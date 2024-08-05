@@ -29,6 +29,6 @@ websocket_client:
 subscribe_event:
   player_chat: true       # 玩家聊天事件监听
   player_death: true      # 玩家死亡事件监听
-  player_login: true      # 玩家登录事件监听
+  player_join: true      # 玩家登录事件监听
   player_quit: true       # 玩家退出事件监听
   player_command: false   # 玩家命令事件监听
