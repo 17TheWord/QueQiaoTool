@@ -17,7 +17,7 @@ class ConfigTest {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.yml")) {
             Yaml yaml = new Yaml();
             config = yaml.loadAs(inputStream, Config.class);
-            System.out.println(config.getServer_name());
+            logger.info(config.getServer_name());
         } catch (Exception e) {
             logger.warn(e.getMessage());
         }
@@ -29,11 +29,11 @@ class ConfigTest {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.yml")) {
             Yaml yaml = new Yaml();
             config = yaml.loadAs(inputStream, Config.class);
-            System.out.println(config.getServer_name());
+            logger.info(config.getServer_name());
             throw new RuntimeException("Test config with RuntimeException.");
         } catch (Exception e) {
             config = new Config();
-            System.out.println(config.getServer_name());
+            logger.info(config.getServer_name());
             logger.warn(e.getMessage());
         }
     }
