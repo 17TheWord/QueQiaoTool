@@ -1,6 +1,6 @@
 package queqiao.websocket;
 
-import com.github.theword.queqiao.websocket.WsServer;
+import com.github.theword.queqiao.tool.websocket.WsServer;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +10,7 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-import static com.github.theword.queqiao.utils.Tool.logger;
+import static com.github.theword.queqiao.tool.utils.Tool.logger;
 
 class WsServerTest {
 

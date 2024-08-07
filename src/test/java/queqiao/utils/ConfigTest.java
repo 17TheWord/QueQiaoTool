@@ -1,6 +1,6 @@
 package queqiao.utils;
 
-import com.github.theword.queqiao.utils.Config;
+import com.github.theword.queqiao.tool.utils.Config;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
