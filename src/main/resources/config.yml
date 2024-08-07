@@ -13,13 +13,13 @@ message_prefix: "鹊桥"
 
 # WebSocket Server配置项
 websocket_server:
-  enable: false         # 是否启用
+  enable: true          # 是否启用
   host: "127.0.0.1"     # WebSocket Server 地址
   port: 8080            # WebSocket Server 端口
 
 # WebSocket Client配置项
 websocket_client:
-  enable: true                  # 是否启用
+  enable: false                 # 是否启用
   reconnect_interval: 5         # 重连间隔（秒）
   reconnect_max_times: 5        # 最大重连次数
   url_list:
@@ -29,6 +29,6 @@ websocket_client:
 subscribe_event:
   player_chat: true       # 玩家聊天事件监听
   player_death: true      # 玩家死亡事件监听
-  player_join: true      # 玩家登录事件监听
+  player_join: true       # 玩家登录事件监听
   player_quit: true       # 玩家退出事件监听
-  player_command: false   # 玩家命令事件监听
+  player_command: true    # 玩家命令事件监听

@@ -8,5 +8,5 @@ public class SubscribeEventConfig {
     private boolean player_death = true;
     private boolean player_join = true;
     private boolean player_quit = true;
-    private boolean player_command = false;
+    private boolean player_command = true;
 }

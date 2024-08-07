@@ -13,7 +13,7 @@ public class WebSocketClientConfig {
     /**
      * 是否启用 WebSocket Client
      */
-    private boolean enable = true;
+    private boolean enable = false;
     /**
      * 重连间隔
      */
