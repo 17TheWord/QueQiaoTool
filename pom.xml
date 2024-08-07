@@ -60,11 +60,11 @@
             <version>${snakeyaml.version}</version>
         </dependency>
 
-        <!-- SLF4J API -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j-api.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -95,4 +95,5 @@
         </dependency>
 
     </dependencies>
+
 </project>
