@@ -32,7 +32,6 @@ public class WebsocketManager {
      */
     private void startWebsocketClients(Object commandReturner) {
         if (Tool.config.getWebsocket_client().isEnable()) {
-            Tool.logger.info(WebsocketConstantMessage.Client.LAUNCHING);
             Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
             Tool.config.getWebsocket_client().getUrl_list().forEach(websocketUrl -> {
                 try {
@@ -41,7 +40,6 @@ public class WebsocketManager {
                     wsClientList.add(wsClient);
                 } catch (URISyntaxException e) {
                     Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Client.URI_SYNTAX_ERROR, websocketUrl));
-                    Tool.logger.warn(String.format(WebsocketConstantMessage.Client.URI_SYNTAX_ERROR, websocketUrl));
                 }
             });
         }
@@ -59,11 +57,9 @@ public class WebsocketManager {
         wsClientList.forEach(wsClient -> {
             Tool.commandReturn(commandReturner, String.format(reason, wsClient.getURI()));
             wsClient.stopWithoutReconnect(code, String.format(reason, wsClient.getURI()));
-            Tool.logger.info(String.format(reason, wsClient.getURI()));
         });
         wsClientList.clear();
         Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.CLEAR_WEBSOCKET_CLIENT_LIST);
-        Tool.logger.info(WebsocketConstantMessage.Client.CLEAR_WEBSOCKET_CLIENT_LIST);
     }
 
 
@@ -74,11 +70,9 @@ public class WebsocketManager {
      */
     private void restartWebsocketClients(Object commandReturner) {
         Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.RELOADING);
-        Tool.logger.info(WebsocketConstantMessage.Client.RELOADING);
         stopWebsocketClients(1000, WebsocketConstantMessage.CLOSE_BY_RELOAD, commandReturner);
         startWebsocketClients(commandReturner);
         Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.RELOADED);
-        Tool.logger.info(WebsocketConstantMessage.Client.RELOADED);
     }
 
     /**
@@ -105,10 +99,8 @@ public class WebsocketManager {
             try {
                 wsServer.stop(0, reason);
                 Tool.commandReturn(commandReturner, reason);
-                Tool.logger.info(reason);
             } catch (InterruptedException e) {
                 Tool.commandReturn(commandReturner, WebsocketConstantMessage.Server.ERROR_ON_STOPPING);
-                Tool.logger.warn(WebsocketConstantMessage.Server.ERROR_ON_STOPPING);
                 Tool.debugLog(e.getMessage());
             }
             wsServer = null;
@@ -125,7 +117,6 @@ public class WebsocketManager {
         stopWebsocketServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
         startWebsocketServer(commandReturner);
         Tool.commandReturn(commandReturner, WebsocketConstantMessage.Server.RELOADED);
-        Tool.logger.info(WebsocketConstantMessage.Server.RELOADED);
     }
 
     /**
@@ -171,7 +162,6 @@ public class WebsocketManager {
     public void reloadWebsocket(boolean isModServer, Object commandReturner) {
         Tool.config = Config.loadConfig(isModServer);
         Tool.commandReturn(commandReturner, CommandConstantMessage.RELOAD_CONFIG);
-        Tool.logger.info(CommandConstantMessage.RELOAD_CONFIG);
         restartWebsocketServer(commandReturner);
         restartWebsocketClients(commandReturner);
     }
@@ -186,23 +176,19 @@ public class WebsocketManager {
     public void reconnectWebsocketClients(boolean all, Object commandReturner) {
         String reconnectCount = all ? CommandConstantMessage.RECONNECT_ALL_CLIENT : CommandConstantMessage.RECONNECT_NOT_OPEN_CLIENT;
         Tool.commandReturn(commandReturner, reconnectCount);
-        Tool.logger.info(reconnectCount);
 
         AtomicInteger opened = new AtomicInteger();
         wsClientList.forEach(wsClient -> {
             if (all || !wsClient.isOpen()) {
                 wsClient.reconnectWebsocket();
                 Tool.commandReturn(commandReturner, String.format(CommandConstantMessage.RECONNECT_MESSAGE, wsClient.getURI()));
-                Tool.logger.info(String.format(CommandConstantMessage.RECONNECT_MESSAGE, wsClient.getURI()));
             } else {
                 opened.getAndIncrement();
             }
         });
         if (opened.get() == wsClientList.size()) {
             Tool.commandReturn(commandReturner, CommandConstantMessage.RECONNECT_NO_CLIENT_NEED_RECONNECT);
-            Tool.logger.info(CommandConstantMessage.RECONNECT_NO_CLIENT_NEED_RECONNECT);
         }
         Tool.commandReturn(commandReturner, CommandConstantMessage.RECONNECTED);
-        Tool.logger.info(CommandConstantMessage.RECONNECTED);
     }
 }
