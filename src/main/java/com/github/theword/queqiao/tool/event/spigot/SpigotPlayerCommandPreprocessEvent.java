@@ -4,7 +4,7 @@ import com.github.theword.queqiao.tool.event.base.BaseCommandEvent;
 
 public class SpigotPlayerCommandPreprocessEvent extends BaseCommandEvent {
 
-    public SpigotPlayerCommandPreprocessEvent( SpigotPlayer player, String command) {
+    public SpigotPlayerCommandPreprocessEvent(SpigotPlayer player, String command) {
         super("PlayerCommandPreprocessEvent", "", player, command);
     }
 }

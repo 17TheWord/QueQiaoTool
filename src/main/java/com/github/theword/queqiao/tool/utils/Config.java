@@ -18,8 +18,8 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
-import static com.github.theword.queqiao.tool.utils.Tool.logger;
 import static com.github.theword.queqiao.tool.utils.Tool.config;
+import static com.github.theword.queqiao.tool.utils.Tool.logger;
 
 /**
  * 配置文件

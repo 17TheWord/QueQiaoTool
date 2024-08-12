@@ -1,8 +1,8 @@
 package com.github.theword.queqiao.tool.handle;
 
 import com.github.theword.queqiao.tool.payload.modle.CommonBaseComponent;
-import com.github.theword.queqiao.tool.payload.modle.CommonTextComponent;
 import com.github.theword.queqiao.tool.payload.modle.CommonSendTitle;
+import com.github.theword.queqiao.tool.payload.modle.CommonTextComponent;
 import org.java_websocket.WebSocket;
 
 import java.util.List;
@@ -20,7 +20,7 @@ public interface HandleApi {
     /**
      * 广播 Send Title 消息
      *
-     * @param webSocket WebSocket
+     * @param webSocket       WebSocket
      * @param commonSendTitle Send Title
      */
     void handleSendTitleMessage(WebSocket webSocket, CommonSendTitle commonSendTitle);

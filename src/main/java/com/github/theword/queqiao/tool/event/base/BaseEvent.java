@@ -6,9 +6,6 @@ import lombok.Setter;
 
 
 public class BaseEvent {
-    @Setter
-    @SerializedName("server_name")
-    private String serverName;
     @SerializedName("event_name")
     private final String eventName;
     @SerializedName("post_type")
@@ -16,6 +13,9 @@ public class BaseEvent {
     @SerializedName("sub_type")
     private final String subType;
     private final int timestamp = (int) (System.currentTimeMillis() / 1000);
+    @Setter
+    @SerializedName("server_name")
+    private String serverName;
 
     public BaseEvent(String eventName, String postType, String subType) {
         this.eventName = eventName;

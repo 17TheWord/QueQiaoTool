@@ -16,13 +16,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Getter
 public class WebsocketManager {
     /**
-     * Websocket Server
-     */
-    private WsServer wsServer;
-    /**
      * Websocket Client 列表
      */
     private final List<WsClient> wsClientList = new ArrayList<>();
+    /**
+     * Websocket Server
+     */
+    private WsServer wsServer;
 
     /**
      * 启动 WebSocket 客户端

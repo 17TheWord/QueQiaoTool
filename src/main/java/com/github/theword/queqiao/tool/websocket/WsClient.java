@@ -20,7 +20,6 @@ import static com.github.theword.queqiao.tool.utils.Tool.*;
  * WebSocket 客户端
  */
 public class WsClient extends WebSocketClient {
-    private int reconnectTimes = 1;
     /**
      * 重连定时器
      */
@@ -30,6 +29,7 @@ public class WsClient extends WebSocketClient {
      * 处理协议消息
      */
     private final HandleProtocolMessage handleProtocolMessage = new HandleProtocolMessage();
+    private int reconnectTimes = 1;
 
     /**
      * Websocket Client 构造函数
