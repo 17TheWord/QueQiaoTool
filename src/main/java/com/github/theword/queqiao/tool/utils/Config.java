@@ -93,8 +93,7 @@ public class Config {
             return;
         } catch (Exception e) {
             logger.warn("读取配置文件失败。");
-            logger.error(e.getMessage());
-            e.printStackTrace();
+            logger.warn(e.getMessage());
         }
         logger.warn("将直接使用默认配置项。");
     }
