@@ -45,7 +45,8 @@ public class WebsocketConstantMessage {
         public static final String MISSING_SERVER_NAME_HEADER = CLIENT_PREFIX + "连接请求头中缺少服务器名，将断开连接";
         public static final String INVALID_CLIENT_ORIGIN_HEADER = CLIENT_PREFIX + "连接请求头中客户端来源错误，将断开连接";
         public static final String SERVER_NAME_PARSE_FAILED_HEADER = CLIENT_PREFIX + "连接请求头中服务器名解析失败，将断开连接";
-        public static final String INVALID_ACCESS_TOKEN_HEADER = CLIENT_PREFIX + "连接身份验证失败，将断开连接";
+        public static final String INVALID_SERVER_NAME_HEADER = CLIENT_PREFIX + "连接请求头中服务器名：%s 错误，将断开连接";
+        public static final String INVALID_ACCESS_TOKEN_HEADER = CLIENT_PREFIX + "连接身份验证码：%s 失败，将断开连接";
 
         public static final String CLIENT_CONNECTED = CLIENT_PREFIX + "客户端已连接";
         public static final String CLIENT_DISCONNECTED = CLIENT_PREFIX + "客户端已断开";

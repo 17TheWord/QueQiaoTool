@@ -15,8 +15,11 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
 
 import static com.github.theword.queqiao.tool.utils.Tool.logger;
+import static com.github.theword.queqiao.tool.utils.Tool.config;
 
 /**
  * 配置文件
@@ -58,13 +61,8 @@ public class Config {
      */
     private SubscribeEventConfig subscribe_event = new SubscribeEventConfig();
 
-    /**
-     * 根据服务端类型加载配置文件
-     *
-     * @param isModServer 是否为模组服务端
-     * @return Config
-     */
-    public static Config loadConfig(boolean isModServer) {
+
+    public Config(boolean isModServer) {
         logger.info("正在读取配置文件。");
 
         String configFolder = isModServer ? "config" : "plugins";
@@ -89,13 +87,57 @@ public class Config {
         try {
             Yaml yaml = new Yaml();
             Reader reader = Files.newBufferedReader(configMapFilePath);
-            Config config = yaml.loadAs(reader, Config.class);
+            Map<String, Object> configMap = yaml.load(reader);
+            loadConfigValues(configMap);
             logger.info("读取配置文件成功。");
-            return config;
+            return;
         } catch (Exception e) {
             logger.warn("读取配置文件失败。");
+            logger.error(e.getMessage());
+            e.printStackTrace();
         }
-        logger.info("将直接使用默认配置项。");
-        return new Config();
+        logger.warn("将直接使用默认配置项。");
+    }
+
+    public static Config loadConfig(boolean isModServer) {
+        return new Config(isModServer);
+    }
+
+    private void loadConfigValues(Map<String, Object> configMap) {
+        enable = (boolean) configMap.get("enable");
+        debug = (boolean) configMap.get("debug");
+        server_name = (String) configMap.get("server_name");
+        access_token = (String) configMap.get("access_token");
+        message_prefix = (String) configMap.get("message_prefix");
+
+        loadWebsocketServerConfig(configMap);
+        loadWebsocketClientConfig(configMap);
+        loadSubscribeEventConfig(configMap);
+        config = this;
+    }
+
+
+    private void loadWebsocketServerConfig(Map<String, Object> configMap) {
+        Map<String, Object> websocketServerConfig = (Map<String, Object>) configMap.get("websocket_server");
+        websocket_server.setEnable((Boolean) websocketServerConfig.get("enable"));
+        websocket_server.setHost((String) websocketServerConfig.get("host"));
+        websocket_server.setPort((int) websocketServerConfig.get("port"));
+    }
+
+    private void loadWebsocketClientConfig(Map<String, Object> configMap) {
+        Map<String, Object> websocketClientConfig = (Map<String, Object>) configMap.get("websocket_client");
+        websocket_client.setEnable((Boolean) websocketClientConfig.get("enable"));
+        websocket_client.setReconnect_interval((int) websocketClientConfig.get("reconnect_interval"));
+        websocket_client.setReconnect_max_times((int) websocketClientConfig.get("reconnect_max_times"));
+        websocket_client.setUrl_list((List<String>) websocketClientConfig.get("url_list"));
+    }
+
+    private void loadSubscribeEventConfig(Map<String, Object> configMap) {
+        Map<String, Object> subscribeEventConfig = (Map<String, Object>) configMap.get("subscribe_event");
+        subscribe_event.setPlayer_chat((boolean) subscribeEventConfig.get("player_chat"));
+        subscribe_event.setPlayer_command((boolean) subscribeEventConfig.get("player_command"));
+        subscribe_event.setPlayer_death((boolean) subscribeEventConfig.get("player_death"));
+        subscribe_event.setPlayer_join((boolean) subscribeEventConfig.get("player_join"));
+        subscribe_event.setPlayer_quit((boolean) subscribeEventConfig.get("player_quit"));
     }
 }
