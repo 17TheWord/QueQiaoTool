@@ -75,4 +75,4 @@ jobs:
       #          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload to GitHub Release
-        run: gh release upload v${{ env.VERSION }} target/queqiao-tools-${{ env.VERSION }}.jar --clobber
+        run: gh release upload v${{ env.VERSION }} target/queqiao-tool-${{ env.VERSION }}.jar --clobber
