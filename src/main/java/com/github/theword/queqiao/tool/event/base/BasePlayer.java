@@ -1,5 +1,6 @@
-package com.github.theword.queqiao.tool.event;
+package com.github.theword.queqiao.tool.event.base;
 
+import com.google.gson.Gson;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,5 +25,9 @@ public class BasePlayer {
     @Override
     public int hashCode() {
         return nickname.hashCode();
+    }
+
+    public String getJson() {
+        return new Gson().toJson(this);
     }
 }
