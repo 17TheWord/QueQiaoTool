@@ -14,6 +14,7 @@ on:
 
 env:
   GH_TOKEN: ${{ github.token }}
+  GITHUB_TOKEN: ${{ github.token }}
 
 jobs:
   build:
@@ -73,8 +74,6 @@ jobs:
       - name: Publish to GitHub Packages Apache Maven
         if: github.event_name == 'push'
         run: mvn deploy -s $GITHUB_WORKSPACE/settings.xml
-        env:
-          GH_TOKEN: ${{ github.token }}
 
       - name: Upload to GitHub Release
         run: gh release upload v${{ env.VERSION }} target/queqiao-tool-${{ env.VERSION }}.jar --clobber
