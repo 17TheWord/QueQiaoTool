@@ -69,6 +69,20 @@ public class Tool {
         }
     }
 
+
+    /**
+     * 判断是否为注册或登录命令
+     *
+     * @param command 命令
+     * @return 是否为注册或登录命令，如果是，返回空字符串
+     */
+    public static String isRegisterOrLoginCommand(String command) {
+        if (command.startsWith("/")) command = command.substring(1);
+        if (command.startsWith("l ") || command.startsWith("login ") || command.startsWith("register ") || command.startsWith("reg ") || command.startsWith(BaseConstant.COMMAND_HEADER + " "))
+            return "";
+        return command;
+    }
+
     /**
      * 命令返回
      * 当有执行者时，向执行者返回相应的消息作回执
