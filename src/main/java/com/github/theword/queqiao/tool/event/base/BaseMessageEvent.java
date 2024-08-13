@@ -6,7 +6,7 @@ public class BaseMessageEvent extends BaseEvent {
     private final BasePlayer player;
     private final String message;
     @SerializedName("message_id")
-    private String messageId;
+    private final String messageId;
 
     public BaseMessageEvent(String eventName, String subType, String messageId, BasePlayer player, String message) {
         super(eventName, "message", subType);
