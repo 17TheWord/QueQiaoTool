@@ -12,7 +12,8 @@ on:
       - opened
       - synchronize
 
-
+env:
+  GH_TOKEN: ${{ github.token }}
 
 jobs:
   build:
