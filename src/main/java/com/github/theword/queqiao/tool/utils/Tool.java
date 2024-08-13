@@ -89,7 +89,7 @@ public class Tool {
      */
     public static void debugLog(String message) {
         if (config.isDebug())
-            logger.debug(message);
+            logger.info(message);
     }
 
     /**
