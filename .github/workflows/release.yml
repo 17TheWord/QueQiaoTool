@@ -12,11 +12,13 @@ on:
       - opened
       - synchronize
 
+
+
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
       - uses: actions/checkout@v4
@@ -30,16 +32,46 @@ jobs:
 
       - name: Get project version from pom.xml
         id: get_version
-        run: echo "VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+        run: |
+          echo "VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+          echo "VERSION=${{ env.VERSION }}"
 
-      - name: Use the extracted version
-        run: echo "The project version is ${{ env.VERSION }}"
+      - name: Check if Release exists
+        id: check-release
+        run: |
+          # Check if the release exists
+          RESPONSE=$(gh release view v${{ env.VERSION }} -R ${{ github.repository }} 2>&1 || true)
+          if echo "$RESPONSE" | grep -q "Not Found"; then
+            echo "Release v${{ env.VERSION }} does not exist. Skipping deletion."
+            echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
+          else
+            echo "Release v${{ env.VERSION }} exists."
+            echo "RELEASE_EXISTS=true" >> $GITHUB_ENV
+          fi
+
+      - name: Delete Release if exists
+        if: env.RELEASE_EXISTS == 'true'
+        run: |
+          # Try to delete the release and handle errors gracefully
+          set +e
+          gh release delete v${{ env.VERSION }} -R ${{ github.repository }} -y --cleanup-tag
+          if [ $? -eq 0 ]; then
+            echo "Release v${{ env.VERSION }} deleted successfully."
+          else
+            echo "Failed to delete release v${{ env.VERSION }}. It might not exist or there might be another issue."
+          fi
+
+      - name: Create Release with temp note
+        run: gh release create v${{ env.VERSION }} --generate-notes
 
       - name: Build with Maven
         run: mvn -B package --file pom.xml
 
-#      - name: Publish to GitHub Packages Apache Maven
-#        if: github.event_name == 'push'
-#        run: mvn deploy -s $GITHUB_WORKSPACE/settings.xml
-#        env:
-#          GITHUB_TOKEN: ${{ github.token }}
+      #      - name: Publish to GitHub Packages Apache Maven
+      #        if: github.event_name == 'push'
+      #        run: mvn deploy -s $GITHUB_WORKSPACE/settings.xml
+      #        env:
+      #          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Upload to GitHub Release
+        run: gh release upload v${{ env.VERSION }} target/queqiao-tools-${{ env.VERSION }}.jar --clobber
