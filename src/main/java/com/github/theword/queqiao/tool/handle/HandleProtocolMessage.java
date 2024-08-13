@@ -1,10 +1,7 @@
 package com.github.theword.queqiao.tool.handle;
 
 import com.github.theword.queqiao.tool.constant.BaseConstant;
-import com.github.theword.queqiao.tool.payload.ActionbarPayload;
-import com.github.theword.queqiao.tool.payload.BasePayload;
-import com.github.theword.queqiao.tool.payload.MessagePayload;
-import com.github.theword.queqiao.tool.payload.SendTitlePayload;
+import com.github.theword.queqiao.tool.payload.*;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.java_websocket.WebSocket;
@@ -21,8 +18,7 @@ public class HandleProtocolMessage {
      */
     public void handleWebSocketJson(WebSocket webSocket, String message) {
         // 组合消息
-        if (config.isDebug())
-            logger.debug("收到来自 {} 的 WebSocket 消息：{}", webSocket.getRemoteSocketAddress(), message);
+        debugLog("收到来自 {} 的 WebSocket 消息：{}", webSocket.getRemoteSocketAddress(), message);
         Gson gson = new Gson();
         BasePayload basePayload = gson.fromJson(message, BasePayload.class);
         JsonElement data = basePayload.getData();
@@ -40,6 +36,10 @@ public class HandleProtocolMessage {
                 ActionbarPayload actionMessageList = gson.fromJson(data, ActionbarPayload.class);
                 handleApi.handleActionBarMessage(webSocket, actionMessageList.getMessageList());
                 break;
+            case "send_private_msg":
+                PrivateMessagePayload privateUUIDMessagePayload = gson.fromJson(data, PrivateMessagePayload.class);
+                handleApi.handlePrivateMessage(webSocket, privateUUIDMessagePayload.getTargetPlayerName(), privateUUIDMessagePayload.getTargetPlayerUuid(), privateUUIDMessagePayload.getMessageList());
+                return;
             case "command":
                 // TODO Support command
             default:
