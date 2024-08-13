@@ -1,4 +1,4 @@
-package com.github.theword.queqiao.tool.event.base;
+package com.github.theword.queqiao.tool.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

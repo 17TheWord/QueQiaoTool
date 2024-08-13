@@ -1,4 +1,4 @@
-package com.github.theword.queqiao.tool.event.base;
+package com.github.theword.queqiao.tool.event;
 
 
 public class BaseNoticeEvent extends BaseEvent {

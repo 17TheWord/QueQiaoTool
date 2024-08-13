@@ -1,4 +1,4 @@
-package com.github.theword.queqiao.tool.event.base;
+package com.github.theword.queqiao.tool.event;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
