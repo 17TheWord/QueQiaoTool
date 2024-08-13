@@ -1,7 +1,7 @@
 package com.github.theword.queqiao.tool.utils;
 
 import com.github.theword.queqiao.tool.constant.BaseConstant;
-import com.github.theword.queqiao.tool.event.BaseEvent;
+import com.github.theword.queqiao.tool.event.base.BaseEvent;
 import com.github.theword.queqiao.tool.handle.HandleApi;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessage;
 import com.github.theword.queqiao.tool.payload.modle.CommonBaseComponent;
