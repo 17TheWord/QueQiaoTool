@@ -28,7 +28,7 @@ public abstract class ReloadCommandAbstract implements SubCommand {
     /**
      * 获取命令用法
      *
-     * @return 使用：/${BaseConstant.COMMAND_HEADER} reload
+     * @return 使用：/{@link BaseConstant#COMMAND_HEADER} reload
      */
     @Override
     public String getUsage() {

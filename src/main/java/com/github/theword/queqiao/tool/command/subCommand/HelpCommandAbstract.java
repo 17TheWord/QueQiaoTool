@@ -28,7 +28,7 @@ public abstract class HelpCommandAbstract implements SubCommand {
     /**
      * 获取命令用法
      *
-     * @return 使用：/BaseConstant.COMMAND_HEADER
+     * @return 使用：/{@link BaseConstant#COMMAND_HEADER}
      */
     @Override
     public String getUsage() {

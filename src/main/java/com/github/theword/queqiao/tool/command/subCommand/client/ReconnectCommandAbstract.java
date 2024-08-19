@@ -22,7 +22,7 @@ public abstract class ReconnectCommandAbstract implements SubCommand {
     }
 
     /**
-     * @return 使用：/BaseConstant.COMMAND_HEADER client reconnect [all]
+     * @return 使用：/{@link BaseConstant#COMMAND_HEADER} client reconnect [all]
      */
     @Override
     public String getUsage() {
