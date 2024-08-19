@@ -119,7 +119,13 @@ public class Config {
     private void loadWebsocketServerConfig(Map<String, Object> configMap) {
         Map<String, Object> websocketServerConfig = (Map<String, Object>) configMap.get("websocket_server");
         websocket_server.setEnable((Boolean) websocketServerConfig.get("enable"));
-        websocket_server.setHost((String) websocketServerConfig.get("host"));
+        String host = (String) websocketServerConfig.get("host");
+        if (host.equals("0.0.0.0") || host.equals("127.0.0.1") || host.equals("localhost"))
+            websocket_server.setHost((String) websocketServerConfig.get("host"));
+        else {
+            websocket_server.setHost("127.0.0.1");
+            logger.warn("哪有你这么设置IP的？你确定你改的host是对的？？我已经帮你改到 127.0.0.1 了，好好想想再去改host！！！");
+        }
         websocket_server.setPort((int) websocketServerConfig.get("port"));
     }
 
