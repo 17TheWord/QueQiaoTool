@@ -23,4 +23,8 @@ public class CommonHoverEntity {
      * Velocity
      */
     UUID uuid;
+    /**
+     * Velocity
+     */
+    String key;
 }
