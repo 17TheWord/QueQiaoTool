@@ -4,7 +4,22 @@ import lombok.Data;
 
 @Data
 public class CommonHoverItem {
-    int id;
-    int count;
+    /**
+     * Spigot, Forge, Fabric
+     * <p>
+     * 使用int类型时，转一次类型
+     */
+    String id;
+    /**
+     * Spigot, Forge, Fabric
+     */
+    Integer count;
+    /**
+     * Spigot
+     */
     String tag;
+    /**
+     * Velocity
+     */
+    String key;
 }
