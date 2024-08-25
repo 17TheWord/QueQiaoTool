@@ -128,7 +128,7 @@ public class Tool {
     public static CommonBaseComponent getPrefixComponent() {
         CommonBaseComponent commonBaseComponent = new CommonBaseComponent();
         commonBaseComponent.setText("[" + config.getMessage_prefix() + "] ");
-        commonBaseComponent.setColor("gold");
+        commonBaseComponent.setColor("yellow");
         return commonBaseComponent;
     }
 }
