@@ -1,5 +1,6 @@
 package com.github.theword.queqiao.tool.payload.modle;
 
+import com.github.theword.queqiao.tool.payload.modle.hover.CommonHoverItem;
 import com.google.gson.Gson;
 import org.junit.jupiter.api.Test;
 
