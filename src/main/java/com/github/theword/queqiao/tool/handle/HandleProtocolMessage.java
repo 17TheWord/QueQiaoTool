@@ -26,22 +26,23 @@ public class HandleProtocolMessage {
             case "broadcast":
             case "send_msg":
                 MessagePayload messageList = gson.fromJson(data, MessagePayload.class);
-                handleApi.handleBroadcastMessage(webSocket, messageList.getMessageList());
+                handleApiService.handleBroadcastMessage(webSocket, messageList.getMessage());
                 break;
             case "send_title":
-                SendTitlePayload sendTitlePayload = gson.fromJson(data, SendTitlePayload.class);
-                handleApi.handleSendTitleMessage(webSocket, sendTitlePayload.getCommonSendTitle());
+                TitlePayload titlePayload = gson.fromJson(data, TitlePayload.class);
+                handleApiService.handleSendTitleMessage(webSocket, titlePayload);
                 break;
-            case "actionbar":
-                ActionbarPayload actionMessageList = gson.fromJson(data, ActionbarPayload.class);
-                handleApi.handleActionBarMessage(webSocket, actionMessageList.getMessageList());
+            case "send_actionbar":
+                MessagePayload actionMessagePayload = gson.fromJson(data, MessagePayload.class);
+                handleApiService.handleActionBarMessage(webSocket, actionMessagePayload.getMessage());
                 break;
             case "send_private_msg":
-                PrivateMessagePayload privateUUIDMessagePayload = gson.fromJson(data, PrivateMessagePayload.class);
-                handleApi.handlePrivateMessage(webSocket, privateUUIDMessagePayload.getTargetPlayerName(), privateUUIDMessagePayload.getTargetPlayerUuid(), privateUUIDMessagePayload.getMessageList());
+                PrivateMessagePayload privateMessagePayload = gson.fromJson(data, PrivateMessagePayload.class);
+                handleApiService.handlePrivateMessage(webSocket, privateMessagePayload.getTargetPlayerName(), privateMessagePayload.getTargetPlayerUuid(), privateMessagePayload.getMessage());
                 return;
-            case "command":
+            case "send_command":
                 // TODO Support command
+                break;
             default:
                 logger.warn(BaseConstant.UNKNOWN_API + "{}", basePayload.getApi());
                 break;
