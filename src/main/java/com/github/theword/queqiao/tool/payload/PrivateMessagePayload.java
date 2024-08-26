@@ -1,12 +1,10 @@
 package com.github.theword.queqiao.tool.payload;
 
-import com.github.theword.queqiao.tool.payload.modle.CommonBaseComponent;
 import com.google.gson.annotations.SerializedName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -28,10 +26,6 @@ public class PrivateMessagePayload extends MessagePayload {
             tempTargetPlayerName = targetPlayerUuid.toString();
         else
             tempTargetPlayerName = "Unknown player";
-        return "send private message to " + tempTargetPlayerName + ": " +
-                getMessageList().stream()
-                        .map(CommonBaseComponent::getText)
-                        .collect(Collectors.joining());
-
+        return "send private message to " + tempTargetPlayerName + ": " + getMessage();
     }
 }
