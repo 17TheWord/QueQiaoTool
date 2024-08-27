@@ -105,7 +105,7 @@ public class Config {
     private void loadConfigValues(Map<String, Object> configMap) {
         enable = (boolean) configMap.get("enable");
         debug = (boolean) configMap.get("debug");
-        serverName = (String) configMap.get("serverName");
+        serverName = (String) configMap.get("server_name");
         accessToken = (String) configMap.get("accessToken");
         messagePrefix = (String) configMap.get("message_prefix");
 
