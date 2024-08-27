@@ -3,9 +3,13 @@ package com.github.theword.queqiao.tool.payload.modle.component;
 import com.github.theword.queqiao.tool.payload.modle.click.CommonClickEvent;
 import com.github.theword.queqiao.tool.payload.modle.hover.CommonHoverEvent;
 import com.google.gson.annotations.SerializedName;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class CommonTextComponent {
     private String text;
     private String color;
@@ -22,6 +26,10 @@ public class CommonTextComponent {
 
     @SerializedName("hover_event")
     private CommonHoverEvent hoverEvent;
+
+    public CommonTextComponent(String text) {
+        this.text = text;
+    }
 
     @Override
     public String toString() {
