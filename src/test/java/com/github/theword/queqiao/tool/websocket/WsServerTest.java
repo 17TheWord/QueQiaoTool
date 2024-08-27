@@ -1,6 +1,5 @@
-package queqiao.websocket;
+package com.github.theword.queqiao.tool.websocket;
 
-import com.github.theword.queqiao.tool.websocket.WsServer;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
@@ -13,15 +12,14 @@ import java.nio.charset.StandardCharsets;
 import static com.github.theword.queqiao.tool.utils.Tool.logger;
 
 class WsServerTest {
-
     @Test
     void testUnicodeServerName() throws UnsupportedEncodingException {
-        System.out.println(URLEncoder.encode("服务器", StandardCharsets.UTF_8.toString()));
+        System.out.println("URLEncoder: " + URLEncoder.encode("服务器", StandardCharsets.UTF_8.toString()));
     }
 
     @Test
     void testDecodeServerName() throws UnsupportedEncodingException {
-        System.out.println(URLDecoder.decode("%E6%9C%8D%E5%8A%A1%E5%99%A8", StandardCharsets.UTF_8.toString()));
+        System.out.println("URLDecoder:" + URLDecoder.decode("%E6%9C%8D%E5%8A%A1%E5%99%A8", StandardCharsets.UTF_8.toString()));
     }
 
     @Test
@@ -37,5 +35,4 @@ class WsServerTest {
             throw new RuntimeException(e);
         }
     }
-
 }
