@@ -11,11 +11,12 @@ import java.util.stream.Collectors;
 public class MessagePayload {
 
     @SerializedName("message")
-    private List<CommonTextComponent> message;
+    private List<MessageSegment> message;
 
     @Override
     public String toString() {
         return message.stream()
+                .map(MessageSegment::getData)
                 .map(CommonTextComponent::getText)
                 .collect(Collectors.joining());
     }

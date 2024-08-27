@@ -26,6 +26,6 @@ public class PrivateMessagePayload extends MessagePayload {
             tempTargetPlayerName = targetPlayerUuid.toString();
         else
             tempTargetPlayerName = "Unknown player";
-        return "send private message to " + tempTargetPlayerName + ": " + getMessage();
+        return "send private message to " + tempTargetPlayerName + ": " + super.toString();
     }
 }

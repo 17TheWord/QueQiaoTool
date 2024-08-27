@@ -126,8 +126,7 @@ public class Tool {
      * @return 前缀
      */
     public static CommonTextComponent getPrefixComponent() {
-        CommonTextComponent CommonTextComponent = new CommonTextComponent();
-        CommonTextComponent.setText("[" + config.getMessagePrefix() + "] ");
+        CommonTextComponent CommonTextComponent = new CommonTextComponent("[" + config.getMessagePrefix() + "] ");
         CommonTextComponent.setColor("yellow");
         return CommonTextComponent;
     }

@@ -1,6 +1,6 @@
 package com.github.theword.queqiao.tool.payload.modle.hover;
 
-import com.github.theword.queqiao.tool.payload.modle.component.CommonTextComponent;
+import com.github.theword.queqiao.tool.payload.MessageSegment;
 import lombok.Data;
 
 import java.util.List;
@@ -19,7 +19,7 @@ public class CommonHoverEntity {
     /**
      * Spigot, Forge, Fabric
      */
-    List<CommonTextComponent> name;
+    List<MessageSegment> name;
     /**
      * Velocity
      */
