@@ -1,7 +1,7 @@
 package com.github.theword.queqiao.tool.handle;
 
+import com.github.theword.queqiao.tool.payload.MessageSegment;
 import com.github.theword.queqiao.tool.payload.TitlePayload;
-import com.github.theword.queqiao.tool.payload.modle.component.CommonTextComponent;
 import org.java_websocket.WebSocket;
 
 import java.util.List;
@@ -17,7 +17,7 @@ public interface HandleApiService {
      * @param webSocket   WebSocket
      * @param messageList 消息列表
      */
-    void handleBroadcastMessage(WebSocket webSocket, List<CommonTextComponent> messageList);
+    void handleBroadcastMessage(WebSocket webSocket, List<MessageSegment> messageList);
 
     /**
      * 广播 Send Title 消息
@@ -33,7 +33,7 @@ public interface HandleApiService {
      * @param webSocket   WebSocket
      * @param messageList Action Bar 消息列表
      */
-    void handleActionBarMessage(WebSocket webSocket, List<CommonTextComponent> messageList);
+    void handleActionBarMessage(WebSocket webSocket, List<MessageSegment> messageList);
 
     /**
      * 发送私聊消息
@@ -43,5 +43,5 @@ public interface HandleApiService {
      * @param targetPlayerUuid 目标 UUID
      * @param messageList      消息列表
      */
-    void handlePrivateMessage(WebSocket webSocket, String targetPlayerName, UUID targetPlayerUuid, List<CommonTextComponent> messageList);
+    void handlePrivateMessage(WebSocket webSocket, String targetPlayerName, UUID targetPlayerUuid, List<MessageSegment> messageList);
 }
