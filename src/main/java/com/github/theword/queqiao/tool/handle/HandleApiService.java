@@ -1,14 +1,15 @@
 package com.github.theword.queqiao.tool.handle;
 
-import com.github.theword.queqiao.tool.payload.modle.CommonBaseComponent;
-import com.github.theword.queqiao.tool.payload.modle.CommonSendTitle;
-import com.github.theword.queqiao.tool.payload.modle.CommonTextComponent;
+import com.github.theword.queqiao.tool.payload.TitlePayload;
+import com.github.theword.queqiao.tool.payload.modle.component.CommonTextComponent;
 import org.java_websocket.WebSocket;
 
 import java.util.List;
 import java.util.UUID;
 
-public interface HandleApi {
+public interface HandleApiService {
+
+    ParseJsonToEventService parseJsonToEventService = null;
 
     /**
      * 广播消息
@@ -21,10 +22,10 @@ public interface HandleApi {
     /**
      * 广播 Send Title 消息
      *
-     * @param webSocket       WebSocket
-     * @param commonSendTitle Send Title
+     * @param webSocket    WebSocket
+     * @param titlePayload Title
      */
-    void handleSendTitleMessage(WebSocket webSocket, CommonSendTitle commonSendTitle);
+    void handleSendTitleMessage(WebSocket webSocket, TitlePayload titlePayload);
 
     /**
      * 广播 Action Bar 消息
@@ -32,7 +33,7 @@ public interface HandleApi {
      * @param webSocket   WebSocket
      * @param messageList Action Bar 消息列表
      */
-    void handleActionBarMessage(WebSocket webSocket, List<CommonBaseComponent> messageList);
+    void handleActionBarMessage(WebSocket webSocket, List<CommonTextComponent> messageList);
 
     /**
      * 发送私聊消息

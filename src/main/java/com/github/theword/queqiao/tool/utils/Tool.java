@@ -2,9 +2,9 @@ package com.github.theword.queqiao.tool.utils;
 
 import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.github.theword.queqiao.tool.event.base.BaseEvent;
-import com.github.theword.queqiao.tool.handle.HandleApi;
-import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessage;
-import com.github.theword.queqiao.tool.payload.modle.CommonBaseComponent;
+import com.github.theword.queqiao.tool.handle.HandleApiService;
+import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
+import com.github.theword.queqiao.tool.payload.modle.component.CommonTextComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,11 +27,11 @@ public class Tool {
     /**
      * api 消息处理
      */
-    public static HandleApi handleApi = null;
+    public static HandleApiService handleApiService = null;
     /**
      * 命令消息处理
      */
-    public static HandleCommandReturnMessage handleCommandReturnMessage = null;
+    public static HandleCommandReturnMessageService handleCommandReturnMessageService = null;
 
     /**
      * 组件初始化，以组件名作为日志名；
@@ -44,13 +44,13 @@ public class Tool {
      * @param handleApiService                  api消息处理
      * @param handleCommandReturnMessageService 命令消息处理
      */
-    public static void initTool(boolean isModServer, HandleApi handleApiService, HandleCommandReturnMessage handleCommandReturnMessageService) {
+    public static void initTool(boolean isModServer, HandleApiService handleApiService, HandleCommandReturnMessageService handleCommandReturnMessageService) {
         logger = LoggerFactory.getLogger(BaseConstant.MODULE_NAME);
         logger.info(BaseConstant.LAUNCHING);
         config = Config.loadConfig(isModServer);
         websocketManager = new WebsocketManager();
-        handleApi = handleApiService;
-        handleCommandReturnMessage = handleCommandReturnMessageService;
+        Tool.handleApiService = handleApiService;
+        Tool.handleCommandReturnMessageService = handleCommandReturnMessageService;
         logger.info(BaseConstant.INITIALIZED);
     }
 
@@ -62,7 +62,7 @@ public class Tool {
      */
     public static void sendWebsocketMessage(BaseEvent event) {
         if (config.isEnable()) {
-            event.setServerName(config.getServer_name());
+            event.setServerName(config.getServerName());
             websocketManager.getWsClientList().forEach(wsClient -> wsClient.send(event.getJson()));
             if (websocketManager.getWsServer() != null)
                 websocketManager.getWsServer().broadcast(event.getJson());
@@ -92,7 +92,7 @@ public class Tool {
      */
     public static void commandReturn(Object commandReturner, String message) {
         if (commandReturner != null)
-            handleCommandReturnMessage.handleCommandReturnMessage(commandReturner, message);
+            handleCommandReturnMessageService.handleCommandReturnMessage(commandReturner, message);
     }
 
     /**
@@ -125,10 +125,10 @@ public class Tool {
      *
      * @return 前缀
      */
-    public static CommonBaseComponent getPrefixComponent() {
-        CommonBaseComponent commonBaseComponent = new CommonBaseComponent();
-        commonBaseComponent.setText("[" + config.getMessage_prefix() + "] ");
-        commonBaseComponent.setColor("gold");
-        return commonBaseComponent;
+    public static CommonTextComponent getPrefixComponent() {
+        CommonTextComponent CommonTextComponent = new CommonTextComponent();
+        CommonTextComponent.setText("[" + config.getMessagePrefix() + "] ");
+        CommonTextComponent.setColor("yellow");
+        return CommonTextComponent;
     }
 }

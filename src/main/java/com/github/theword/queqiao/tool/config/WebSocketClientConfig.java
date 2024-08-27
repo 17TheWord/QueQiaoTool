@@ -17,13 +17,13 @@ public class WebSocketClientConfig {
     /**
      * 重连间隔
      */
-    private int reconnect_interval = 5;
+    private int reconnectInterval = 5;
     /**
      * 最大重连次数
      */
-    private int reconnect_max_times = 5;
+    private int reconnectMaxTimes = 5;
     /**
      * WebSocket URL 列表
      */
-    private List<String> url_list = new ArrayList<>();
+    private List<String> urlList = new ArrayList<>();
 }

@@ -71,14 +71,14 @@ public class WsServer extends WebSocketServer {
             return;
         }
 
-        if (!serverName.equals(config.getServer_name())) {
+        if (!serverName.equals(config.getServerName())) {
             logger.warn(String.format(WebsocketConstantMessage.Server.INVALID_SERVER_NAME_HEADER, getClientAddress(webSocket), serverName));
             webSocket.close(1008, "X-Self-name Header is wrong");
             return;
         }
 
         String accessToken = clientHandshake.getFieldValue("Authorization");
-        if (!config.getAccess_token().isEmpty() && !accessToken.equals("Bearer " + config.getAccess_token())) {
+        if (!config.getAccessToken().isEmpty() && !accessToken.equals("Bearer " + config.getAccessToken())) {
             logger.warn(String.format(WebsocketConstantMessage.Server.INVALID_ACCESS_TOKEN_HEADER, getClientAddress(webSocket), accessToken));
             webSocket.close(1008, "Authorization Header is wrong");
             return;

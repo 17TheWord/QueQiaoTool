@@ -1,6 +1,6 @@
 package com.github.theword.queqiao.tool.handle;
 
-public interface HandleCommandReturnMessage {
+public interface HandleCommandReturnMessageService {
 
     /**
      * 处理命令返回消息

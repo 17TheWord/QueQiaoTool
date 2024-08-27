@@ -1,7 +1,6 @@
 package com.github.theword.queqiao.tool.payload;
 
-import com.github.theword.queqiao.tool.payload.modle.CommonBaseComponent;
-import com.github.theword.queqiao.tool.payload.modle.CommonTextComponent;
+import com.github.theword.queqiao.tool.payload.modle.component.CommonTextComponent;
 import com.google.gson.annotations.SerializedName;
 import lombok.Data;
 
@@ -11,13 +10,13 @@ import java.util.stream.Collectors;
 @Data
 public class MessagePayload {
 
-    @SerializedName("message_list")
-    private List<CommonTextComponent> messageList;
+    @SerializedName("message")
+    private List<CommonTextComponent> message;
 
     @Override
     public String toString() {
-        return messageList.stream()
-                .map(CommonBaseComponent::getText)
+        return message.stream()
+                .map(CommonTextComponent::getText)
                 .collect(Collectors.joining());
     }
 }

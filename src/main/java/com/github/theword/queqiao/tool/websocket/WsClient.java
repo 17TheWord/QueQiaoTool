@@ -39,10 +39,10 @@ public class WsClient extends WebSocketClient {
     @SneakyThrows
     public WsClient(URI uri) {
         super(uri);
-        addHeader("x-self-name", URLEncoder.encode(config.getServer_name(), StandardCharsets.UTF_8.toString()));
+        addHeader("x-self-name", URLEncoder.encode(config.getServerName(), StandardCharsets.UTF_8.toString()));
         addHeader("x-client-origin", "minecraft");
-        if (!config.getAccess_token().isEmpty())
-            addHeader("Authorization", "Bearer " + config.getAccess_token());
+        if (!config.getAccessToken().isEmpty())
+            addHeader("Authorization", "Bearer " + config.getAccessToken());
     }
 
     /**
@@ -81,7 +81,7 @@ public class WsClient extends WebSocketClient {
      */
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        if (remote && reconnectTimes <= config.getWebsocket_client().getReconnect_max_times()) {
+        if (remote && reconnectTimes <= config.getWebsocketClient().getReconnectMaxTimes()) {
             reconnectWebsocket();
         }
     }
@@ -97,7 +97,7 @@ public class WsClient extends WebSocketClient {
                 reconnect();
             }
         };
-        timer.schedule(timerTask, config.getWebsocket_client().getReconnect_interval() * 1000L);
+        timer.schedule(timerTask, config.getWebsocketClient().getReconnectInterval() * 1000L);
     }
 
     /**
@@ -119,7 +119,7 @@ public class WsClient extends WebSocketClient {
         debugLog(String.format(WebsocketConstantMessage.Client.RECONNECTING, getURI(), reconnectTimes));
         reconnectTimes++;
         super.reconnect();
-        if (reconnectTimes == config.getWebsocket_client().getReconnect_max_times() + 1) {
+        if (reconnectTimes == config.getWebsocketClient().getReconnectMaxTimes() + 1) {
             logger.info(String.format(WebsocketConstantMessage.Client.MAX_RECONNECT_ATTEMPTS_REACHED, getURI()));
         }
     }
@@ -132,7 +132,7 @@ public class WsClient extends WebSocketClient {
     @Override
     public void onError(Exception exception) {
         logger.warn(String.format(WebsocketConstantMessage.Client.CONNECTION_ERROR, getURI(), exception.getMessage()));
-        if (exception instanceof ConnectException && exception.getMessage().equals("Connection refused: connect") && reconnectTimes <= config.getWebsocket_client().getReconnect_max_times()) {
+        if (exception instanceof ConnectException && exception.getMessage().equals("Connection refused: connect") && reconnectTimes <= config.getWebsocketClient().getReconnectMaxTimes()) {
             reconnectWebsocket();
         }
     }

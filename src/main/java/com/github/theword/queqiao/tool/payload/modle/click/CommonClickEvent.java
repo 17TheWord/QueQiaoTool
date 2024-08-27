@@ -1,4 +1,4 @@
-package com.github.theword.queqiao.tool.payload.modle;
+package com.github.theword.queqiao.tool.payload.modle.click;
 
 import lombok.Data;
 

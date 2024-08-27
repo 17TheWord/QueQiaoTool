@@ -38,28 +38,28 @@ public class Config {
     /**
      * 服务器名
      */
-    private String server_name = "Server";
+    private String serverName = "Server";
     /**
      * 访问令牌
      */
-    private String access_token = "";
+    private String accessToken = "";
     /**
      * 消息前缀
      */
-    private String message_prefix = "鹊桥";
+    private String messagePrefix = "鹊桥";
 
     /**
      * WebSocket Server 配置项
      */
-    private WebSocketServerConfig websocket_server = new WebSocketServerConfig();
+    private WebSocketServerConfig websocketServer = new WebSocketServerConfig();
     /**
      * WebSocket Client 配置项
      */
-    private WebSocketClientConfig websocket_client = new WebSocketClientConfig();
+    private WebSocketClientConfig websocketClient = new WebSocketClientConfig();
     /**
      * 订阅事件配置项
      */
-    private SubscribeEventConfig subscribe_event = new SubscribeEventConfig();
+    private SubscribeEventConfig subscribeEvent = new SubscribeEventConfig();
 
 
     public Config(boolean isModServer) {
@@ -105,9 +105,9 @@ public class Config {
     private void loadConfigValues(Map<String, Object> configMap) {
         enable = (boolean) configMap.get("enable");
         debug = (boolean) configMap.get("debug");
-        server_name = (String) configMap.get("server_name");
-        access_token = (String) configMap.get("access_token");
-        message_prefix = (String) configMap.get("message_prefix");
+        serverName = (String) configMap.get("serverName");
+        accessToken = (String) configMap.get("accessToken");
+        messagePrefix = (String) configMap.get("message_prefix");
 
         loadWebsocketServerConfig(configMap);
         loadWebsocketClientConfig(configMap);
@@ -118,31 +118,31 @@ public class Config {
 
     private void loadWebsocketServerConfig(Map<String, Object> configMap) {
         Map<String, Object> websocketServerConfig = (Map<String, Object>) configMap.get("websocket_server");
-        websocket_server.setEnable((Boolean) websocketServerConfig.get("enable"));
+        websocketServer.setEnable((Boolean) websocketServerConfig.get("enable"));
         String host = (String) websocketServerConfig.get("host");
         if (host.equals("0.0.0.0") || host.equals("127.0.0.1") || host.equals("localhost"))
-            websocket_server.setHost((String) websocketServerConfig.get("host"));
+            websocketServer.setHost((String) websocketServerConfig.get("host"));
         else {
-            websocket_server.setHost("127.0.0.1");
+            websocketServer.setHost("127.0.0.1");
             logger.warn("哪有你这么设置IP的？你确定你改的host是对的？？我已经帮你改到 127.0.0.1 了，好好想想再去改host！！！");
         }
-        websocket_server.setPort((int) websocketServerConfig.get("port"));
+        websocketServer.setPort((int) websocketServerConfig.get("port"));
     }
 
     private void loadWebsocketClientConfig(Map<String, Object> configMap) {
         Map<String, Object> websocketClientConfig = (Map<String, Object>) configMap.get("websocket_client");
-        websocket_client.setEnable((Boolean) websocketClientConfig.get("enable"));
-        websocket_client.setReconnect_interval((int) websocketClientConfig.get("reconnect_interval"));
-        websocket_client.setReconnect_max_times((int) websocketClientConfig.get("reconnect_max_times"));
-        websocket_client.setUrl_list((List<String>) websocketClientConfig.get("url_list"));
+        websocketClient.setEnable((Boolean) websocketClientConfig.get("enable"));
+        websocketClient.setReconnectInterval((int) websocketClientConfig.get("reconnect_interval"));
+        websocketClient.setReconnectMaxTimes((int) websocketClientConfig.get("reconnect_max_times"));
+        websocketClient.setUrlList((List<String>) websocketClientConfig.get("url_list"));
     }
 
     private void loadSubscribeEventConfig(Map<String, Object> configMap) {
         Map<String, Object> subscribeEventConfig = (Map<String, Object>) configMap.get("subscribe_event");
-        subscribe_event.setPlayer_chat((boolean) subscribeEventConfig.get("player_chat"));
-        subscribe_event.setPlayer_command((boolean) subscribeEventConfig.get("player_command"));
-        subscribe_event.setPlayer_death((boolean) subscribeEventConfig.get("player_death"));
-        subscribe_event.setPlayer_join((boolean) subscribeEventConfig.get("player_join"));
-        subscribe_event.setPlayer_quit((boolean) subscribeEventConfig.get("player_quit"));
+        subscribeEvent.setPlayerChat((boolean) subscribeEventConfig.get("player_chat"));
+        subscribeEvent.setPlayerCommand((boolean) subscribeEventConfig.get("player_command"));
+        subscribeEvent.setPlayerDeath((boolean) subscribeEventConfig.get("player_death"));
+        subscribeEvent.setPlayerJoin((boolean) subscribeEventConfig.get("player_join"));
+        subscribeEvent.setPlayerQuit((boolean) subscribeEventConfig.get("player_quit"));
     }
 }

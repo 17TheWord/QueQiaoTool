@@ -4,9 +4,9 @@ import lombok.Data;
 
 @Data
 public class SubscribeEventConfig {
-    private boolean player_chat = true;
-    private boolean player_death = true;
-    private boolean player_join = true;
-    private boolean player_quit = true;
-    private boolean player_command = true;
+    private boolean playerChat = true;
+    private boolean playerDeath = true;
+    private boolean playerJoin = true;
+    private boolean playerQuit = true;
+    private boolean playerCommand = true;
 }
