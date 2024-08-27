@@ -31,9 +31,9 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     private void startWebsocketClients(Object commandReturner) {
-        if (Tool.config.getWebsocket_client().isEnable()) {
+        if (Tool.config.getWebsocketClient().isEnable()) {
             Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
-            Tool.config.getWebsocket_client().getUrl_list().forEach(websocketUrl -> {
+            Tool.config.getWebsocketClient().getUrlList().forEach(websocketUrl -> {
                 try {
                     WsClient wsClient = new WsClient(new URI(websocketUrl));
                     wsClient.connect();
@@ -81,10 +81,10 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     private void startWebsocketServer(Object commandReturner) {
-        if (Tool.config.getWebsocket_server().isEnable()) {
-            wsServer = new WsServer(new InetSocketAddress(Tool.config.getWebsocket_server().getHost(), Tool.config.getWebsocket_server().getPort()));
+        if (Tool.config.getWebsocketServer().isEnable()) {
+            wsServer = new WsServer(new InetSocketAddress(Tool.config.getWebsocketServer().getHost(), Tool.config.getWebsocketServer().getPort()));
             wsServer.start();
-            Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Server.SERVER_STARTING, Tool.config.getWebsocket_server().getHost(), Tool.config.getWebsocket_server().getPort()));
+            Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Server.SERVER_STARTING, Tool.config.getWebsocketServer().getHost(), Tool.config.getWebsocketServer().getPort()));
         }
     }
 

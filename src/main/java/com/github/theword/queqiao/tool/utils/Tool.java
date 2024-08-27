@@ -62,7 +62,7 @@ public class Tool {
      */
     public static void sendWebsocketMessage(BaseEvent event) {
         if (config.isEnable()) {
-            event.setServerName(config.getServer_name());
+            event.setServerName(config.getServerName());
             websocketManager.getWsClientList().forEach(wsClient -> wsClient.send(event.getJson()));
             if (websocketManager.getWsServer() != null)
                 websocketManager.getWsServer().broadcast(event.getJson());
@@ -127,7 +127,7 @@ public class Tool {
      */
     public static CommonTextComponent getPrefixComponent() {
         CommonTextComponent CommonTextComponent = new CommonTextComponent();
-        CommonTextComponent.setText("[" + config.getMessage_prefix() + "] ");
+        CommonTextComponent.setText("[" + config.getMessagePrefix() + "] ");
         CommonTextComponent.setColor("yellow");
         return CommonTextComponent;
     }
