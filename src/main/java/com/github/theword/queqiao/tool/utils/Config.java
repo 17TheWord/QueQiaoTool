@@ -106,7 +106,7 @@ public class Config {
         enable = (boolean) configMap.get("enable");
         debug = (boolean) configMap.get("debug");
         serverName = (String) configMap.get("server_name");
-        accessToken = (String) configMap.get("accessToken");
+        accessToken = (String) configMap.get("access_token");
         messagePrefix = (String) configMap.get("message_prefix");
 
         loadWebsocketServerConfig(configMap);
