@@ -5,21 +5,15 @@ import com.github.theword.queqiao.tool.payload.modle.hover.CommonHoverEvent;
 import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommonTextComponent {
-    private String text;
-    private String color;
-    private String font;
-    private boolean bold;
-    private boolean italic;
-    private boolean underlined;
-    private boolean strikethrough;
-    private boolean obfuscated;
-    private String insertion;
+@EqualsAndHashCode(callSuper = true)
+public class CommonTextComponent extends CommonBaseComponent {
+
 
     @SerializedName("click_event")
     private CommonClickEvent clickEvent;
@@ -28,11 +22,12 @@ public class CommonTextComponent {
     private CommonHoverEvent hoverEvent;
 
     public CommonTextComponent(String text) {
-        this.text = text;
+        super(text);
     }
+
 
     @Override
     public String toString() {
-        return this.text;
+        return super.toString();
     }
 }

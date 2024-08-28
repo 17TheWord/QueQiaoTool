@@ -1,7 +1,7 @@
 package com.github.theword.queqiao.tool.handle;
 
 import com.github.theword.queqiao.tool.payload.MessageSegment;
-import com.github.theword.queqiao.tool.payload.modle.component.CommonTextComponent;
+import com.github.theword.queqiao.tool.payload.modle.component.CommonBaseComponent;
 
 import java.util.List;
 
@@ -25,6 +25,8 @@ public interface ParseJsonToEventService {
      * @param message 统一自定义文本组件
      * @return 服务端具体文本组件
      */
-    Object parsePerMessageToComponent(CommonTextComponent message);
+    Object parsePerMessageToComponent(CommonBaseComponent message);
+
+    Object parseCommonBaseComponentListToComponent(List<CommonBaseComponent> message);
 
 }
