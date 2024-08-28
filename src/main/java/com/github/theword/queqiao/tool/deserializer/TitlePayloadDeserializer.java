@@ -7,6 +7,17 @@ import com.google.gson.*;
 import java.lang.reflect.Type;
 
 public class TitlePayloadDeserializer implements JsonDeserializer<TitlePayload> {
+
+    /**
+     * 反序列化 Title 消息
+     * <p>接管所有 TitlePayload 及其子类的反序列化任务</p>
+     *
+     * @param json    Json数据
+     * @param type    目标类型
+     * @param context Json反序列化上下文
+     * @return TitlePayload
+     * @throws JsonParseException Json反序列化异常
+     */
     @Override
     public TitlePayload deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
         TitlePayload payload = new TitlePayload();

@@ -2,6 +2,7 @@ package com.github.theword.queqiao.tool.websocket;
 
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.handle.HandleProtocolMessage;
+import com.github.theword.queqiao.tool.response.Response;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.java_websocket.client.WebSocketClient;
@@ -63,12 +64,8 @@ public class WsClient extends WebSocketClient {
     @Override
     public void onMessage(String message) {
         if (config.isEnable()) {
-            try {
-                handleProtocolMessage.handleWebSocketJson(this, message);
-            } catch (Exception e) {
-                logger.warn(String.format(WebsocketConstantMessage.PARSE_MESSAGE_ERROR_ON_MESSAGE, getURI()));
-                logger.warn(e.getMessage());
-            }
+            Response response = handleProtocolMessage.handleWebSocketJson(this, message);
+            this.send(response.getJson());
         }
     }
 
