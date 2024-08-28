@@ -10,7 +10,7 @@ public class TitlePayload {
     private List<MessageSegment> title;
     private List<MessageSegment> subtitle;
     private int fadein = 10;
-    private int stay = 20;
+    private int stay = 70;
     private int fadeout = 10;
 
     @Override
