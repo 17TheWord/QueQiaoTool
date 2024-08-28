@@ -28,11 +28,5 @@ class WsServerTest {
         InetSocketAddress inetSocketAddress = new InetSocketAddress("127.0.0.1", 25565);
         WsServer wsServer = new WsServer(inetSocketAddress);
         wsServer.start();
-        try {
-            Thread.sleep(3000);
-            wsServer.stop();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
