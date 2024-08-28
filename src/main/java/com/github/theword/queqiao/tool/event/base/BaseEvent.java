@@ -14,7 +14,7 @@ public class BaseEvent {
     private final String subType;
     private final int timestamp = (int) (System.currentTimeMillis() / 1000);
     @Setter
-    @SerializedName("serverName")
+    @SerializedName("server_name")
     private String serverName;
 
     public BaseEvent(String eventName, String postType, String subType) {
