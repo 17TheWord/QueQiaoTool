@@ -2,6 +2,11 @@ package com.github.theword.queqiao.tool.command;
 
 public interface SubCommand {
 
+    /**
+     * 获取命令名称
+     *
+     * @return 命令名称
+     */
     String getName();
 
     /**
