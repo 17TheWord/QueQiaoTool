@@ -20,12 +20,14 @@ public class Response {
     private Integer code;
     @SerializedName("post_type")
     private String postType = "response";
+    private ResponseEnum status;
     private String message;
     private Object data = null;
     private String echo;
 
-    public Response(Integer code, String message, Object data, String echo) {
+    public Response(Integer code, ResponseEnum status, String message, Object data, String echo) {
         this.code = code;
+        this.status = status;
         this.message = message;
         this.data = data;
         this.echo = echo;

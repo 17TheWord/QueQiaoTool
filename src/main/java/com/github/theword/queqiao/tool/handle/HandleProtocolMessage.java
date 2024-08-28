@@ -7,6 +7,7 @@ import com.github.theword.queqiao.tool.deserializer.TitlePayloadDeserializer;
 import com.github.theword.queqiao.tool.payload.*;
 import com.github.theword.queqiao.tool.response.PrivateMessageResponse;
 import com.github.theword.queqiao.tool.response.Response;
+import com.github.theword.queqiao.tool.response.ResponseEnum;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -32,7 +33,7 @@ public class HandleProtocolMessage {
                 .create();
         BasePayload basePayload = gson.fromJson(message, BasePayload.class);
         JsonElement data = basePayload.getData();
-        Response response = new Response(200, "success", "No data", basePayload.getEcho());
+        Response response = new Response(200, ResponseEnum.SUCCESS, "success", "No data", basePayload.getEcho());
         try {
             switch (basePayload.getApi()) {
                 case "broadcast":
@@ -50,6 +51,12 @@ public class HandleProtocolMessage {
                     break;
                 case "send_private_msg":
                     PrivateMessagePayload privateMessagePayload = gson.fromJson(data, PrivateMessagePayload.class);
+                    if ((privateMessagePayload.getNickname() == null || privateMessagePayload.getNickname().isEmpty()) && privateMessagePayload.getUuid() == null) {
+                        response.setStatus(ResponseEnum.FAILED);
+                        response.setData(PrivateMessageResponse.playerIsNull());
+                        response.setMessage(PrivateMessageResponse.playerIsNull().getMessage());
+                        return response;
+                    }
                     PrivateMessageResponse privateMessageResponse = handleApiService.handleSendPrivateMessage(
                             privateMessagePayload.getNickname(),
                             privateMessagePayload.getUuid(),
