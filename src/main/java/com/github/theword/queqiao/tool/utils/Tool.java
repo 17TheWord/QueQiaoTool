@@ -115,7 +115,7 @@ public class Tool {
      */
     public static void debugLog(String format, Object... args) {
         if (config.isDebug()) {
-            logger.debug(format, args);
+            logger.info(format, args);
         }
     }
 
