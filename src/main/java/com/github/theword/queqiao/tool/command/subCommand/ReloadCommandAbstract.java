@@ -34,4 +34,14 @@ public abstract class ReloadCommandAbstract implements SubCommand {
     public String getUsage() {
         return "使用：/" + BaseConstant.COMMAND_HEADER + " reload";
     }
+
+    /**
+     * 获取命令权限节点
+     *
+     * @return 权限节点
+     */
+    @Override
+    public String getPermissionNode() {
+        return BaseConstant.COMMAND_HEADER + ".reload";
+    }
 }
