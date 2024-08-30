@@ -22,4 +22,11 @@ public interface SubCommand {
      * @return 命令用法
      */
     String getUsage();
+
+    /**
+     * 获取命令权限节点
+     *
+     * @return 权限节点
+     */
+    String getPermissionNode();
 }

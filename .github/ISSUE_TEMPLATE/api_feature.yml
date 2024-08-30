@@ -1,0 +1,36 @@
+name: 接口建议
+description: 增加新的API接口
+title: "[API Feature]（在此简单描述新API功能）"
+assignees: 17TheWord
+labels: [ "api feature" ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 请补全标题并认真填写下方内容
+
+  - type: input
+    id: api-name
+    attributes:
+      label: API名称
+      description: 新增加的API名称
+      placeholder: send_private_msg
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra-info
+    attributes:
+      label: 功能描述
+      description: 这个API的功能是什么？
+      placeholder: |
+        发送私聊消息
+        参数：
+          uuid: 玩家UUID
+          nickname: 玩家昵称
+          message: 消息内容
+        返回值：
+          player: 目标玩家信息
+          message: 返回信息（是否成功，失败原因等）
+    validations:
+      required: true
