@@ -1,0 +1,28 @@
+name: 命令建议
+description: 增加新的游戏内命令
+title: "[Command Feature]（在此简单描述新命令的功能）"
+assignees: 17TheWord
+labels: [ "command feature" ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 请补全标题并认真填写下方内容
+
+  - type: input
+    id: command-name
+    attributes:
+      label: 命令名称
+      description: 新增加的命令名称
+      placeholder: queqiao client list
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra-info
+    attributes:
+      label: 功能描述
+      description: 这个命令的功能是什么？
+      placeholder: 列出 Websocket Client 的列表，标识序号、IP、端口、状态等信息。
+    validations:
+      required: true
