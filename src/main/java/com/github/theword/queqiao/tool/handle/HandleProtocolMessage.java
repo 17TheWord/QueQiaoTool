@@ -77,7 +77,12 @@ public class HandleProtocolMessage {
             }
         } catch (Exception e) {
             logger.warn(String.format(WebsocketConstantMessage.PARSE_MESSAGE_ERROR_ON_MESSAGE, webSocket.getRemoteSocketAddress()));
-            logger.warn(e.getMessage());
+            if (config.isDebug()) {
+                e.printStackTrace();
+            } else {
+                logger.warn(e.getMessage());
+                logger.warn(e.getCause().getMessage());
+            }
         }
         return response;
     }
