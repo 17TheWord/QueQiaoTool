@@ -5,13 +5,17 @@ import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.websocket.WsClient;
 import com.github.theword.queqiao.tool.websocket.WsServer;
 import lombok.Getter;
+import org.java_websocket.WebSocket;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.github.theword.queqiao.tool.utils.Tool.config;
 
 @Getter
 public class WebsocketManager {
@@ -31,9 +35,9 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     private void startWebsocketClients(Object commandReturner) {
-        if (Tool.config.getWebsocketClient().isEnable()) {
+        if (config.getWebsocketClient().isEnable()) {
             Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
-            Tool.config.getWebsocketClient().getUrlList().forEach(websocketUrl -> {
+            config.getWebsocketClient().getUrlList().forEach(websocketUrl -> {
                 try {
                     WsClient wsClient = new WsClient(new URI(websocketUrl));
                     wsClient.connect();
@@ -81,10 +85,10 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     private void startWebsocketServer(Object commandReturner) {
-        if (Tool.config.getWebsocketServer().isEnable()) {
-            wsServer = new WsServer(new InetSocketAddress(Tool.config.getWebsocketServer().getHost(), Tool.config.getWebsocketServer().getPort()));
+        if (config.getWebsocketServer().isEnable()) {
+            wsServer = new WsServer(new InetSocketAddress(config.getWebsocketServer().getHost(), config.getWebsocketServer().getPort()));
             wsServer.start();
-            Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Server.SERVER_STARTING, Tool.config.getWebsocketServer().getHost(), Tool.config.getWebsocketServer().getPort()));
+            Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Server.SERVER_STARTING, config.getWebsocketServer().getHost(), config.getWebsocketServer().getPort()));
         }
     }
 
@@ -160,7 +164,7 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     public void reloadWebsocket(boolean isModServer, Object commandReturner) {
-        Tool.config = Config.loadConfig(isModServer);
+        config = Config.loadConfig(isModServer);
         Tool.commandReturn(commandReturner, CommandConstantMessage.RELOAD_CONFIG);
         restartWebsocketServer(commandReturner);
         restartWebsocketClients(commandReturner);
@@ -190,5 +194,64 @@ public class WebsocketManager {
             Tool.commandReturn(commandReturner, CommandConstantMessage.RECONNECT_NO_CLIENT_NEED_RECONNECT);
         }
         Tool.commandReturn(commandReturner, CommandConstantMessage.RECONNECTED);
+    }
+
+
+    /**
+     * 获取 WebSocket 服务端状态
+     * 整合游戏内命令调用
+     *
+     * @param commandReturner 命令执行者
+     */
+    public void getWebsocketServerStatus(Object commandReturner) {
+        if (!config.getWebsocketServer().isEnable()) {
+            Tool.commandReturn(commandReturner, "Websocket Server 配置项未启用，如需开启，请在 config.yml 中启用 WebsocketServer 配置项");
+            Tool.commandReturn(commandReturner, String.format("配置项中地址为 %s:%d", config.getWebsocketServer().getHost(), config.getWebsocketServer().getPort()));
+            return;
+        }
+
+        if (wsServer == null) {
+            Tool.commandReturn(commandReturner, "Websocket Server 为null，查询失败");
+            return;
+        }
+
+        Tool.commandReturn(commandReturner, String.format("当前 Websocket Server 已开启，监听地址为 %s:%d", wsServer.getAddress().getHostString(), wsServer.getPort()));
+
+        if (wsServer.getConnections().isEmpty()) {
+            Tool.commandReturn(commandReturner, "当前暂无 Websocket 连接到该 Server");
+            return;
+        }
+
+        Tool.commandReturn(commandReturner, String.format("当前 Websocket Server 已有 %d 个连接", wsServer.getConnections().size()));
+
+        int count = 0;
+        for (WebSocket webSocket : wsServer.getConnections()) {
+            count++;
+            Tool.commandReturn(commandReturner, String.format("%d 来自 %s:%d 的连接", count, webSocket.getRemoteSocketAddress().getHostString(), webSocket.getRemoteSocketAddress().getPort()));
+        }
+    }
+
+    /**
+     * 获取 WebSocket 客户端状态
+     * 整合游戏内命令调用
+     *
+     * @param commandReturner 命令执行者
+     */
+    public void getWebsocketClientStatus(Object commandReturner) {
+        if (!config.getWebsocketClient().isEnable()) {
+            Tool.commandReturn(commandReturner, "Websocket Client 配置项未启用，如需开启，请在 config.yml 中启用 WebsocketClient 配置项");
+            Tool.commandReturn(commandReturner, "配置文件中连接列表如下共 " + config.getWebsocketClient().getUrlList().size() + " 个 Client");
+            for (int i = 0; i < config.getWebsocketClient().getUrlList().size(); i++) {
+                Tool.commandReturn(commandReturner, String.format("%d 连接至 %s", i + 1, config.getWebsocketClient().getUrlList().get(i)));
+            }
+            return;
+        }
+
+        Tool.commandReturn(commandReturner, "Websocket Client 列表，共 " + wsClientList.size() + " 个 Client");
+
+        for (int i = 0; i < wsClientList.size(); i++) {
+            WsClient wsClient = wsClientList.get(i);
+            Tool.commandReturn(commandReturner, String.format("%d 连接至 %s 的 Client，状态：%s", i, wsClient.getURI(), wsClient.isOpen() ? "已连接" : "未连接"));
+        }
     }
 }
