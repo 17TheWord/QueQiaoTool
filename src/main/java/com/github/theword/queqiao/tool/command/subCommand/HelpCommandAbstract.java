@@ -16,6 +16,18 @@ public abstract class HelpCommandAbstract implements SubCommand {
     }
 
     /**
+     * 获取命令前缀
+     * <p>用于遍历时判断前驱后继</p>
+     * <P>前缀为命令头则代表根命令</P>
+     *
+     * @return {@link BaseConstant#COMMAND_HEADER}
+     */
+    @Override
+    public String getPrefix() {
+        return BaseConstant.COMMAND_HEADER;
+    }
+
+    /**
      * 获取命令描述
      *
      * @return 获取命令帮助
@@ -43,5 +55,27 @@ public abstract class HelpCommandAbstract implements SubCommand {
     @Override
     public String getPermissionNode() {
         return BaseConstant.COMMAND_HEADER + ".help";
+    }
+
+    /**
+     * 执行命令
+     * 获取所有命令使用方法
+     *
+     * @param commandReturner 命令执行者
+     */
+    public void execute(Object commandReturner) {
+        // TODO 截取根目录使用方法
+    }
+
+    /**
+     * 执行命令
+     * <p>Pass</p>
+     *
+     * @param commandReturner 命令执行者
+     * @param all             布尔值占位符
+     */
+    @Override
+    public void execute(Object commandReturner, boolean all) {
+        execute(commandReturner);
     }
 }
