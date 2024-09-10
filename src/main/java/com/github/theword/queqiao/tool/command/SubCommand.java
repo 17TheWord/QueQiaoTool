@@ -10,6 +10,15 @@ public interface SubCommand {
     String getName();
 
     /**
+     * 获取命令前缀
+     * <p>用于遍历时判断前驱后继</p>
+     * <P>为空字符串则代表根命令</P>
+     *
+     * @return 命令前缀
+     */
+    String getPrefix();
+
+    /**
      * 获取命令描述
      *
      * @return 命令描述
@@ -29,4 +38,21 @@ public interface SubCommand {
      * @return 权限节点
      */
     String getPermissionNode();
+
+    /**
+     * 执行命令
+     *
+     * @param commandReturner 命令执行者
+     * @param boolVar         布尔值占位符
+     * @since 0.1.5
+     */
+    void execute(Object commandReturner, boolean boolVar);
+
+    /**
+     * 执行命令
+     *
+     * @param commandReturner 命令执行者
+     * @since 0.1.5
+     */
+    void execute(Object commandReturner);
 }
