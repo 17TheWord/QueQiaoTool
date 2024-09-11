@@ -1,6 +1,5 @@
 package com.github.theword.queqiao.tool.utils;
 
-import com.github.theword.queqiao.tool.constant.CommandConstantMessage;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.websocket.WsClient;
 import com.github.theword.queqiao.tool.websocket.WsServer;
@@ -11,7 +10,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.github.theword.queqiao.tool.utils.Tool.config;
 
 @Getter
 public class WebsocketManager {
@@ -31,9 +31,9 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     private void startWebsocketClients(Object commandReturner) {
-        if (Tool.config.getWebsocketClient().isEnable()) {
+        if (config.getWebsocketClient().isEnable()) {
             Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
-            Tool.config.getWebsocketClient().getUrlList().forEach(websocketUrl -> {
+            config.getWebsocketClient().getUrlList().forEach(websocketUrl -> {
                 try {
                     WsClient wsClient = new WsClient(new URI(websocketUrl));
                     wsClient.connect();
@@ -68,7 +68,7 @@ public class WebsocketManager {
      *
      * @param commandReturner 命令执行者
      */
-    private void restartWebsocketClients(Object commandReturner) {
+    public void restartWebsocketClients(Object commandReturner) {
         Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.RELOADING);
         stopWebsocketClients(1000, WebsocketConstantMessage.CLOSE_BY_RELOAD, commandReturner);
         startWebsocketClients(commandReturner);
@@ -81,10 +81,10 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     private void startWebsocketServer(Object commandReturner) {
-        if (Tool.config.getWebsocketServer().isEnable()) {
-            wsServer = new WsServer(new InetSocketAddress(Tool.config.getWebsocketServer().getHost(), Tool.config.getWebsocketServer().getPort()));
+        if (config.getWebsocketServer().isEnable()) {
+            wsServer = new WsServer(new InetSocketAddress(config.getWebsocketServer().getHost(), config.getWebsocketServer().getPort()));
             wsServer.start();
-            Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Server.SERVER_STARTING, Tool.config.getWebsocketServer().getHost(), Tool.config.getWebsocketServer().getPort()));
+            Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Server.SERVER_STARTING, config.getWebsocketServer().getHost(), config.getWebsocketServer().getPort()));
         }
     }
 
@@ -113,7 +113,7 @@ public class WebsocketManager {
      *
      * @param commandReturner 命令执行者
      */
-    private void restartWebsocketServer(Object commandReturner) {
+    public void restartWebsocketServer(Object commandReturner) {
         stopWebsocketServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
         startWebsocketServer(commandReturner);
         Tool.commandReturn(commandReturner, WebsocketConstantMessage.Server.RELOADED);
@@ -149,46 +149,5 @@ public class WebsocketManager {
     public void stopWebsocket(int code, String reason, Object commandReturner) {
         stopWebsocketClients(code, reason, commandReturner);
         stopWebsocketServer(commandReturner, reason);
-    }
-
-
-    /**
-     * 重载 WebSocket
-     * reload 命令调用
-     *
-     * @param isModServer     是否为 ModServer
-     * @param commandReturner 命令执行者
-     */
-    public void reloadWebsocket(boolean isModServer, Object commandReturner) {
-        Tool.config = Config.loadConfig(isModServer);
-        Tool.commandReturn(commandReturner, CommandConstantMessage.RELOAD_CONFIG);
-        restartWebsocketServer(commandReturner);
-        restartWebsocketClients(commandReturner);
-    }
-
-    /**
-     * 重连 WebSocket 客户端
-     * reconnect [all] 命令调用
-     *
-     * @param all             是否全部重连
-     * @param commandReturner 命令执行者
-     */
-    public void reconnectWebsocketClients(boolean all, Object commandReturner) {
-        String reconnectCount = all ? CommandConstantMessage.RECONNECT_ALL_CLIENT : CommandConstantMessage.RECONNECT_NOT_OPEN_CLIENT;
-        Tool.commandReturn(commandReturner, reconnectCount);
-
-        AtomicInteger opened = new AtomicInteger();
-        wsClientList.forEach(wsClient -> {
-            if (all || !wsClient.isOpen()) {
-                wsClient.reconnectWebsocket();
-                Tool.commandReturn(commandReturner, String.format(CommandConstantMessage.RECONNECT_MESSAGE, wsClient.getURI()));
-            } else {
-                opened.getAndIncrement();
-            }
-        });
-        if (opened.get() == wsClientList.size()) {
-            Tool.commandReturn(commandReturner, CommandConstantMessage.RECONNECT_NO_CLIENT_NEED_RECONNECT);
-        }
-        Tool.commandReturn(commandReturner, CommandConstantMessage.RECONNECTED);
     }
 }
