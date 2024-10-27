@@ -63,7 +63,7 @@ public class Config extends CommonConfig {
     }
 
     @Override
-    void loadConfigValues(Map<String, Object> configMap) {
+    protected void loadConfigValues(Map<String, Object> configMap) {
         enable = (boolean) configMap.get("enable");
         debug = (boolean) configMap.get("debug");
         serverName = (String) configMap.get("server_name");
