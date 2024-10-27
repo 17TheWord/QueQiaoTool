@@ -1,5 +1,6 @@
 package com.github.theword.queqiao.tool.utils;
 
+import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.github.theword.queqiao.tool.event.base.BaseEvent;
 import com.github.theword.queqiao.tool.handle.HandleApiService;

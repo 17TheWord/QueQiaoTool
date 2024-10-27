@@ -3,7 +3,7 @@ package com.github.theword.queqiao.tool.command.subCommand;
 import com.github.theword.queqiao.tool.command.SubCommand;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.github.theword.queqiao.tool.constant.CommandConstantMessage;
-import com.github.theword.queqiao.tool.utils.Config;
+import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.utils.Tool;
 
 import static com.github.theword.queqiao.tool.utils.Tool.config;

@@ -1,20 +1,8 @@
-package com.github.theword.queqiao.tool.utils;
+package com.github.theword.queqiao.tool.config;
 
-
-import com.github.theword.queqiao.tool.config.SubscribeEventConfig;
-import com.github.theword.queqiao.tool.config.WebSocketClientConfig;
-import com.github.theword.queqiao.tool.config.WebSocketServerConfig;
-import com.github.theword.queqiao.tool.constant.BaseConstant;
 import lombok.Data;
-import org.apache.commons.io.FileUtils;
-import org.yaml.snakeyaml.Yaml;
+import lombok.EqualsAndHashCode;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +13,8 @@ import static com.github.theword.queqiao.tool.utils.Tool.logger;
  * 配置文件
  */
 @Data
-public class Config {
+@EqualsAndHashCode(callSuper = true)
+public class Config extends CommonConfig {
     /**
      * 是否启用组件
      */
@@ -63,46 +52,18 @@ public class Config {
 
 
     public Config(boolean isModServer) {
-        logger.info("正在读取配置文件。");
-
         String configFolder = isModServer ? "config" : "plugins";
         String serverType = isModServer ? "模组" : "插件";
-
-        Path configMapFilePath = Paths.get("./" + configFolder, BaseConstant.MODULE_NAME, "config.yml");
-
-        logger.info("当前服务端类型为：{}服，配置文件路径为：{}。", serverType, configMapFilePath.toAbsolutePath());
-
-        if (!Files.exists(configMapFilePath)) {
-            logger.warn("配置文件不存在，即将生成默认配置文件。");
-            try {
-                InputStream inputStream = Config.class.getClassLoader().getResourceAsStream("config.yml");
-                assert inputStream != null;
-                FileUtils.copyInputStreamToFile(inputStream, configMapFilePath.toFile());
-                logger.info("已生成默认配置文件。");
-            } catch (IOException e) {
-                logger.warn("生成配置文件失败。");
-            }
-        }
-
-        try {
-            Yaml yaml = new Yaml();
-            Reader reader = Files.newBufferedReader(configMapFilePath);
-            Map<String, Object> configMap = yaml.load(reader);
-            loadConfigValues(configMap);
-            logger.info("读取配置文件成功。");
-            return;
-        } catch (Exception e) {
-            logger.warn("读取配置文件失败。");
-            logger.warn(e.getMessage());
-        }
-        logger.warn("将直接使用默认配置项。");
+        logger.info("当前服务端类型为：{}服", serverType);
+        readConfigFile(configFolder, "config.yml");
     }
 
     public static Config loadConfig(boolean isModServer) {
         return new Config(isModServer);
     }
 
-    private void loadConfigValues(Map<String, Object> configMap) {
+    @Override
+    void loadConfigValues(Map<String, Object> configMap) {
         enable = (boolean) configMap.get("enable");
         debug = (boolean) configMap.get("debug");
         serverName = (String) configMap.get("server_name");
@@ -116,6 +77,7 @@ public class Config {
     }
 
 
+    @SuppressWarnings("unchecked")
     private void loadWebsocketServerConfig(Map<String, Object> configMap) {
         Map<String, Object> websocketServerConfig = (Map<String, Object>) configMap.get("websocket_server");
         websocketServer.setEnable((Boolean) websocketServerConfig.get("enable"));
@@ -129,6 +91,7 @@ public class Config {
         websocketServer.setPort((int) websocketServerConfig.get("port"));
     }
 
+    @SuppressWarnings("unchecked")
     private void loadWebsocketClientConfig(Map<String, Object> configMap) {
         Map<String, Object> websocketClientConfig = (Map<String, Object>) configMap.get("websocket_client");
         websocketClient.setEnable((Boolean) websocketClientConfig.get("enable"));
@@ -137,6 +100,7 @@ public class Config {
         websocketClient.setUrlList((List<String>) websocketClientConfig.get("url_list"));
     }
 
+    @SuppressWarnings("unchecked")
     private void loadSubscribeEventConfig(Map<String, Object> configMap) {
         Map<String, Object> subscribeEventConfig = (Map<String, Object>) configMap.get("subscribe_event");
         subscribeEvent.setPlayerChat((boolean) subscribeEventConfig.get("player_chat"));
