@@ -78,7 +78,7 @@ public class HandleProtocolMessage {
         } catch (Exception e) {
             logger.warn(String.format(WebsocketConstantMessage.PARSE_MESSAGE_ERROR_ON_MESSAGE, webSocket.getRemoteSocketAddress()));
             if (config.isDebug()) {
-                e.printStackTrace();
+                logger.warn(e.getMessage());
             } else {
                 logger.warn(e.getMessage());
                 logger.warn(e.getCause().getMessage());

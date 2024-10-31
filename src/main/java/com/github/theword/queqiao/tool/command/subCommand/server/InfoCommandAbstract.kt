@@ -1,55 +1,41 @@
-package com.github.theword.queqiao.tool.command.subCommand.server;
+package com.github.theword.queqiao.tool.command.subCommand.server
 
-import com.github.theword.queqiao.tool.command.subCommand.ClientCommandAbstract;
-import com.github.theword.queqiao.tool.command.subCommand.ServerCommandAbstract;
-import com.github.theword.queqiao.tool.utils.Tool;
-import com.github.theword.queqiao.tool.websocket.WsServer;
-import org.java_websocket.WebSocket;
+import com.github.theword.queqiao.tool.command.subCommand.ServerCommandAbstract
+import com.github.theword.queqiao.tool.command.subCommand.ClientCommandAbstract
+import com.github.theword.queqiao.tool.utils.Tool
 
-import static com.github.theword.queqiao.tool.utils.Tool.config;
-import static com.github.theword.queqiao.tool.utils.Tool.websocketManager;
+abstract class InfoCommandAbstract : ServerCommandAbstract() {
+    override val name: String
+        /**
+         * 获取命令名称
+         *
+         * @return info
+         */
+        get() = "info"
 
-public abstract class InfoCommandAbstract extends ServerCommandAbstract {
+    override val description: String
+        /**
+         * 获取命令描述
+         *
+         * @return 获取 Websocket Server 信息
+         */
+        get() = "获取 Websocket Server 信息"
 
-    /**
-     * 获取命令名称
-     *
-     * @return info
-     */
-    @Override
-    public String getName() {
-        return "info";
-    }
+    override val usage: String
+        /**
+         * 获取命令用法
+         *
+         * @return 使用：/[ServerCommandAbstract.usage] info
+         */
+        get() = super.usage + " info"
 
-    /**
-     * 获取命令描述
-     *
-     * @return 获取 Websocket Server 信息
-     */
-    @Override
-    public String getDescription() {
-        return "获取 Websocket Server 信息";
-    }
-
-    /**
-     * 获取命令用法
-     *
-     * @return 使用：/{@link ServerCommandAbstract#getUsage()} info
-     */
-    @Override
-    public String getUsage() {
-        return super.getUsage() + " info";
-    }
-
-    /**
-     * 获取命令权限节点
-     *
-     * @return {@link ClientCommandAbstract#getPermissionNode()}.info
-     */
-    @Override
-    public String getPermissionNode() {
-        return super.getPermissionNode() + ".info";
-    }
+    override val permissionNode: String
+        /**
+         * 获取命令权限节点
+         *
+         * @return [ClientCommandAbstract.permissionNode].info
+         */
+        get() = super.permissionNode + ".info"
 
     /**
      * 获取 WebSocket 服务端状态
@@ -57,46 +43,69 @@ public abstract class InfoCommandAbstract extends ServerCommandAbstract {
      *
      * @param commandReturner 命令执行者
      */
-    @Override
-    public void execute(Object commandReturner) {
-        if (!config.getWebsocketServer().isEnable()) {
-            Tool.commandReturn(commandReturner, "Websocket Server 配置项未启用，如需开启，请在 config.yml 中启用 WebsocketServer 配置项");
-            Tool.commandReturn(commandReturner, String.format("配置项中地址为 %s:%d", config.getWebsocketServer().getHost(), config.getWebsocketServer().getPort()));
-            return;
+    override fun execute(commandReturner: Any?) {
+        if (!Tool.config.websocketServer.isEnable()) {
+            Tool.commandReturn(
+                commandReturner,
+                "Websocket Server 配置项未启用，如需开启，请在 config.yml 中启用 WebsocketServer 配置项"
+            )
+            Tool.commandReturn(
+                commandReturner,
+                String.format(
+                    "配置项中地址为 %s:%d",
+                    Tool.config.websocketServer.host,
+                    Tool.config.websocketServer.port
+                )
+            )
+            return
         }
 
-        WsServer wsServer = websocketManager.getWsServer();
+        val wsServer = Tool.websocketManager.wsServer
 
         if (wsServer == null) {
-            Tool.commandReturn(commandReturner, "Websocket Server 为null，查询失败");
-            return;
+            Tool.commandReturn(commandReturner, "Websocket Server 为null，查询失败")
+            return
         }
 
-        Tool.commandReturn(commandReturner, String.format("当前 Websocket Server 已开启，监听地址为 %s:%d", wsServer.getAddress().getHostString(), wsServer.getPort()));
+        Tool.commandReturn(
+            commandReturner,
+            String.format("当前 Websocket Server 已开启，监听地址为 %s:%d", wsServer.address.hostString, wsServer.port)
+        )
 
-        if (wsServer.getConnections().isEmpty()) {
-            Tool.commandReturn(commandReturner, "当前暂无 Websocket 连接到该 Server");
-            return;
+        if (wsServer.connections.isEmpty()) {
+            Tool.commandReturn(commandReturner, "当前暂无 Websocket 连接到该 Server")
+            return
         }
 
-        Tool.commandReturn(commandReturner, String.format("当前 Websocket Server 已有 %d 个连接", wsServer.getConnections().size()));
+        Tool.commandReturn(
+            commandReturner,
+            String.format("当前 Websocket Server 已有 %d 个连接", wsServer.connections.size)
+        )
 
-        int count = 0;
-        for (WebSocket webSocket : wsServer.getConnections()) {
-            count++;
-            Tool.commandReturn(commandReturner, String.format("%d 来自 %s:%d 的连接", count, webSocket.getRemoteSocketAddress().getHostString(), webSocket.getRemoteSocketAddress().getPort()));
+        var count = 0
+        for (webSocket in wsServer.connections) {
+            count++
+            Tool.commandReturn(
+                commandReturner,
+                String.format(
+                    "%d 来自 %s:%d 的连接",
+                    count,
+                    webSocket.remoteSocketAddress.hostString,
+                    webSocket.remoteSocketAddress.port
+                )
+            )
         }
     }
 
     /**
      * 占位
-     * <p>Pass</p>
+     *
+     * Pass
      *
      * @param commandReturner 命令执行者
      * @param boolVar         布尔值占位符
      */
-    @Override
-    public void execute(Object commandReturner, boolean boolVar) {
-        execute(commandReturner);
+    override fun execute(commandReturner: Any?, boolVar: Boolean) {
+        execute(commandReturner)
     }
 }

@@ -1,31 +1,35 @@
-package com.github.theword.queqiao.tool.payload.modle.hover;
+package com.github.theword.queqiao.tool.payload.modle.hover
 
-import com.github.theword.queqiao.tool.payload.modle.component.CommonBaseComponent;
-import lombok.Data;
+import com.github.theword.queqiao.tool.payload.modle.component.CommonBaseComponent
+import java.util.UUID
 
-import java.util.List;
-import java.util.UUID;
-
-@Data
-public class CommonHoverEntity {
+data class CommonHoverEntity(
     /**
      * Spigot, Forge, Fabric
      */
-    String type;
+    var type: String? = null,
+
     /**
      * Spigot
      */
-    String id;
+    var id: String? = null,
+
     /**
      * Spigot, Forge, Fabric
      */
-    List<CommonBaseComponent> name;
+    var name: List<CommonBaseComponent>? = null,
+
     /**
      * Velocity
      */
-    UUID uuid;
+    var uuid: UUID? = null,
+
     /**
      * Velocity
      */
-    String key;
+    var key: String? = null,
+) {
+    override fun toString(): String {
+        return "CommonHoverEntity(type=$type, id=$id, name=$name, uuid=$uuid, key=$key)"
+    }
 }

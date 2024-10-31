@@ -1,10 +1,12 @@
-package com.github.theword.queqiao.tool.config;
+package com.github.theword.queqiao.tool.config
 
-import lombok.Data;
 
-@Data
-public class WebSocketServerConfig {
-    private boolean enable = true;
-    private String host = "127.0.0.1";
-    private int port = 8080;
+data class WebSocketServerConfig(
+    var enable: Boolean = true,
+    var host: String = "127.0.0.1",
+    var port: Int = 8080,
+) {
+    fun isEnable(): Boolean {
+        return enable
+    }
 }

@@ -1,8 +1,5 @@
-package com.github.theword.queqiao.tool.event.base;
+package com.github.theword.queqiao.tool.event.base
 
-public class BasePlayerDeathEvent extends BaseMessageEvent {
-
-    public BasePlayerDeathEvent(String eventName, String messageId, BasePlayer player, String message) {
-        super(eventName, "death", messageId, player, message);
-    }
-}
+class BasePlayerDeathEvent(
+    eventName: String, messageId: String, player: BasePlayer, message: String
+) : BaseMessageEvent(eventName, "death", messageId, player, message)

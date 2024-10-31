@@ -1,7 +1,5 @@
-package com.github.theword.queqiao.tool.event.base;
+package com.github.theword.queqiao.tool.event.base
 
-public class BaseCommandEvent extends BaseMessageEvent {
-    public BaseCommandEvent(String eventName, String messageId, BasePlayer player, String command) {
-        super(eventName, "player_command", messageId, player, command);
-    }
-}
+class BaseCommandEvent(
+    eventName: String, messageId: String, player: BasePlayer, command: String
+) : BaseMessageEvent(eventName, "player_command", messageId, player, command)

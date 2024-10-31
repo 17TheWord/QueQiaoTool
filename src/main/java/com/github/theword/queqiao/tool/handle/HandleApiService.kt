@@ -1,34 +1,31 @@
-package com.github.theword.queqiao.tool.handle;
+package com.github.theword.queqiao.tool.handle
 
-import com.github.theword.queqiao.tool.payload.MessageSegment;
-import com.github.theword.queqiao.tool.payload.TitlePayload;
-import com.github.theword.queqiao.tool.response.PrivateMessageResponse;
+import com.github.theword.queqiao.tool.payload.MessageSegment
+import com.github.theword.queqiao.tool.payload.TitlePayload
+import com.github.theword.queqiao.tool.response.PrivateMessageResponse
+import java.util.UUID
 
-import java.util.List;
-import java.util.UUID;
-
-public interface HandleApiService {
-
+interface HandleApiService {
     /**
      * 广播消息
      *
      * @param messageList 消息列表
      */
-    void handleBroadcastMessage(List<MessageSegment> messageList);
+    fun handleBroadcastMessage(messageList: List<MessageSegment>)
 
     /**
      * 广播 Title 消息
      *
      * @param titlePayload Title
      */
-    void handleSendTitleMessage(TitlePayload titlePayload);
+    fun handleSendTitleMessage(titlePayload: TitlePayload)
 
     /**
      * 广播 ActionBar 消息
      *
      * @param messageList Action Bar 消息列表
      */
-    void handleSendActionBarMessage(List<MessageSegment> messageList);
+    fun handleSendActionBarMessage(messageList: List<MessageSegment>)
 
     /**
      * 发送私聊消息
@@ -37,5 +34,9 @@ public interface HandleApiService {
      * @param uuid        目标 UUID
      * @param messageList 消息列表
      */
-    PrivateMessageResponse handleSendPrivateMessage(String nickname, UUID uuid, List<MessageSegment> messageList);
+    fun handleSendPrivateMessage(
+        nickname: String?,
+        uuid: UUID?,
+        messageList: List<MessageSegment>
+    ): PrivateMessageResponse
 }

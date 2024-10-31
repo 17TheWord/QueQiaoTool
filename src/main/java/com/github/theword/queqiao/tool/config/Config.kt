@@ -1,112 +1,117 @@
-package com.github.theword.queqiao.tool.config;
+package com.github.theword.queqiao.tool.config
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
-import java.util.List;
-import java.util.Map;
-
-import static com.github.theword.queqiao.tool.utils.Tool.config;
-import static com.github.theword.queqiao.tool.utils.Tool.logger;
+import com.github.theword.queqiao.tool.utils.Tool
 
 /**
  * 配置文件
  */
-@Data
-@EqualsAndHashCode(callSuper = true)
-public class Config extends CommonConfig {
+class Config(isModServer: Boolean) : CommonConfig() {
     /**
      * 是否启用组件
      */
-    private boolean enable = true;
+    var enable = true
+
     /**
      * 是否开启调试模式
      */
-    private boolean debug = false;
+    var debug = false
 
     /**
      * 服务器名
      */
-    private String serverName = "Server";
+    var serverName: String = "Server"
+
     /**
      * 访问令牌
      */
-    private String accessToken = "";
+    var accessToken: String = ""
+
     /**
      * 消息前缀
      */
-    private String messagePrefix = "鹊桥";
+    var messagePrefix: String = "鹊桥"
 
     /**
      * WebSocket Server 配置项
      */
-    private WebSocketServerConfig websocketServer = new WebSocketServerConfig();
+    var websocketServer = WebSocketServerConfig()
+
     /**
      * WebSocket Client 配置项
      */
-    private WebSocketClientConfig websocketClient = new WebSocketClientConfig();
+    var websocketClient = WebSocketClientConfig()
+
     /**
      * 订阅事件配置项
      */
-    private SubscribeEventConfig subscribeEvent = new SubscribeEventConfig();
+    var subscribeEvent = SubscribeEventConfig()
 
-
-    public Config(boolean isModServer) {
-        String configFolder = isModServer ? "config" : "plugins";
-        String serverType = isModServer ? "模组" : "插件";
-        logger.info("当前服务端类型为：{}服", serverType);
-        readConfigFile(configFolder, "config.yml");
+    fun isEnable(): Boolean {
+        return enable
     }
 
-    public static Config loadConfig(boolean isModServer) {
-        return new Config(isModServer);
+    fun isDebug(): Boolean {
+        return enable
     }
 
-    @Override
-    protected void loadConfigValues(Map<String, Object> configMap) {
-        enable = (boolean) configMap.get("enable");
-        debug = (boolean) configMap.get("debug");
-        serverName = (String) configMap.get("server_name");
-        accessToken = (String) configMap.get("access_token");
-        messagePrefix = (String) configMap.get("message_prefix");
+    init {
+        val configFolder = if (isModServer) "config" else "plugins"
+        val serverType = if (isModServer) "模组" else "插件"
+        Tool.logger.info("当前服务端类型为：{}服", serverType)
+        readConfigFile(configFolder, "config.yml")
+    }
 
-        loadWebsocketServerConfig(configMap);
-        loadWebsocketClientConfig(configMap);
-        loadSubscribeEventConfig(configMap);
-        config = this;
+    override fun loadConfigValues(configMap: Map<String, Any>) {
+        enable = configMap["enable"] as Boolean
+        debug = configMap["debug"] as Boolean
+        serverName = configMap["server_name"] as String
+        accessToken = configMap["access_token"] as String
+        messagePrefix = configMap["message_prefix"] as String
+
+        loadWebsocketServerConfig(configMap)
+        loadWebsocketClientConfig(configMap)
+        loadSubscribeEventConfig(configMap)
+        Tool.config = this
     }
 
 
-    @SuppressWarnings("unchecked")
-    private void loadWebsocketServerConfig(Map<String, Object> configMap) {
-        Map<String, Object> websocketServerConfig = (Map<String, Object>) configMap.get("websocket_server");
-        websocketServer.setEnable((Boolean) websocketServerConfig.get("enable"));
-        String host = (String) websocketServerConfig.get("host");
-        if (host.equals("0.0.0.0") || host.equals("127.0.0.1") || host.equals("localhost"))
-            websocketServer.setHost((String) websocketServerConfig.get("host"));
+    @Suppress("UNCHECKED_CAST")
+    private fun loadWebsocketServerConfig(configMap: Map<String, Any>) {
+        val websocketServerConfig = configMap["websocket_server"] as Map<String, Any>
+        websocketServer.enable = websocketServerConfig["enable"] as Boolean
+        val host = websocketServerConfig["host"] as String?
+        if (host == "0.0.0.0" || host == "127.0.0.1" || host == "localhost") websocketServer.host =
+            (websocketServerConfig["host"] as String?)!!
         else {
-            websocketServer.setHost("127.0.0.1");
-            logger.warn("哪有你这么设置IP的？你确定你改的host是对的？？我已经帮你改到 127.0.0.1 了，好好想想再去改host！！！");
+            websocketServer.host = "127.0.0.1"
+            Tool.logger.warn("哪有你这么设置IP的？你确定你改的host是对的？？我已经帮你改到 127.0.0.1 了，好好想想再去改host！！！")
         }
-        websocketServer.setPort((int) websocketServerConfig.get("port"));
+        websocketServer.port = websocketServerConfig["port"] as Int
     }
 
-    @SuppressWarnings("unchecked")
-    private void loadWebsocketClientConfig(Map<String, Object> configMap) {
-        Map<String, Object> websocketClientConfig = (Map<String, Object>) configMap.get("websocket_client");
-        websocketClient.setEnable((Boolean) websocketClientConfig.get("enable"));
-        websocketClient.setReconnectInterval((int) websocketClientConfig.get("reconnect_interval"));
-        websocketClient.setReconnectMaxTimes((int) websocketClientConfig.get("reconnect_max_times"));
-        websocketClient.setUrlList((List<String>) websocketClientConfig.get("url_list"));
+    @Suppress("UNCHECKED_CAST")
+    private fun loadWebsocketClientConfig(configMap: Map<String, Any>) {
+        val websocketClientConfig = configMap["websocket_client"] as Map<String, Any>
+        websocketClient.enable = websocketClientConfig["enable"] as Boolean
+        websocketClient.reconnectInterval = websocketClientConfig["reconnect_interval"] as Int
+        websocketClient.reconnectMaxTimes = websocketClientConfig["reconnect_max_times"] as Int
+        websocketClient.urlList = websocketClientConfig["url_list"] as List<String>
     }
 
-    @SuppressWarnings("unchecked")
-    private void loadSubscribeEventConfig(Map<String, Object> configMap) {
-        Map<String, Object> subscribeEventConfig = (Map<String, Object>) configMap.get("subscribe_event");
-        subscribeEvent.setPlayerChat((boolean) subscribeEventConfig.get("player_chat"));
-        subscribeEvent.setPlayerCommand((boolean) subscribeEventConfig.get("player_command"));
-        subscribeEvent.setPlayerDeath((boolean) subscribeEventConfig.get("player_death"));
-        subscribeEvent.setPlayerJoin((boolean) subscribeEventConfig.get("player_join"));
-        subscribeEvent.setPlayerQuit((boolean) subscribeEventConfig.get("player_quit"));
+    @Suppress("UNCHECKED_CAST")
+    private fun loadSubscribeEventConfig(configMap: Map<String, Any>) {
+        val subscribeEventConfig = configMap["subscribe_event"] as Map<String, Any>
+        subscribeEvent.playerChat = subscribeEventConfig["player_chat"] as Boolean
+        subscribeEvent.playerCommand = subscribeEventConfig["player_command"] as Boolean
+        subscribeEvent.playerDeath = subscribeEventConfig["player_death"] as Boolean
+        subscribeEvent.playerJoin = subscribeEventConfig["player_join"] as Boolean
+        subscribeEvent.playerQuit = subscribeEventConfig["player_quit"] as Boolean
+    }
+
+    companion object {
+        @JvmStatic
+        fun loadConfig(isModServer: Boolean): Config {
+            return Config(isModServer)
+        }
     }
 }

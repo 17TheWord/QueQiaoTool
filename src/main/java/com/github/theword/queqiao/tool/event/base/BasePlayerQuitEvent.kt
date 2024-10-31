@@ -1,7 +1,5 @@
-package com.github.theword.queqiao.tool.event.base;
+package com.github.theword.queqiao.tool.event.base
 
-public class BasePlayerQuitEvent extends BaseNoticeEvent {
-    public BasePlayerQuitEvent(String eventName, BasePlayer player) {
-        super(eventName, "quit", player);
-    }
-}
+class BasePlayerQuitEvent(
+    eventName: String, player: BasePlayer
+) : BaseNoticeEvent(eventName, "quit", player)

@@ -1,28 +1,24 @@
-package com.github.theword.queqiao.tool.utils;
+package com.github.theword.queqiao.tool.utils
 
-import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
-import com.github.theword.queqiao.tool.websocket.WsClient;
-import com.github.theword.queqiao.tool.websocket.WsServer;
-import lombok.Getter;
+import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage
+import com.github.theword.queqiao.tool.websocket.WsClient
+import com.github.theword.queqiao.tool.websocket.WsServer
+import java.net.InetSocketAddress
+import java.net.URI
+import java.net.URISyntaxException
+import java.util.function.Consumer
 
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
 
-import static com.github.theword.queqiao.tool.utils.Tool.config;
-
-@Getter
-public class WebsocketManager {
+class WebsocketManager {
     /**
      * Websocket Client 列表
      */
-    private final List<WsClient> wsClientList = new ArrayList<>();
+    val wsClientList: MutableList<WsClient> = ArrayList()
+
     /**
      * Websocket Server
      */
-    private WsServer wsServer;
+    var wsServer: WsServer? = null
 
     /**
      * 启动 WebSocket 客户端
@@ -30,18 +26,21 @@ public class WebsocketManager {
      *
      * @param commandReturner 命令执行者
      */
-    private void startWebsocketClients(Object commandReturner) {
-        if (config.getWebsocketClient().isEnable()) {
-            Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
-            config.getWebsocketClient().getUrlList().forEach(websocketUrl -> {
+    private fun startWebsocketClients(commandReturner: Any) {
+        if (Tool.config.websocketClient.isEnable()) {
+            Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.LAUNCHING)
+            Tool.config.websocketClient.urlList.forEach(Consumer { websocketUrl: String ->
                 try {
-                    WsClient wsClient = new WsClient(new URI(websocketUrl));
-                    wsClient.connect();
-                    wsClientList.add(wsClient);
-                } catch (URISyntaxException e) {
-                    Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Client.URI_SYNTAX_ERROR, websocketUrl));
+                    val wsClient = WsClient(URI(websocketUrl))
+                    wsClient.connect()
+                    wsClientList.add(wsClient)
+                } catch (e: URISyntaxException) {
+                    Tool.commandReturn(
+                        commandReturner,
+                        String.format(WebsocketConstantMessage.Client.URI_SYNTAX_ERROR, websocketUrl)
+                    )
                 }
-            });
+            })
         }
     }
 
@@ -53,13 +52,13 @@ public class WebsocketManager {
      * @param reason          原因
      * @param commandReturner 命令执行者
      */
-    private void stopWebsocketClients(int code, String reason, Object commandReturner) {
-        wsClientList.forEach(wsClient -> {
-            Tool.commandReturn(commandReturner, String.format(reason, wsClient.getURI()));
-            wsClient.stopWithoutReconnect(code, String.format(reason, wsClient.getURI()));
-        });
-        wsClientList.clear();
-        Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.CLEAR_WEBSOCKET_CLIENT_LIST);
+    private fun stopWebsocketClients(code: Int, reason: String, commandReturner: Any?) {
+        wsClientList.forEach(Consumer { wsClient: WsClient ->
+            Tool.commandReturn(commandReturner, String.format(reason, wsClient.uri))
+            wsClient.stopWithoutReconnect(code, String.format(reason, wsClient.uri))
+        })
+        wsClientList.clear()
+        Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.CLEAR_WEBSOCKET_CLIENT_LIST)
     }
 
 
@@ -68,11 +67,11 @@ public class WebsocketManager {
      *
      * @param commandReturner 命令执行者
      */
-    public void restartWebsocketClients(Object commandReturner) {
-        Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.RELOADING);
-        stopWebsocketClients(1000, WebsocketConstantMessage.CLOSE_BY_RELOAD, commandReturner);
-        startWebsocketClients(commandReturner);
-        Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.RELOADED);
+    fun restartWebsocketClients(commandReturner: Any) {
+        Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.RELOADING)
+        stopWebsocketClients(1000, WebsocketConstantMessage.CLOSE_BY_RELOAD, commandReturner)
+        startWebsocketClients(commandReturner)
+        Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.RELOADED)
     }
 
     /**
@@ -80,11 +79,18 @@ public class WebsocketManager {
      *
      * @param commandReturner 命令执行者
      */
-    private void startWebsocketServer(Object commandReturner) {
-        if (config.getWebsocketServer().isEnable()) {
-            wsServer = new WsServer(new InetSocketAddress(config.getWebsocketServer().getHost(), config.getWebsocketServer().getPort()));
-            wsServer.start();
-            Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Server.SERVER_STARTING, config.getWebsocketServer().getHost(), config.getWebsocketServer().getPort()));
+    private fun startWebsocketServer(commandReturner: Any) {
+        if (Tool.config.websocketServer.isEnable()) {
+            wsServer = WsServer(InetSocketAddress(Tool.config.websocketServer.host, Tool.config.websocketServer.port))
+            wsServer!!.start()
+            Tool.commandReturn(
+                commandReturner,
+                String.format(
+                    WebsocketConstantMessage.Server.SERVER_STARTING,
+                    Tool.config.websocketServer.host,
+                    Tool.config.websocketServer.port
+                )
+            )
         }
     }
 
@@ -94,16 +100,16 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      * @param reason          原因
      */
-    private void stopWebsocketServer(Object commandReturner, String reason) {
+    private fun stopWebsocketServer(commandReturner: Any?, reason: String) {
         if (wsServer != null) {
             try {
-                wsServer.stop(0, reason);
-                Tool.commandReturn(commandReturner, reason);
-            } catch (InterruptedException e) {
-                Tool.commandReturn(commandReturner, WebsocketConstantMessage.Server.ERROR_ON_STOPPING);
-                Tool.debugLog(e.getMessage());
+                wsServer!!.stop(0, reason)
+                Tool.commandReturn(commandReturner, reason)
+            } catch (e: InterruptedException) {
+                Tool.commandReturn(commandReturner, WebsocketConstantMessage.Server.ERROR_ON_STOPPING)
+                Tool.debugLog(e.message)
             }
-            wsServer = null;
+            wsServer = null
         }
     }
 
@@ -113,10 +119,10 @@ public class WebsocketManager {
      *
      * @param commandReturner 命令执行者
      */
-    public void restartWebsocketServer(Object commandReturner) {
-        stopWebsocketServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
-        startWebsocketServer(commandReturner);
-        Tool.commandReturn(commandReturner, WebsocketConstantMessage.Server.RELOADED);
+    fun restartWebsocketServer(commandReturner: Any) {
+        stopWebsocketServer(commandReturner, WebsocketConstantMessage.Server.RELOADING)
+        startWebsocketServer(commandReturner)
+        Tool.commandReturn(commandReturner, WebsocketConstantMessage.Server.RELOADED)
     }
 
     /**
@@ -125,17 +131,17 @@ public class WebsocketManager {
      *
      * @param commandReturner 命令执行者
      */
-    public void startWebsocket(Object commandReturner) {
-        startWebsocketClients(commandReturner);
-        startWebsocketServer(commandReturner);
+    fun startWebsocket(commandReturner: Any) {
+        startWebsocketClients(commandReturner)
+        startWebsocketServer(commandReturner)
     }
 
     /**
      * 因 Minecraft Server 关闭，关闭 WebSocket
      * 关服时调用
      */
-    public void stopWebsocketByServerClose() {
-        stopWebsocket(1000, WebsocketConstantMessage.Client.CLOSING_CONNECTION, null);
+    fun stopWebsocketByServerClose() {
+        stopWebsocket(1000, WebsocketConstantMessage.Client.CLOSING_CONNECTION, null)
     }
 
     /**
@@ -146,8 +152,8 @@ public class WebsocketManager {
      * @param reason          原因
      * @param commandReturner 命令执行者
      */
-    public void stopWebsocket(int code, String reason, Object commandReturner) {
-        stopWebsocketClients(code, reason, commandReturner);
-        stopWebsocketServer(commandReturner, reason);
+    fun stopWebsocket(code: Int, reason: String, commandReturner: Any?) {
+        stopWebsocketClients(code, reason, commandReturner)
+        stopWebsocketServer(commandReturner, reason)
     }
 }

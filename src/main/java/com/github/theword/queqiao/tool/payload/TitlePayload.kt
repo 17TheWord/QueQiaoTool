@@ -1,23 +1,16 @@
-package com.github.theword.queqiao.tool.payload;
+package com.github.theword.queqiao.tool.payload
 
-import lombok.Data;
-
-import java.util.List;
-import java.util.stream.Collectors;
-
-@Data
-public class TitlePayload {
-    private List<MessageSegment> title;
-    private List<MessageSegment> subtitle;
-    private int fadein = 10;
-    private int stay = 70;
-    private int fadeout = 10;
-
-    @Override
-    public String toString() {
-        String titleStr = "Title:" + title.stream().map(MessageSegment::toString).collect(Collectors.joining(""));
-        if (subtitle != null)
-            titleStr += "\nSubTitle:" + subtitle.stream().map(MessageSegment::toString).collect(Collectors.joining(""));
-        return titleStr;
+class TitlePayload {
+    var title: List<MessageSegment> = listOf()
+    var subtitle: List<MessageSegment>? = null
+    var fadein: Int = 10
+    var stay: Int = 70
+    var fadeout: Int = 10
+    override fun toString(): String {
+        val titleStr = StringBuilder("Title: ${title.joinToString("")}")
+        subtitle?.let {
+            titleStr.append("\nSubTitle: ${it.joinToString("")}")
+        }
+        return titleStr.toString()
     }
 }

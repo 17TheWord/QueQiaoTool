@@ -1,9 +1,4 @@
-package com.github.theword.queqiao.tool.payload.modle.click;
+package com.github.theword.queqiao.tool.payload.modle.click
 
-import lombok.Data;
 
-@Data
-public class CommonClickEvent {
-    private String action;
-    private String value;
-}
+data class CommonClickEvent(val action: String, val value: String)

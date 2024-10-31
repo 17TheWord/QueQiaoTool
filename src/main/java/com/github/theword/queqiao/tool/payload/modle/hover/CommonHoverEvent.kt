@@ -1,15 +1,10 @@
-package com.github.theword.queqiao.tool.payload.modle.hover;
+package com.github.theword.queqiao.tool.payload.modle.hover
 
+import com.github.theword.queqiao.tool.payload.modle.component.CommonBaseComponent
 
-import com.github.theword.queqiao.tool.payload.modle.component.CommonBaseComponent;
-import lombok.Data;
-
-import java.util.List;
-
-@Data
-public class CommonHoverEvent {
-    private String action;
-    private List<CommonBaseComponent> text;
-    private CommonHoverItem item;
-    private CommonHoverEntity entity;
-}
+data class CommonHoverEvent(
+    val action: String? = null,
+    val text: List<CommonBaseComponent>? = null,
+    val item: CommonHoverItem? = null,
+    val entity: CommonHoverEntity? = null
+) 

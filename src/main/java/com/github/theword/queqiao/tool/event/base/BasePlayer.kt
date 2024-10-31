@@ -1,33 +1,21 @@
-package com.github.theword.queqiao.tool.event.base;
+package com.github.theword.queqiao.tool.event.base
 
-import com.google.gson.Gson;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.google.gson.Gson
+import java.util.UUID
 
-import java.util.UUID;
+data class BasePlayer(private val nickname: String, private val uuid: UUID? = null) {
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class BasePlayer {
-    private String nickname;
-    private UUID uuid;
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof BasePlayer)) return false;
-        if (this == o) return true;
-        if (uuid != null && uuid.equals(((BasePlayer) o).uuid)) return true;
-        return nickname != null && nickname.equals(((BasePlayer) o).nickname);
+    override fun equals(other: Any?): Boolean {
+        if (other !is BasePlayer) return false
+        if (this === other) return true
+        if (uuid != null && uuid == other.uuid) return true
+        return nickname == other.nickname
     }
 
-    @Override
-    public int hashCode() {
-        return nickname.hashCode();
+    override fun hashCode(): Int {
+        return nickname.hashCode()
     }
 
-    public String getJson() {
-        return new Gson().toJson(this);
-    }
+    val json: String
+        get() = Gson().toJson(this)
 }

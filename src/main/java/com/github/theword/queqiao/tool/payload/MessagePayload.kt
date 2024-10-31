@@ -1,23 +1,16 @@
-package com.github.theword.queqiao.tool.payload;
+package com.github.theword.queqiao.tool.payload
 
-import com.github.theword.queqiao.tool.payload.modle.component.CommonTextComponent;
-import com.google.gson.annotations.SerializedName;
-import lombok.Data;
+import com.github.theword.queqiao.tool.payload.modle.component.CommonTextComponent
+import com.google.gson.annotations.SerializedName
+import java.util.stream.Collectors
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-@Data
-public class MessagePayload {
-
+open class MessagePayload {
     @SerializedName("message")
-    private List<MessageSegment> message;
-
-    @Override
-    public String toString() {
+    var message: List<MessageSegment> = listOf()
+    override fun toString(): String {
         return message.stream()
-                .map(MessageSegment::getData)
-                .map(CommonTextComponent::getText)
-                .collect(Collectors.joining());
+            .map { obj: MessageSegment -> obj.data }
+            .map { obj: CommonTextComponent -> obj.text }
+            .collect(Collectors.joining())
     }
 }

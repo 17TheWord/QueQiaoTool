@@ -1,16 +1,18 @@
-package com.github.theword.queqiao.tool.deserializer;
+package com.github.theword.queqiao.tool.deserializer
 
-import com.github.theword.queqiao.tool.payload.TitlePayload;
-import com.github.theword.queqiao.tool.utils.PayloadUtils;
-import com.google.gson.*;
+import com.github.theword.queqiao.tool.payload.TitlePayload
+import com.github.theword.queqiao.tool.utils.PayloadUtils.deserializeMessageSegmentList
+import com.google.gson.JsonDeserializationContext
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
+import com.google.gson.JsonParseException
+import java.lang.reflect.Type
 
-import java.lang.reflect.Type;
-
-public class TitlePayloadDeserializer implements JsonDeserializer<TitlePayload> {
-
+class TitlePayloadDeserializer : JsonDeserializer<TitlePayload> {
     /**
      * 反序列化 Title 消息
-     * <p>接管所有 TitlePayload 及其子类的反序列化任务</p>
+     *
+     * 接管所有 TitlePayload 及其子类的反序列化任务
      *
      * @param json    Json数据
      * @param type    目标类型
@@ -18,34 +20,34 @@ public class TitlePayloadDeserializer implements JsonDeserializer<TitlePayload> 
      * @return TitlePayload
      * @throws JsonParseException Json反序列化异常
      */
-    @Override
-    public TitlePayload deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
-        TitlePayload payload = new TitlePayload();
-        JsonObject jsonObject = json.getAsJsonObject();
+    @Throws(JsonParseException::class)
+    override fun deserialize(json: JsonElement, type: Type, context: JsonDeserializationContext): TitlePayload {
+        val payload = TitlePayload()
+        val jsonObject = json.asJsonObject
 
         // Deserialize title
-        JsonElement titleElement = jsonObject.get("title");
+        val titleElement = jsonObject["title"]
         if (titleElement != null) {
-            payload.setTitle(PayloadUtils.deserializeMessageSegmentList(titleElement, context));
+            payload.title = deserializeMessageSegmentList(titleElement, context)
         }
 
         // Deserialize subtitle
-        JsonElement subtitleElement = jsonObject.get("subtitle");
+        val subtitleElement = jsonObject["subtitle"]
         if (subtitleElement != null) {
-            payload.setSubtitle(PayloadUtils.deserializeMessageSegmentList(subtitleElement, context));
+            payload.subtitle = deserializeMessageSegmentList(subtitleElement, context)
         }
 
         // Deserialize other fields
         if (jsonObject.has("fadein")) {
-            payload.setFadein(jsonObject.get("fadein").getAsInt());
+            payload.fadein = jsonObject["fadein"].asInt
         }
         if (jsonObject.has("stay")) {
-            payload.setStay(jsonObject.get("stay").getAsInt());
+            payload.stay = jsonObject["stay"].asInt
         }
         if (jsonObject.has("fadeout")) {
-            payload.setFadeout(jsonObject.get("fadeout").getAsInt());
+            payload.fadeout = jsonObject["fadeout"].asInt
         }
 
-        return payload;
+        return payload
     }
 }

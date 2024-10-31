@@ -1,40 +1,32 @@
-package com.github.theword.queqiao.tool.response;
+package com.github.theword.queqiao.tool.response
 
-import com.google.gson.Gson;
-import com.google.gson.annotations.SerializedName;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 
 /**
  * Response
- * <p>code：返回值</p>
- * <p>message：返回信息</p>
- * <p>data：数据</p>
- * <p>echo：请求的echo，从请求中获取</p>
+ *
+ * code：返回值
+ *
+ * message：返回信息
+ *
+ * data：数据
+ *
+ * echo：请求的echo，从请求中获取
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Response {
-    private Integer code;
+data class Response(
+    var code: Int,
+    var status: ResponseEnum,
+    var message: String,
+    var data: Any?,
+    var echo: String?
+) {
     @SerializedName("post_type")
-    private String postType = "response";
-    private ResponseEnum status;
-    private String message;
-    private Object data = null;
-    private String echo;
+    private val postType = "response"
 
-    public Response(Integer code, ResponseEnum status, String message, Object data, String echo) {
-        this.code = code;
-        this.status = status;
-        this.message = message;
-        this.data = data;
-        this.echo = echo;
-    }
-
-    public String getJson() {
-        Gson gson = new Gson();
-        return gson.toJson(this);
-    }
+    val json: String
+        get() {
+            val gson = Gson()
+            return gson.toJson(this)
+        }
 }

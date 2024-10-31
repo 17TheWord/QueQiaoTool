@@ -1,18 +1,20 @@
-package com.github.theword.queqiao.tool.deserializer;
+package com.github.theword.queqiao.tool.deserializer
 
-import com.github.theword.queqiao.tool.payload.MessagePayload;
-import com.github.theword.queqiao.tool.payload.PrivateMessagePayload;
-import com.github.theword.queqiao.tool.utils.PayloadUtils;
-import com.google.gson.*;
+import com.github.theword.queqiao.tool.payload.MessagePayload
+import com.github.theword.queqiao.tool.payload.PrivateMessagePayload
+import com.github.theword.queqiao.tool.utils.PayloadUtils.deserializeMessageSegmentList
+import com.google.gson.JsonDeserializationContext
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
+import com.google.gson.JsonParseException
+import java.lang.reflect.Type
+import java.util.*
 
-import java.lang.reflect.Type;
-import java.util.UUID;
-
-public class MessagePayloadDeserializer implements JsonDeserializer<MessagePayload> {
-
+class MessagePayloadDeserializer : JsonDeserializer<MessagePayload> {
     /**
      * 反序列化Message消息
-     * <p>接管所有 MessagePayload 及其子类的反序列化任务</p>
+     *
+     * 接管所有 MessagePayload 及其子类的反序列化任务
      *
      * @param json    Json数据
      * @param typeOfT 目标类型
@@ -20,21 +22,21 @@ public class MessagePayloadDeserializer implements JsonDeserializer<MessagePaylo
      * @return ? extends MessagePayload
      * @throws JsonParseException Json反序列化异常
      */
-    @Override
-    public MessagePayload deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        JsonObject jsonObject = json.getAsJsonObject();
+    @Throws(JsonParseException::class)
+    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): MessagePayload {
+        val jsonObject = json.asJsonObject
 
         if (jsonObject.has("uuid") || jsonObject.has("nickname")) {
-            PrivateMessagePayload privatePayload = new PrivateMessagePayload();
-            privatePayload.setUuid(context.deserialize(jsonObject.get("uuid"), UUID.class));
-            privatePayload.setNickname(context.deserialize(jsonObject.get("nickname"), String.class));
-            privatePayload.setMessage(PayloadUtils.deserializeMessageSegmentList(jsonObject.get("message"), context));
-            return privatePayload;
+            val privatePayload = PrivateMessagePayload()
+            privatePayload.uuid = context.deserialize(jsonObject["uuid"], UUID::class.java)
+            privatePayload.nickname = context.deserialize(jsonObject["nickname"], String::class.java)
+            privatePayload.message = deserializeMessageSegmentList(jsonObject["message"], context)
+            return privatePayload
         } else {
-            MessagePayload payload = new MessagePayload();
-            JsonElement messageElement = jsonObject.get("message");
-            payload.setMessage(PayloadUtils.deserializeMessageSegmentList(messageElement, context));
-            return payload;
+            val payload = MessagePayload()
+            val messageElement = jsonObject["message"]
+            payload.message = deserializeMessageSegmentList(messageElement, context)
+            return payload
         }
     }
 }

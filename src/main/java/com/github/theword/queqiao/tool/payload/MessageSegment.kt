@@ -1,14 +1,5 @@
-package com.github.theword.queqiao.tool.payload;
+package com.github.theword.queqiao.tool.payload
 
-import com.github.theword.queqiao.tool.payload.modle.component.CommonTextComponent;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.github.theword.queqiao.tool.payload.modle.component.CommonTextComponent
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class MessageSegment {
-    private String type;
-    private CommonTextComponent data;
-}
+data class MessageSegment(val type: String, val data: CommonTextComponent)

@@ -1,7 +1,5 @@
-package com.github.theword.queqiao.tool.event.base;
+package com.github.theword.queqiao.tool.event.base
 
-public class BasePlayerJoinEvent extends BaseNoticeEvent {
-    public BasePlayerJoinEvent(String eventName, BasePlayer player) {
-        super(eventName, "join", player);
-    }
-}
+class BasePlayerJoinEvent(
+    eventName: String, player: BasePlayer
+) : BaseNoticeEvent(eventName, "join", player)

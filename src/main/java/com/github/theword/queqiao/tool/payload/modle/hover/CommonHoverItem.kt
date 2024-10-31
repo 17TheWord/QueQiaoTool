@@ -1,25 +1,27 @@
-package com.github.theword.queqiao.tool.payload.modle.hover;
+package com.github.theword.queqiao.tool.payload.modle.hover
 
-import lombok.Data;
 
-@Data
-public class CommonHoverItem {
+data class CommonHoverItem(
     /**
      * Spigot, Forge, Fabric
-     * <p>
+     *
+     *
      * 使用int类型时，转一次类型
      */
-    String id;
+    var id: String? = null,
+
     /**
      * Spigot, Forge, Fabric
      */
-    Integer count;
+    var count: Int? = null,
+
     /**
      * Spigot
      */
-    String tag;
+    var tag: String? = null,
+
     /**
      * Velocity
      */
-    String key;
-}
+    var key: String? = null
+)

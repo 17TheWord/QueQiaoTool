@@ -1,12 +1,6 @@
-package com.github.theword.queqiao.tool.event.base;
+package com.github.theword.queqiao.tool.event.base
 
 
-public class BaseNoticeEvent extends BaseEvent {
-    private final BasePlayer player;
-
-    public BaseNoticeEvent(String eventName, String subType, BasePlayer player) {
-        super(eventName, "notice", subType);
-        this.player = player;
-    }
-
-}
+open class BaseNoticeEvent(
+    eventName: String, subType: String, private val player: BasePlayer
+) : BaseEvent(eventName, "notice", subType)

@@ -1,29 +1,17 @@
-package com.github.theword.queqiao.tool.response;
+package com.github.theword.queqiao.tool.response
 
-import lombok.Getter;
-
-@Getter
-public enum ResponseEnum {
+enum class ResponseEnum(val value: String) {
     SUCCESS("success"),
     FAILED("failed");
 
-    private final String value;
-
-    ResponseEnum(String value) {
-        this.value = value;
+    override fun toString(): String {
+        return value
     }
 
-    @Override
-    public String toString() {
-        return value;
-    }
-
-    public static ResponseEnum fromString(String value) {
-        for (ResponseEnum response : ResponseEnum.values()) {
-            if (response.value.equalsIgnoreCase(value)) {
-                return response;
-            }
+    companion object {
+        fun fromString(value: String): ResponseEnum {
+            return entries.find { it.value.equals(value, ignoreCase = true) }
+                ?: throw IllegalArgumentException("Unknown value: $value")
         }
-        throw new IllegalArgumentException("Unknown value: " + value);
     }
 }

@@ -1,11 +1,11 @@
-package com.github.theword.queqiao.tool.constant;
+package com.github.theword.queqiao.tool.constant
 
-public class BaseConstant {
-    public static final String MODULE_NAME = "QueQiao";
-    public static final String MOD_ID = "queqiao";
-    public static final String COMMAND_HEADER = MOD_ID;
-    public static final String LAUNCHING = "正在启动";
-    public static final String INITIALIZED = "初始化完成";
-    public static final String UNKNOWN_API = "未知的API：";
-    public static final int MOD_PERMISSION_LEVEL = 2;
+object BaseConstant {
+    const val MODULE_NAME: String = "QueQiao"
+    const val MOD_ID: String = "queqiao"
+    const val COMMAND_HEADER: String = MOD_ID
+    const val LAUNCHING: String = "正在启动"
+    const val INITIALIZED: String = "初始化完成"
+    const val UNKNOWN_API: String = "未知的API："
+    const val MOD_PERMISSION_LEVEL: Int = 2
 }
