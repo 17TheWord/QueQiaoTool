@@ -35,7 +35,7 @@ public class Config extends CommonConfig {
     /**
      * 消息前缀
      */
-    private String messagePrefix = "鹊桥";
+    private String messagePrefix = "[鹊桥]";
 
     /**
      * WebSocket Server 配置项
