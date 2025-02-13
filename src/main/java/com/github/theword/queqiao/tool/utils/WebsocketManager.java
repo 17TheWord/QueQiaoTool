@@ -131,6 +131,14 @@ public class WebsocketManager {
     }
 
     /**
+     * 因 Minecraft Server 开启，启动 WebSocket
+     * 开服时调用
+     */
+    public void startWebsocketOnServerStart() {
+        startWebsocket(null);
+    }
+
+    /**
      * 因 Minecraft Server 关闭，关闭 WebSocket
      * 关服时调用
      */
