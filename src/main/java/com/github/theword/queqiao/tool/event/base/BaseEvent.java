@@ -4,6 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import lombok.Setter;
 
+import static com.github.theword.queqiao.tool.utils.Tool.config;
+import static com.github.theword.queqiao.tool.utils.Tool.SERVER_VERSION;
+import static com.github.theword.queqiao.tool.utils.Tool.SERVER_TYPE;
+
 /**
  * BaseEvent
  * <p>
@@ -19,7 +23,13 @@ public class BaseEvent {
     private final int timestamp = (int) (System.currentTimeMillis() / 1000);
     @Setter
     @SerializedName("server_name")
-    private String serverName;
+    private String serverName = config.getServerName();
+    @Setter
+    @SerializedName("server_version")
+    private String serverVersion = SERVER_VERSION;
+    @Setter
+    @SerializedName("server_type")
+    private String serverType = SERVER_TYPE;
 
     public BaseEvent(String eventName, String postType, String subType) {
         this.eventName = eventName;
