@@ -21,6 +21,10 @@ public class Tool {
      * 配置项
      */
     public static Config config = null;
+
+    public static String SERVER_VERSION = "Unknown";
+    public static String SERVER_TYPE = "Unknown";
+
     /**
      * Websocket 管理器
      */
@@ -41,17 +45,21 @@ public class Tool {
      * 初始化 api 消息处理与命令消息处理；
      * 初始化完成后，打印初始化完成日志
      *
-     * @param isModServer                       是否为模组服务器
-     * @param handleApiService                  api消息处理
-     * @param handleCommandReturnMessageService 命令消息处理
+     * @param isModServer                    是否为模组服务器
+     * @param serverVersion                  服务端版本
+     * @param serverType                     服务端类型
+     * @param handleApiImpl                  api消息处理
+     * @param handleCommandReturnMessageImpl 命令消息处理
      */
-    public static void initTool(boolean isModServer, HandleApiService handleApiService, HandleCommandReturnMessageService handleCommandReturnMessageService) {
+    public static void initTool(boolean isModServer, String serverVersion, String serverType, HandleApiService handleApiImpl, HandleCommandReturnMessageService handleCommandReturnMessageImpl) {
         logger = LoggerFactory.getLogger(BaseConstant.MODULE_NAME);
         logger.info(BaseConstant.LAUNCHING);
         config = Config.loadConfig(isModServer);
+        SERVER_VERSION = serverVersion;
+        SERVER_TYPE = serverType;
         websocketManager = new WebsocketManager();
-        Tool.handleApiService = handleApiService;
-        Tool.handleCommandReturnMessageService = handleCommandReturnMessageService;
+        handleApiService = handleApiImpl;
+        handleCommandReturnMessageService = handleCommandReturnMessageImpl;
         logger.info(BaseConstant.INITIALIZED);
     }
 
@@ -63,7 +71,6 @@ public class Tool {
      */
     public static void sendWebsocketMessage(BaseEvent event) {
         if (config.isEnable()) {
-            event.setServerName(config.getServerName());
             websocketManager.getWsClientList().forEach(wsClient -> wsClient.send(event.getJson()));
             if (websocketManager.getWsServer() != null)
                 websocketManager.getWsServer().broadcast(event.getJson());
