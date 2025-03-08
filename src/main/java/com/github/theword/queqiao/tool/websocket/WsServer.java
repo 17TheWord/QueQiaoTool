@@ -27,6 +27,7 @@ public class WsServer extends WebSocketServer {
      */
     public WsServer(InetSocketAddress address) {
         super(address);
+        super.setReuseAddr(true);
         this.hostName = address.getHostName();
         this.port = address.getPort();
     }
