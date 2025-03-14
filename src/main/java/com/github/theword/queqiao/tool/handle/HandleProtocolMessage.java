@@ -2,18 +2,19 @@ package com.github.theword.queqiao.tool.handle;
 
 import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
-import com.github.theword.queqiao.tool.deserializer.MessagePayloadDeserializer;
-import com.github.theword.queqiao.tool.deserializer.TitlePayloadDeserializer;
 import com.github.theword.queqiao.tool.payload.*;
 import com.github.theword.queqiao.tool.response.PrivateMessageResponse;
 import com.github.theword.queqiao.tool.response.Response;
 import com.github.theword.queqiao.tool.response.ResponseEnum;
+import com.github.theword.queqiao.tool.utils.GsonUtils;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import org.java_websocket.WebSocket;
 
-import static com.github.theword.queqiao.tool.utils.Tool.*;
+import static com.github.theword.queqiao.tool.utils.Tool.config;
+import static com.github.theword.queqiao.tool.utils.Tool.logger;
+import static com.github.theword.queqiao.tool.utils.Tool.debugLog;
+import static com.github.theword.queqiao.tool.utils.Tool.handleApiService;
 
 public class HandleProtocolMessage {
 
@@ -26,11 +27,7 @@ public class HandleProtocolMessage {
     public Response handleWebSocketJson(WebSocket webSocket, String message) {
         // 组合消息
         debugLog("收到来自 {} 的 WebSocket 消息：{}", webSocket.getRemoteSocketAddress(), message);
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(MessagePayload.class, new MessagePayloadDeserializer())
-                .registerTypeAdapter(TitlePayload.class, new TitlePayloadDeserializer())
-                .registerTypeAdapter(PrivateMessagePayload.class, new MessagePayloadDeserializer())
-                .create();
+        Gson gson = GsonUtils.buildGson();
         BasePayload basePayload = gson.fromJson(message, BasePayload.class);
         JsonElement data = basePayload.getData();
         Response response = new Response(200, ResponseEnum.SUCCESS, "success", "No data", basePayload.getEcho());
@@ -78,7 +75,7 @@ public class HandleProtocolMessage {
         } catch (Exception e) {
             logger.warn(String.format(WebsocketConstantMessage.PARSE_MESSAGE_ERROR_ON_MESSAGE, webSocket.getRemoteSocketAddress()));
             if (config.isDebug()) {
-                e.printStackTrace();
+                logger.error("Debug模式异常详情", e);
             } else {
                 logger.warn(e.getMessage());
                 logger.warn(e.getCause().getMessage());
