@@ -1,5 +1,6 @@
 package com.github.theword.queqiao.tool.event.base;
 
+import com.github.theword.queqiao.tool.utils.GsonUtils;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import lombok.Setter;
@@ -38,7 +39,7 @@ public class BaseEvent {
     }
 
     public String getJson() {
-        Gson gson = new Gson();
+        Gson gson = GsonUtils.buildGson();
         return gson.toJson(this);
     }
 }
