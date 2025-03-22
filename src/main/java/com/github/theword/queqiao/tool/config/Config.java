@@ -108,5 +108,6 @@ public class Config extends CommonConfig {
         subscribeEvent.setPlayerDeath((boolean) subscribeEventConfig.get("player_death"));
         subscribeEvent.setPlayerJoin((boolean) subscribeEventConfig.get("player_join"));
         subscribeEvent.setPlayerQuit((boolean) subscribeEventConfig.get("player_quit"));
+        subscribeEvent.setPlayerAdvancement((boolean) subscribeEventConfig.get("player_advancement"));
     }
 }

@@ -8,6 +8,8 @@ import com.github.theword.queqiao.tool.payload.TitlePayload;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.lang.reflect.Modifier;
+
 public class GsonUtils {
 
     public static Gson buildGson() {
@@ -15,6 +17,7 @@ public class GsonUtils {
                 .registerTypeAdapter(MessagePayload.class, new MessagePayloadDeserializer())
                 .registerTypeAdapter(TitlePayload.class, new TitlePayloadDeserializer())
                 .registerTypeAdapter(PrivateMessagePayload.class, new MessagePayloadDeserializer())
+                .excludeFieldsWithModifiers(Modifier.STATIC, Modifier.TRANSIENT)
                 .create();
     }
 

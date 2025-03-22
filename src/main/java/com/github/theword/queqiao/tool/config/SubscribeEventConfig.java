@@ -9,4 +9,5 @@ public class SubscribeEventConfig {
     private boolean playerJoin = true;
     private boolean playerQuit = true;
     private boolean playerCommand = true;
+    private boolean playerAdvancement = true;
 }
