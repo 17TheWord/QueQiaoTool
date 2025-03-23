@@ -10,8 +10,19 @@ import com.google.gson.GsonBuilder;
 
 import java.lang.reflect.Modifier;
 
+/**
+ * Gson Utils
+ */
 public class GsonUtils {
 
+    /**
+     * Gson builder with custom deserializer
+     * <p> adapter: {@link MessagePayloadDeserializer} </p>
+     * <p> adapter: {@link TitlePayloadDeserializer} </p>
+     * <p> excludeFieldsWithModifiers: {@link Modifier#STATIC} </p>
+     *
+     * @return Gson
+     */
     public static Gson buildGson() {
         return new GsonBuilder()
                 .registerTypeAdapter(MessagePayload.class, new MessagePayloadDeserializer())

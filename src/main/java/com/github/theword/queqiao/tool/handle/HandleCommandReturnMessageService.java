@@ -1,5 +1,9 @@
 package com.github.theword.queqiao.tool.handle;
 
+/**
+ * 公共命令返回消息处理
+ * <p> 服务端均需实现该接口 </p>
+ */
 public interface HandleCommandReturnMessageService {
 
     /**

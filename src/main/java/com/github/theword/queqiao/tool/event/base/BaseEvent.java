@@ -11,8 +11,10 @@ import static com.github.theword.queqiao.tool.utils.Tool.SERVER_TYPE;
 
 /**
  * BaseEvent
- * <p>
- * serverName 将在发送前通过配置文件获取并填充
+ * <p> serverName 将在发送前通过配置文件获取并填充 </p>
+ * <p> timestamp 为当前秒级时间戳 </p>
+ * <p> serverVersion 在服务端启动时传值 </p>
+ * <p> serverType 在服务端启动时传值 </p>
  */
 public class BaseEvent {
     @SerializedName("event_name")

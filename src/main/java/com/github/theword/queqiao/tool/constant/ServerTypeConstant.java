@@ -1,5 +1,9 @@
 package com.github.theword.queqiao.tool.constant;
 
+/**
+ * 服务端类型常量
+ * <p>插件/模组 初始化阶段使用</p>
+ */
 public class ServerTypeConstant {
 
     public static final String ORIGIN = "origin";
