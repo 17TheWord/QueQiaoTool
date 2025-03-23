@@ -16,12 +16,24 @@ import static com.github.theword.queqiao.tool.utils.Tool.logger;
 
 public abstract class CommonConfig {
 
+    /**
+     * 读取配置文件
+     *
+     * @param configFolder 配置文件所在文件夹
+     * @param fileName     配置文件名
+     */
     protected void readConfigFile(String configFolder, String fileName) {
         Path configPath = Paths.get("./" + configFolder, BaseConstant.MODULE_NAME, fileName);
         checkFileExists(configPath, fileName);
         readConfigValues(configPath, fileName);
     }
 
+    /**
+     * 读取配置文件内容
+     *
+     * @param path     路径
+     * @param fileName 文件名
+     */
     protected void readConfigValues(Path path, String fileName) {
         logger.info("正在读取配置文件 {}...", fileName);
         try {
@@ -37,8 +49,20 @@ public abstract class CommonConfig {
         }
     }
 
+    /**
+     * 加载配置文件内容
+     * <p>由原版端实现，读取自定义 regex.yml</p>
+     *
+     * @param configMap 配置文件内容
+     */
     protected abstract void loadConfigValues(Map<String, Object> configMap);
 
+    /**
+     * 检查配置文件是否存在
+     *
+     * @param path     路径
+     * @param fileName 文件名
+     */
     protected void checkFileExists(Path path, String fileName) {
         logger.info("正在寻找配置文件 {}...", fileName);
         logger.info("配置文件 {} 路径为：{}。", fileName, path.toAbsolutePath());

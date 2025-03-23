@@ -11,7 +11,7 @@ import java.util.UUID;
 public class MessagePayloadDeserializer implements JsonDeserializer<MessagePayload> {
 
     /**
-     * 反序列化Message消息
+     * 反序列化 Message 消息
      * <p>接管所有 MessagePayload 及其子类的反序列化任务</p>
      *
      * @param json    Json数据

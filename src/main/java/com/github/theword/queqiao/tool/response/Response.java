@@ -1,6 +1,6 @@
 package com.github.theword.queqiao.tool.response;
 
-import com.google.gson.Gson;
+import com.github.theword.queqiao.tool.utils.GsonUtils;
 import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,7 +34,6 @@ public class Response {
     }
 
     public String getJson() {
-        Gson gson = new Gson();
-        return gson.toJson(this);
+        return GsonUtils.buildGson().toJson(this);
     }
 }

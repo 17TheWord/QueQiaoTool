@@ -23,6 +23,7 @@ public class HandleProtocolMessage {
      *
      * @param webSocket WebSocket
      * @param message   websocket消息
+     * @return Response {@link Response}
      */
     public Response handleWebSocketJson(WebSocket webSocket, String message) {
         // 组合消息

@@ -10,16 +10,20 @@ import java.util.List;
  */
 @Data
 public class WebSocketClientConfig {
+
     /**
      * 是否启用 WebSocket Client
      */
     private boolean enable = false;
+
     /**
      * 重连间隔
+     * 单位：秒
      */
     private int reconnectInterval = 5;
     /**
      * 最大重连次数
+     * 单位：次
      */
     private int reconnectMaxTimes = 5;
     /**

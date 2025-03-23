@@ -149,6 +149,4 @@ public class WsClient extends WebSocketClient {
             debugLog(WebsocketConstantMessage.Client.SEND_MESSAGE_FAILED, getURI(), text);
         }
     }
-
-
 }

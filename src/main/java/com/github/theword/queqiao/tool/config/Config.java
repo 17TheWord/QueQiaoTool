@@ -10,17 +10,19 @@ import static com.github.theword.queqiao.tool.utils.Tool.config;
 import static com.github.theword.queqiao.tool.utils.Tool.logger;
 
 /**
- * 配置文件
+ * 配置项
+ * 服务器初始化阶段请调用 {@link #loadConfig(boolean)}
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class Config extends CommonConfig {
     /**
-     * 是否启用组件
+     * 是否启用插件/模组
      */
     private boolean enable = true;
     /**
      * 是否开启调试模式
+     * <p>对详部分简写日志进行 logger.info 输出</p>
      */
     private boolean debug = false;
 
@@ -51,6 +53,11 @@ public class Config extends CommonConfig {
     private SubscribeEventConfig subscribeEvent = new SubscribeEventConfig();
 
 
+    /**
+     * Contractor
+     *
+     * @param isModServer 是否为模组服务端
+     */
     public Config(boolean isModServer) {
         String configFolder = isModServer ? "config" : "plugins";
         String serverType = isModServer ? "模组" : "插件";
@@ -58,10 +65,22 @@ public class Config extends CommonConfig {
         readConfigFile(configFolder, "config.yml");
     }
 
+    /**
+     * 加载配置文件
+     * <p>服务端启动、初始化模组时调用</p>
+     *
+     * @param isModServer 是否为模组服务端
+     * @return Config
+     */
     public static Config loadConfig(boolean isModServer) {
         return new Config(isModServer);
     }
 
+    /**
+     * 加载配置文件
+     *
+     * @param configMap 配置文件内容
+     */
     @Override
     protected void loadConfigValues(Map<String, Object> configMap) {
         enable = (boolean) configMap.get("enable");
@@ -77,6 +96,11 @@ public class Config extends CommonConfig {
     }
 
 
+    /**
+     * 加载 WebSocket Server 配置项
+     *
+     * @param configMap WebSocket Server
+     */
     @SuppressWarnings("unchecked")
     private void loadWebsocketServerConfig(Map<String, Object> configMap) {
         Map<String, Object> websocketServerConfig = (Map<String, Object>) configMap.get("websocket_server");
@@ -91,6 +115,11 @@ public class Config extends CommonConfig {
         websocketServer.setPort((int) websocketServerConfig.get("port"));
     }
 
+    /**
+     * 加载 WebSocket Client 配置项
+     *
+     * @param configMap WebSocket Client
+     */
     @SuppressWarnings("unchecked")
     private void loadWebsocketClientConfig(Map<String, Object> configMap) {
         Map<String, Object> websocketClientConfig = (Map<String, Object>) configMap.get("websocket_client");
@@ -100,6 +129,11 @@ public class Config extends CommonConfig {
         websocketClient.setUrlList((List<String>) websocketClientConfig.get("url_list"));
     }
 
+    /**
+     * 加载订阅事件配置项
+     *
+     * @param configMap SubscribeEvent
+     */
     @SuppressWarnings("unchecked")
     private void loadSubscribeEventConfig(Map<String, Object> configMap) {
         Map<String, Object> subscribeEventConfig = (Map<String, Object>) configMap.get("subscribe_event");
