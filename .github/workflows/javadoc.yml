@@ -1,0 +1,41 @@
+name: Build and Push Javadoc to Branches
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+
+permissions:
+  contents: write  # 允许推送代码到分支
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+
+      - name: Generate Javadoc
+        run: |
+          mvn javadoc:javadoc
+
+      - name: Determine Target Branch
+        id: set-branch
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "TARGET_BRANCH=pages" >> $GITHUB_ENV
+          elif [[ "${{ github.ref_name }}" == "dev" ]]; then
+            echo "TARGET_BRANCH=dev-pages" >> $GITHUB_ENV
+          fi
+
+      - name: Push Javadoc to Target Branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/javadoc/apidocs
+          publish_branch: ${{ env.TARGET_BRANCH }}
+          keep_files: true
