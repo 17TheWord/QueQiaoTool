@@ -1,0 +1,16 @@
+com.github.theword.queqiao.tool.command
+com.github.theword.queqiao.tool.command.subCommand
+com.github.theword.queqiao.tool.command.subCommand.client
+com.github.theword.queqiao.tool.command.subCommand.server
+com.github.theword.queqiao.tool.config
+com.github.theword.queqiao.tool.constant
+com.github.theword.queqiao.tool.deserializer
+com.github.theword.queqiao.tool.event.base
+com.github.theword.queqiao.tool.handle
+com.github.theword.queqiao.tool.payload
+com.github.theword.queqiao.tool.payload.modle.click
+com.github.theword.queqiao.tool.payload.modle.component
+com.github.theword.queqiao.tool.payload.modle.hover
+com.github.theword.queqiao.tool.response
+com.github.theword.queqiao.tool.utils
+com.github.theword.queqiao.tool.websocket
