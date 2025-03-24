@@ -28,6 +28,10 @@
 
 - [`config.yml`](./src/main/resources/config.yml)
 
+## 参与 & 开发
+
+- [`Wiki`](https://github.com/17TheWord/QueQiaoTool/wiki) 帮助
+
 ## 许可证
 
 本项目使用 [MIT](./LICENSE) 作为开源许可证。
