@@ -39,7 +39,7 @@ public abstract class CommonConfig {
         try {
             Yaml yaml = new Yaml();
             Reader reader = Files.newBufferedReader(path);
-            Map<String, Object> configMap = yaml.load(reader);
+            Map<String, Object> configMap = yaml.loadAs(reader, Map.class);
             loadConfigValues(configMap);
             logger.info("读取配置文件 {} 成功。", fileName);
         } catch (IOException exception) {
