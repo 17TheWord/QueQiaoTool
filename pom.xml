@@ -6,7 +6,7 @@
 
     <groupId>com.github.theword.queqiao</groupId>
     <artifactId>queqiao-tool</artifactId>
-    <version>0.2.4</version>
+    <version>0.2.5</version>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -15,10 +15,10 @@
         <!--其他版本号属性-->
         <gson.version>2.10.1</gson.version>
         <lombok.version>1.18.30</lombok.version>
-        <snakeyaml.version>2.2</snakeyaml.version>
-        <slf4j-api.version>1.7.32</slf4j-api.version>
+        <snakeyaml.version>1.33</snakeyaml.version>
+        <slf4j-api.version>1.7.25</slf4j-api.version>
         <commons-io.version>2.15.1</commons-io.version>
-        <slf4j-simple.version>1.7.36</slf4j-simple.version>
+        <slf4j-simple.version>1.7.25</slf4j-simple.version>
         <java-webSocket.version>1.5.3</java-webSocket.version>
         <junit-jupiter-api.version>5.10.0</junit-jupiter-api.version>
     </properties>
@@ -45,6 +45,39 @@
                         <goals>
                             <goal>javadoc</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.4</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <relocations>
+                                <!-- 可选：重命名 SLF4J 包路径，避免与其他 Mod 冲突 -->
+<!--                                <relocation>-->
+<!--                                    <pattern>org.slf4j</pattern>-->
+<!--                                    <shadedPattern>com.github.theword.queqiao.shaded.slf4j</shadedPattern>-->
+<!--                                </relocation>-->
+                            </relocations>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -86,19 +119,20 @@
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
             <version>${snakeyaml.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.java-websocket</groupId>
             <artifactId>Java-WebSocket</artifactId>
             <version>${java-webSocket.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j-api.version}</version>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
