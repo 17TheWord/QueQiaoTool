@@ -6,7 +6,7 @@
 
     <groupId>com.github.theword.queqiao</groupId>
     <artifactId>queqiao-tool</artifactId>
-    <version>0.2.6</version>
+    <version>0.2.7</version>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -133,6 +133,7 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j-api.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
