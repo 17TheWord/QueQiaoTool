@@ -6,6 +6,10 @@ import com.google.gson.*;
 
 import java.lang.reflect.Type;
 
+/**
+ * TitlePayload 反序列化器
+ * <p> 用于将 JSON 数据反序列化为 TitlePayload 对象 </p>
+ */
 public class TitlePayloadDeserializer implements JsonDeserializer<TitlePayload> {
 
     /**

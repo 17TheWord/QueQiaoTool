@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 通用基础玩家进度事件
+ */
 public class BasePlayerAdvancementEvent extends BaseNoticeEvent {
     private final BaseAdvancement advancement;
 

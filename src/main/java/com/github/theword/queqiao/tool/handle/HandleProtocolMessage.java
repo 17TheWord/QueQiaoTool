@@ -16,6 +16,9 @@ import static com.github.theword.queqiao.tool.utils.Tool.logger;
 import static com.github.theword.queqiao.tool.utils.Tool.debugLog;
 import static com.github.theword.queqiao.tool.utils.Tool.handleApiService;
 
+/**
+ * 处理协议消息
+ */
 public class HandleProtocolMessage {
 
     /**

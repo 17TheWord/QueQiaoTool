@@ -10,7 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 工具类
+ * 工具类（全局静态入口）
+ * <p>持有全局静态对象与公共工具方法，例如日志、配置、WebSocket 管理等。</p>
  */
 public class Tool {
     /**
@@ -22,7 +23,13 @@ public class Tool {
      */
     public static Config config = null;
 
+    /**
+     * 服务端版本（初始化时设置）
+     */
     public static String SERVER_VERSION = "Unknown";
+    /**
+     * 服务端类型（初始化时设置）
+     */
     public static String SERVER_TYPE = "Unknown";
 
     /**
