@@ -73,6 +73,11 @@ public class BaseEvent {
         this.subType = subType;
     }
 
+    /**
+     * 将事件对象序列化为 JSON 字符串。
+     *
+     * @return 事件的 JSON 表示
+     */
     public String getJson() {
         Gson gson = GsonUtils.buildGson();
         return gson.toJson(this);

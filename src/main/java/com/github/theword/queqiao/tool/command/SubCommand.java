@@ -1,5 +1,10 @@
 package com.github.theword.queqiao.tool.command;
 
+/**
+ * 子命令接口
+ * <p> 所有命令均需实现该接口下对应的Abstract子类 </p>
+ *
+ */
 public interface SubCommand {
 
     /**
