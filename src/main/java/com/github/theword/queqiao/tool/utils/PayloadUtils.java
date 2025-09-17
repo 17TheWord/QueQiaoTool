@@ -17,7 +17,7 @@ public class PayloadUtils {
      *
      * @param element JsonElement
      * @param context JsonDeserializationContext
-     * @return List<MessageSegment>
+     * @return {@code List<MessageSegment>} 消息段列表
      */
     public static List<MessageSegment> deserializeMessageSegmentList(JsonElement element, JsonDeserializationContext context) {
         if (element.isJsonArray()) {
