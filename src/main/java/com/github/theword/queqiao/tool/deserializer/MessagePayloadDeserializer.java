@@ -8,6 +8,10 @@ import com.google.gson.*;
 import java.lang.reflect.Type;
 import java.util.UUID;
 
+/**
+ * MessagePayload 反序列化器
+ * <p> 用于将 JSON 数据反序列化为 MessagePayload 对象 </p>
+ */
 public class MessagePayloadDeserializer implements JsonDeserializer<MessagePayload> {
 
     /**

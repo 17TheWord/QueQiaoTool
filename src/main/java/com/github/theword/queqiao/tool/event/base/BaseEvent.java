@@ -11,35 +11,73 @@ import static com.github.theword.queqiao.tool.utils.Tool.SERVER_TYPE;
 
 /**
  * BaseEvent
- * <p> serverName 将在发送前通过配置文件获取并填充 </p>
- * <p> timestamp 为当前秒级时间戳 </p>
- * <p> serverVersion 在服务端启动时传值 </p>
- * <p> serverType 在服务端启动时传值 </p>
+ * <p> 基础事件 </p>
+ * <p> 所有事件均继承该类 </p>
  */
 public class BaseEvent {
+
+    /**
+     * 事件名称
+     */
     @SerializedName("event_name")
     private final String eventName;
+
+    /**
+     * 事件类型，如 message、notice、request 等
+     */
     @SerializedName("post_type")
     private final String postType;
+
+    /**
+     * 事件子类型，如 chat、join、quit 等
+     */
     @SerializedName("sub_type")
     private final String subType;
+
+    /**
+     * 时间戳，秒级
+     */
     private final int timestamp = (int) (System.currentTimeMillis() / 1000);
+
+    /**
+     * 服务器名，每次生成事件通过配置文件获取
+     */
     @Setter
     @SerializedName("server_name")
     private String serverName = config.getServerName();
+
+    /**
+     * 服务器版本号，工具初始化阶段传入
+     */
     @Setter
     @SerializedName("server_version")
     private String serverVersion = SERVER_VERSION;
+
+    /**
+     * 服务器类型，工具初始化阶段传入
+     */
     @Setter
     @SerializedName("server_type")
     private String serverType = SERVER_TYPE;
 
+    /**
+     * 构造函数
+     *
+     * @param eventName 事件名称
+     * @param postType  事件类型
+     * @param subType   事件子类型
+     */
     public BaseEvent(String eventName, String postType, String subType) {
         this.eventName = eventName;
         this.postType = postType;
         this.subType = subType;
     }
 
+    /**
+     * 将事件对象序列化为 JSON 字符串。
+     *
+     * @return 事件的 JSON 表示
+     */
     public String getJson() {
         Gson gson = GsonUtils.buildGson();
         return gson.toJson(this);

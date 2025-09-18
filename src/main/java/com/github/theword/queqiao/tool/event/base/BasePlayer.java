@@ -7,11 +7,24 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
+/**
+ * 玩家基础信息
+ * <p> 包含玩家的昵称和 UUID </p>
+ * <p> 用于标识一个玩家 </p>
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class BasePlayer {
+
+    /**
+     * 玩家昵称
+     */
     private String nickname;
+
+    /**
+     * 玩家 UUID
+     */
     private UUID uuid;
 
     /**
