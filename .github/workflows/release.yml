@@ -56,3 +56,5 @@ jobs:
 
       - name: Upload to Release
         run: gh release upload v${{ env.VERSION }} build/libs/queqiao-tool-${{ env.VERSION }}.jar --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
