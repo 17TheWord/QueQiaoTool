@@ -8,24 +8,24 @@ on:
     branches:
       - main
 
-env:
-  GH_TOKEN: ${{ github.token }}
-  GITHUB_TOKEN: ${{ github.token }}
-
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       packages: write
+
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up JDK 8 for Shared Runner
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           java-version: '8'
           distribution: 'temurin'
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v4
 
       - name: Make Gradle Wrapper executable
         run: chmod +x ./gradlew
@@ -37,21 +37,22 @@ jobs:
           echo "VERSION=$VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Handle existing Release
+      - name: Check if Release exists
+        id: check_release
         run: |
-          RELEASE_EXISTS=$(gh release view v${{ env.VERSION }} -R ${{ github.repository }} 2>&1 || true)
-          if echo "$RELEASE_EXISTS" | grep -q "Not Found"; then
-            echo "Release v${{ env.VERSION }} does not exist. Proceeding to create."
-          else
-            echo "Release v${{ env.VERSION }} exists. Deleting existing release."
-            gh release delete v${{ env.VERSION }} -R ${{ github.repository }} -y --cleanup-tag || echo "Failed to delete release. It might not exist or there might be another issue."
+          if gh release view v${{ env.VERSION }} -R ${{ github.repository }} >/dev/null 2>&1; then
+            echo "Release v${{ env.VERSION }} already exists. Exiting gracefully."
+            exit 0
           fi
-          gh release create v${{ env.VERSION }} --generate-notes
+
+      - name: Create Release
+        run: gh release create v${{ env.VERSION }} --generate-notes
 
       - name: Build and Publish with Gradle
-        run: ./gradlew build publish
+        run: ./gradlew publish
         env:
+          GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload to GitHub Release
-        run: gh release upload v${{ env.VERSION }} target/queqiao-tool-${{ env.VERSION }}.jar --clobber
+      - name: Upload to Release
+        run: gh release upload v${{ env.VERSION }} build/libs/queqiao-tool-${{ env.VERSION }}.jar --clobber
