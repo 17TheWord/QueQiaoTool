@@ -8,7 +8,7 @@ permissions:
   contents: write  # 允许推送代码到分支
 
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -30,7 +30,7 @@ jobs:
         id: get_version
         run: |
           VERSION=$(grep -E "^projectVersion=" gradle.properties | cut -d "=" -f 2)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION"
 
       - name: Run All Checks
         run: ./gradlew check
