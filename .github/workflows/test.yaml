@@ -26,5 +26,11 @@ jobs:
       - name: Make Gradle Wrapper executable
         run: chmod +x ./gradlew
 
+      - name: Get project version from gradle.properties
+        id: get_version
+        run: |
+          VERSION=$(grep -E "^version=" gradle.properties | cut -d "=" -f 2)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: Run All Checks
         run: ./gradlew check
