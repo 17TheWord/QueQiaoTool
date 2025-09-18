@@ -71,8 +71,8 @@ publishing {
             name = "GitHubPackages"
             url = uri("https://maven.pkg.github.com/17TheWord/QueQiaoTool")
             credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
+                username = System.getenv("GH_ACTOR")
+                password = System.getenv("GH_TOKEN")
             }
         }
     }
