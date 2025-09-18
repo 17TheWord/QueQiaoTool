@@ -7,8 +7,8 @@ plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
-group = "com.github.theword.queqiao"
-version = "0.2.8"
+group = property("projectGroup")!!
+version = property("projectVersion")!!
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
