@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -20,9 +20,14 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v3
+
+      - name: Make Gradle Wrapper executable
+        run: chmod +x ./gradlew
+
       - name: Generate Javadoc
-        run: |
-          mvn javadoc:javadoc
+        run: ./gradlew javadoc
 
       - name: Determine Target Branch
         id: set-branch
@@ -37,6 +42,6 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./target/javadoc/apidocs
+          publish_dir: ./build/docs/javadoc
           publish_branch: ${{ env.TARGET_BRANCH }}
           keep_files: true
