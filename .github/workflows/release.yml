@@ -26,16 +26,14 @@ jobs:
         with:
           java-version: '8'
           distribution: 'temurin'
-          server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
-          settings-path: ${{ github.workspace }} # location for the settings.xml file
 
       - name: Make Gradle Wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Get project version from gradle.properties
+      - name: Get Version
         id: get_version
         run: |
-          VERSION=$(grep -E "^version=" gradle.properties | cut -d "=" -f 2)
+          VERSION=$(grep -E "^projectVersion=" gradle.properties | cut -d "=" -f 2)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Handle existing Release
