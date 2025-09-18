@@ -1,0 +1,35 @@
+name: Setup Java & Gradle
+description: Setup Java JDK, validate Gradle wrapper, make gradlew executable, preload dependencies
+
+inputs:
+  java-version:
+    description: JDK version to use
+    required: false
+    default: "8"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ inputs.java-version }}
+        distribution: temurin
+
+    - name: Validate Gradle Wrapper
+      uses: gradle/actions/wrapper-validation@v4
+
+    - name: Get Version
+      shell: bash
+      run: |
+        VERSION=$(grep -E "^projectVersion=" gradle.properties | cut -d "=" -f 2)
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "VERSION=$VERSION"
+
+    - name: Make Gradle Wrapper Executable
+      shell: bash
+      run: chmod +x ./gradlew
+
+    - name: Preload Dependencies
+      shell: bash
+      run: ./gradlew --no-daemon dependencies

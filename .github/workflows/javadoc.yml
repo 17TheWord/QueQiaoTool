@@ -15,17 +15,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
+      - name: Setup Java & Gradle
+        uses: ./.github/actions/set-java
         with:
           java-version: '8'
-          distribution: 'temurin'
-
-      - name: Validate Gradle Wrapper
-        uses: gradle/actions/wrapper-validation@v4
-
-      - name: Make Gradle Wrapper executable
-        run: chmod +x ./gradlew
 
       - name: Generate Javadoc
         run: ./gradlew javadoc
