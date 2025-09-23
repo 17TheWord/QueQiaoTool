@@ -1,5 +1,6 @@
 package com.github.theword.queqiao.tool.handle;
 
+import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.payload.*;
@@ -11,10 +12,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.java_websocket.WebSocket;
 
-import static com.github.theword.queqiao.tool.utils.Tool.config;
-import static com.github.theword.queqiao.tool.utils.Tool.logger;
 import static com.github.theword.queqiao.tool.utils.Tool.debugLog;
-import static com.github.theword.queqiao.tool.utils.Tool.handleApiService;
 
 /**
  * 处理协议消息
@@ -40,15 +38,15 @@ public class HandleProtocolMessage {
                 case "broadcast":
                 case "send_msg":
                     MessagePayload messageList = gson.fromJson(data, MessagePayload.class);
-                    handleApiService.handleBroadcastMessage(messageList.getMessage());
+                    GlobalContext.getHandleApiService().handleBroadcastMessage(messageList.getMessage());
                     break;
                 case "send_title":
                     TitlePayload titlePayload = gson.fromJson(data, TitlePayload.class);
-                    handleApiService.handleSendTitleMessage(titlePayload);
+                    GlobalContext.getHandleApiService().handleSendTitleMessage(titlePayload);
                     break;
                 case "send_actionbar":
                     MessagePayload actionMessagePayload = gson.fromJson(data, MessagePayload.class);
-                    handleApiService.handleSendActionBarMessage(actionMessagePayload.getMessage());
+                    GlobalContext.getHandleApiService().handleSendActionBarMessage(actionMessagePayload.getMessage());
                     break;
                 case "send_private_msg":
                     PrivateMessagePayload privateMessagePayload = gson.fromJson(data, PrivateMessagePayload.class);
@@ -58,7 +56,7 @@ public class HandleProtocolMessage {
                         response.setMessage(PrivateMessageResponse.playerIsNull().getMessage());
                         return response;
                     }
-                    PrivateMessageResponse privateMessageResponse = handleApiService.handleSendPrivateMessage(
+                    PrivateMessageResponse privateMessageResponse = GlobalContext.getHandleApiService().handleSendPrivateMessage(
                             privateMessagePayload.getNickname(),
                             privateMessagePayload.getUuid(),
                             privateMessagePayload.getMessage()
@@ -71,18 +69,20 @@ public class HandleProtocolMessage {
                     response.setMessage(basePayload.getApi() + "is not supported now");
                     break;
                 default:
-                    logger.warn(BaseConstant.UNKNOWN_API + "{}", basePayload.getApi());
+                    GlobalContext.getLogger().warn(BaseConstant.UNKNOWN_API + "{}", basePayload.getApi());
                     response.setCode(404);
                     response.setMessage(BaseConstant.UNKNOWN_API + basePayload.getApi());
                     break;
             }
         } catch (Exception e) {
-            logger.warn(String.format(WebsocketConstantMessage.PARSE_MESSAGE_ERROR_ON_MESSAGE, webSocket.getRemoteSocketAddress()));
-            if (config.isDebug()) {
-                logger.error("Debug模式异常详情", e);
+            GlobalContext.getLogger().warn(WebsocketConstantMessage.PARSE_MESSAGE_ERROR_ON_MESSAGE, webSocket.getRemoteSocketAddress());
+            if (GlobalContext.getConfig().isDebug()) {
+                GlobalContext.getLogger().error("Debug模式异常详情", e);
             } else {
-                logger.warn(e.getMessage());
-                logger.warn(e.getCause().getMessage());
+                GlobalContext.getLogger().warn(String.valueOf(e.getMessage()));
+                if (e.getCause() != null) {
+                    GlobalContext.getLogger().warn(String.valueOf(e.getCause().getMessage()));
+                }
             }
         }
         return response;
