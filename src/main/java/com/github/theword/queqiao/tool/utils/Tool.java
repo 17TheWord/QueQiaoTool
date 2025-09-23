@@ -99,9 +99,11 @@ public class Tool {
      * 同时向所有 Websocket 客户端和服务端广播消息
      *
      * @param event 任何继承于 BaseEvent 的事件
+     * @deprecated 请使用 {@link GlobalContext#getWebsocketManager()} 和 {@link WebsocketManager#sendEvent(com.github.theword.queqiao.tool.event.base.BaseEvent)} 代替
      */
+    @Deprecated
     public static void sendWebsocketMessage(BaseEvent event) {
-        if (config.isEnable()) {
+        if (GlobalContext.getConfig().isEnable()) {
             websocketManager.getWsClientList().forEach(wsClient -> wsClient.send(event.getJson()));
             if (websocketManager.getWsServer() != null)
                 websocketManager.getWsServer().broadcast(event.getJson());
@@ -141,8 +143,8 @@ public class Tool {
      * @param message 消息
      */
     public static void debugLog(String message) {
-        if (config.isDebug())
-            logger.info(message);
+        if (GlobalContext.getConfig().isDebug())
+            GlobalContext.getLogger().info(message);
     }
 
     /**
@@ -153,8 +155,8 @@ public class Tool {
      * @param args   参数
      */
     public static void debugLog(String format, Object... args) {
-        if (config.isDebug()) {
-            logger.info(format, args);
+        if (GlobalContext.getConfig().isDebug()) {
+            GlobalContext.getLogger().info(format, args);
         }
     }
 
@@ -166,7 +168,7 @@ public class Tool {
      * @return 前缀
      */
     public static CommonTextComponent getPrefixComponent() {
-        CommonTextComponent CommonTextComponent = new CommonTextComponent(config.getMessagePrefix());
+        CommonTextComponent CommonTextComponent = new CommonTextComponent(GlobalContext.getConfig().getMessagePrefix());
         CommonTextComponent.setColor("yellow");
         return CommonTextComponent;
     }
