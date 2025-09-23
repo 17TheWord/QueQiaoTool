@@ -47,6 +47,69 @@ public class Config extends CommonConfig {
      */
     private SubscribeEventConfig subscribeEvent = new SubscribeEventConfig();
 
+    public boolean isEnable() {
+        return enable;
+    }
+
+    public void setEnable(boolean enable) {
+        this.enable = enable;
+    }
+
+    public boolean isDebug() {
+        return debug;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
+    }
+
+    public String getServerName() {
+        return serverName;
+    }
+
+    public void setServerName(String serverName) {
+        this.serverName = serverName;
+    }
+
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
+    }
+
+    public String getMessagePrefix() {
+        return messagePrefix;
+    }
+
+    public void setMessagePrefix(String messagePrefix) {
+        this.messagePrefix = messagePrefix;
+    }
+
+    public WebSocketServerConfig getWebsocketServer() {
+        return websocketServer;
+    }
+
+    public void setWebsocketServer(WebSocketServerConfig websocketServer) {
+        this.websocketServer = websocketServer;
+    }
+
+    public WebSocketClientConfig getWebsocketClient() {
+        return websocketClient;
+    }
+
+    public void setWebsocketClient(WebSocketClientConfig websocketClient) {
+        this.websocketClient = websocketClient;
+    }
+
+    public SubscribeEventConfig getSubscribeEvent() {
+        return subscribeEvent;
+    }
+
+    public void setSubscribeEvent(SubscribeEventConfig subscribeEvent) {
+        this.subscribeEvent = subscribeEvent;
+    }
 
     /**
      * Contractor
@@ -87,7 +150,7 @@ public class Config extends CommonConfig {
         loadWebsocketServerConfig(configMap);
         loadWebsocketClientConfig(configMap);
         loadSubscribeEventConfig(configMap);
-        
+
         GlobalContext.setConfig(this);
     }
 
