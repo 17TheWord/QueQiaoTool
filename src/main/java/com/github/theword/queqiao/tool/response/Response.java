@@ -2,9 +2,6 @@ package com.github.theword.queqiao.tool.response;
 
 import com.github.theword.queqiao.tool.utils.GsonUtils;
 import com.google.gson.annotations.SerializedName;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 /**
  * Response
@@ -13,9 +10,6 @@ import lombok.NoArgsConstructor;
  * <p>data：数据</p>
  * <p>echo：请求的echo，从请求中获取</p>
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Response {
     private Integer code;
     @SerializedName("post_type")
@@ -24,6 +18,9 @@ public class Response {
     private String message;
     private Object data = null;
     private String echo;
+
+    public Response() {
+    }
 
     /**
      * 全参构造器
@@ -49,5 +46,53 @@ public class Response {
      */
     public String getJson() {
         return GsonUtils.buildGson().toJson(this);
+    }
+
+    public Integer getCode() {
+        return code;
+    }
+
+    public void setCode(Integer code) {
+        this.code = code;
+    }
+
+    public String getPostType() {
+        return postType;
+    }
+
+    public void setPostType(String postType) {
+        this.postType = postType;
+    }
+
+    public ResponseEnum getStatus() {
+        return status;
+    }
+
+    public void setStatus(ResponseEnum status) {
+        this.status = status;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public Object getData() {
+        return data;
+    }
+
+    public void setData(Object data) {
+        this.data = data;
+    }
+
+    public String getEcho() {
+        return echo;
+    }
+
+    public void setEcho(String echo) {
+        this.echo = echo;
     }
 }
