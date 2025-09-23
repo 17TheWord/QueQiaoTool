@@ -131,6 +131,17 @@ public class WebsocketManager {
     }
 
     /**
+     * 重载 Websocket
+     * reload 命令调用
+     *
+     * @param commandReturner 命令执行者
+     */
+    public void restartWebsocket(Object commandReturner) {
+        restartWebsocketServer(commandReturner);
+        restartWebsocketClients(commandReturner);
+    }
+
+    /**
      * 启动 WebSocket
      * 开服时调用
      *

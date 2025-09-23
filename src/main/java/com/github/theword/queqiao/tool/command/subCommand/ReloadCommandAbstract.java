@@ -1,13 +1,12 @@
 package com.github.theword.queqiao.tool.command.subCommand;
 
+import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.command.SubCommand;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.github.theword.queqiao.tool.constant.CommandConstantMessage;
 import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.utils.Tool;
 
-import static com.github.theword.queqiao.tool.utils.Tool.config;
-import static com.github.theword.queqiao.tool.utils.Tool.websocketManager;
 
 public abstract class ReloadCommandAbstract implements SubCommand {
 
@@ -77,9 +76,8 @@ public abstract class ReloadCommandAbstract implements SubCommand {
      */
     @Override
     public void execute(Object commandReturner, boolean isModServer) {
-        config = Config.loadConfig(isModServer);
+        GlobalContext.setConfig(Config.loadConfig(isModServer));
         Tool.commandReturn(commandReturner, CommandConstantMessage.RELOAD_CONFIG);
-        websocketManager.restartWebsocketServer(commandReturner);
-        websocketManager.restartWebsocketClients(commandReturner);
+        GlobalContext.getWebsocketManager().restartWebsocket(commandReturner);
     }
 }
