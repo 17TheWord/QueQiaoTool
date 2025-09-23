@@ -1,5 +1,6 @@
 package com.github.theword.queqiao.tool.utils;
 
+import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.github.theword.queqiao.tool.event.base.BaseEvent;
@@ -16,33 +17,54 @@ import org.slf4j.LoggerFactory;
 public class Tool {
     /**
      * 日志
+     *
+     * @deprecated 请使用 {@link GlobalContext#getLogger()} 代替
      */
+    @Deprecated
     public static Logger logger = null;
     /**
      * 配置项
+     *
+     * @deprecated 请使用 {@link GlobalContext#getConfig()} 代替
      */
+    @Deprecated
     public static Config config = null;
 
     /**
      * 服务端版本（初始化时设置）
+     *
+     * @deprecated 请使用 {@link GlobalContext#getServerVersion()} 代替
      */
+    @Deprecated
     public static String SERVER_VERSION = "Unknown";
     /**
      * 服务端类型（初始化时设置）
+     *
+     * @deprecated 请使用 {@link GlobalContext#getServerType()} 代替
      */
+    @Deprecated
     public static String SERVER_TYPE = "Unknown";
 
     /**
      * Websocket 管理器
+     *
+     * @deprecated 请使用 {@link GlobalContext#getWebsocketManager()} 代替
      */
+    @Deprecated
     public static WebsocketManager websocketManager = null;
     /**
      * api 消息处理
+     *
+     * @deprecated 请使用 {@link GlobalContext#getHandleApiService()} 代替
      */
+    @Deprecated
     public static HandleApiService handleApiService = null;
     /**
      * 命令消息处理
+     *
+     * @deprecated 请使用 {@link GlobalContext#getHandleCommandReturnMessageService()} 代替
      */
+    @Deprecated
     public static HandleCommandReturnMessageService handleCommandReturnMessageService = null;
 
     /**
@@ -57,7 +79,9 @@ public class Tool {
      * @param serverType                     服务端类型
      * @param handleApiImpl                  api消息处理
      * @param handleCommandReturnMessageImpl 命令消息处理
+     * @deprecated 请使用 {@link GlobalContext#init(boolean, String, String, HandleApiService, HandleCommandReturnMessageService)} 代替
      */
+    @Deprecated
     public static void initTool(boolean isModServer, String serverVersion, String serverType, HandleApiService handleApiImpl, HandleCommandReturnMessageService handleCommandReturnMessageImpl) {
         logger = LoggerFactory.getLogger(BaseConstant.MODULE_NAME);
         logger.info(BaseConstant.LAUNCHING);
