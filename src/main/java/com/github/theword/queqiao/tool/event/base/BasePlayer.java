@@ -1,9 +1,6 @@
 package com.github.theword.queqiao.tool.event.base;
 
 import com.github.theword.queqiao.tool.utils.GsonUtils;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
@@ -12,9 +9,6 @@ import java.util.UUID;
  * <p> 包含玩家的昵称和 UUID </p>
  * <p> 用于标识一个玩家 </p>
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class BasePlayer {
 
     /**
@@ -26,6 +20,30 @@ public class BasePlayer {
      * 玩家 UUID
      */
     private UUID uuid;
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
+    }
+
+    public BasePlayer() {
+    }
+
+    public BasePlayer(String nickname, UUID uuid) {
+        this.nickname = nickname;
+        this.uuid = uuid;
+    }
 
     /**
      * 判断两个玩家是否为同一个玩家
@@ -53,7 +71,9 @@ public class BasePlayer {
      * 将玩家对象转换为 JSON 字符串
      *
      * @return JSON 字符串
+     * @deprecated 请使用 {@link GsonUtils#buildGson()} 生成的 Gson 对象进行转换
      */
+    @Deprecated
     public String getJson() {
         return GsonUtils.buildGson().toJson(this);
     }
