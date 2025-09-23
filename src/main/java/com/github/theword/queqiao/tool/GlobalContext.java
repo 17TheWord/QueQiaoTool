@@ -50,6 +50,10 @@ public class GlobalContext {
         return logger;
     }
 
+    public static void setLogger(Logger logger) {
+        GlobalContext.logger = logger;
+    }
+
     public static WebsocketManager getWebsocketManager() {
         return websocketManager;
     }
