@@ -39,6 +39,10 @@ public class GlobalContext {
         return config;
     }
 
+    public static void setConfig(Config config) {
+        GlobalContext.config = config;
+    }
+
     public static Logger getLogger() {
         return logger;
     }
