@@ -18,6 +18,12 @@
     catch(err) {
     }
 //-->
+var methods = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
+var altColor = "altColor";
+var rowColor = "rowColor";
+var tableTab = "tableTab";
+var activeTableTab = "activeTableTab";
 </script>
 <noscript>
 <div>JavaScript is disabled on your browser.</div>
@@ -70,13 +76,13 @@
 <li>Nested&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor.summary">Constr</a>&nbsp;|&nbsp;</li>
-<li><a href="#methods.inherited.from.class.java.lang.Object">Method</a></li>
+<li><a href="#method.summary">Method</a></li>
 </ul>
 <ul class="subNavList">
 <li>Detail:&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor.detail">Constr</a>&nbsp;|&nbsp;</li>
-<li>Method</li>
+<li><a href="#method.detail">Method</a></li>
 </ul>
 </div>
 <a name="skip.navbar.top">
@@ -126,6 +132,14 @@ extends <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html
 <tr class="altColor">
 <td class="colOne"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/config/SubscribeEventConfig.html#SubscribeEventConfig--">SubscribeEventConfig</a></span>()</code>&nbsp;</td>
 </tr>
+<tr class="rowColor">
+<td class="colOne"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/config/SubscribeEventConfig.html#SubscribeEventConfig-boolean-boolean-boolean-boolean-boolean-boolean-">SubscribeEventConfig</a></span>(boolean&nbsp;playerChat,
+                    boolean&nbsp;playerDeath,
+                    boolean&nbsp;playerJoin,
+                    boolean&nbsp;playerQuit,
+                    boolean&nbsp;playerCommand,
+                    boolean&nbsp;playerAdvancement)</code>&nbsp;</td>
+</tr>
 </table>
 </li>
 </ul>
@@ -135,6 +149,61 @@ extends <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html
 <!--   -->
 </a>
 <h3>Method Summary</h3>
+<table class="memberSummary" border="0" cellpadding="3" cellspacing="0" summary="Method Summary table, listing methods, and an explanation">
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Method and Description</th>
+</tr>
+<tr id="i0" class="altColor">
+<td class="colFirst"><code>boolean</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/config/SubscribeEventConfig.html#isPlayerAdvancement--">isPlayerAdvancement</a></span>()</code>&nbsp;</td>
+</tr>
+<tr id="i1" class="rowColor">
+<td class="colFirst"><code>boolean</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/config/SubscribeEventConfig.html#isPlayerChat--">isPlayerChat</a></span>()</code>&nbsp;</td>
+</tr>
+<tr id="i2" class="altColor">
+<td class="colFirst"><code>boolean</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/config/SubscribeEventConfig.html#isPlayerCommand--">isPlayerCommand</a></span>()</code>&nbsp;</td>
+</tr>
+<tr id="i3" class="rowColor">
+<td class="colFirst"><code>boolean</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/config/SubscribeEventConfig.html#isPlayerDeath--">isPlayerDeath</a></span>()</code>&nbsp;</td>
+</tr>
+<tr id="i4" class="altColor">
+<td class="colFirst"><code>boolean</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/config/SubscribeEventConfig.html#isPlayerJoin--">isPlayerJoin</a></span>()</code>&nbsp;</td>
+</tr>
+<tr id="i5" class="rowColor">
+<td class="colFirst"><code>boolean</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/config/SubscribeEventConfig.html#isPlayerQuit--">isPlayerQuit</a></span>()</code>&nbsp;</td>
+</tr>
+<tr id="i6" class="altColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/config/SubscribeEventConfig.html#setPlayerAdvancement-boolean-">setPlayerAdvancement</a></span>(boolean&nbsp;playerAdvancement)</code>&nbsp;</td>
+</tr>
+<tr id="i7" class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/config/SubscribeEventConfig.html#setPlayerChat-boolean-">setPlayerChat</a></span>(boolean&nbsp;playerChat)</code>&nbsp;</td>
+</tr>
+<tr id="i8" class="altColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/config/SubscribeEventConfig.html#setPlayerCommand-boolean-">setPlayerCommand</a></span>(boolean&nbsp;playerCommand)</code>&nbsp;</td>
+</tr>
+<tr id="i9" class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/config/SubscribeEventConfig.html#setPlayerDeath-boolean-">setPlayerDeath</a></span>(boolean&nbsp;playerDeath)</code>&nbsp;</td>
+</tr>
+<tr id="i10" class="altColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/config/SubscribeEventConfig.html#setPlayerJoin-boolean-">setPlayerJoin</a></span>(boolean&nbsp;playerJoin)</code>&nbsp;</td>
+</tr>
+<tr id="i11" class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/config/SubscribeEventConfig.html#setPlayerQuit-boolean-">setPlayerQuit</a></span>(boolean&nbsp;playerQuit)</code>&nbsp;</td>
+</tr>
+</table>
 <ul class="blockList">
 <li class="blockList"><a name="methods.inherited.from.class.java.lang.Object">
 <!--   -->
@@ -159,10 +228,140 @@ extends <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html
 <a name="SubscribeEventConfig--">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>SubscribeEventConfig</h4>
 <pre>public&nbsp;SubscribeEventConfig()</pre>
+</li>
+</ul>
+<a name="SubscribeEventConfig-boolean-boolean-boolean-boolean-boolean-boolean-">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>SubscribeEventConfig</h4>
+<pre>public&nbsp;SubscribeEventConfig(boolean&nbsp;playerChat,
+                            boolean&nbsp;playerDeath,
+                            boolean&nbsp;playerJoin,
+                            boolean&nbsp;playerQuit,
+                            boolean&nbsp;playerCommand,
+                            boolean&nbsp;playerAdvancement)</pre>
+</li>
+</ul>
+</li>
+</ul>
+<!-- ============ METHOD DETAIL ========== -->
+<ul class="blockList">
+<li class="blockList"><a name="method.detail">
+<!--   -->
+</a>
+<h3>Method Detail</h3>
+<a name="isPlayerChat--">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>isPlayerChat</h4>
+<pre>public&nbsp;boolean&nbsp;isPlayerChat()</pre>
+</li>
+</ul>
+<a name="setPlayerChat-boolean-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setPlayerChat</h4>
+<pre>public&nbsp;void&nbsp;setPlayerChat(boolean&nbsp;playerChat)</pre>
+</li>
+</ul>
+<a name="isPlayerDeath--">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>isPlayerDeath</h4>
+<pre>public&nbsp;boolean&nbsp;isPlayerDeath()</pre>
+</li>
+</ul>
+<a name="setPlayerDeath-boolean-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setPlayerDeath</h4>
+<pre>public&nbsp;void&nbsp;setPlayerDeath(boolean&nbsp;playerDeath)</pre>
+</li>
+</ul>
+<a name="isPlayerJoin--">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>isPlayerJoin</h4>
+<pre>public&nbsp;boolean&nbsp;isPlayerJoin()</pre>
+</li>
+</ul>
+<a name="setPlayerJoin-boolean-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setPlayerJoin</h4>
+<pre>public&nbsp;void&nbsp;setPlayerJoin(boolean&nbsp;playerJoin)</pre>
+</li>
+</ul>
+<a name="isPlayerQuit--">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>isPlayerQuit</h4>
+<pre>public&nbsp;boolean&nbsp;isPlayerQuit()</pre>
+</li>
+</ul>
+<a name="setPlayerQuit-boolean-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setPlayerQuit</h4>
+<pre>public&nbsp;void&nbsp;setPlayerQuit(boolean&nbsp;playerQuit)</pre>
+</li>
+</ul>
+<a name="isPlayerCommand--">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>isPlayerCommand</h4>
+<pre>public&nbsp;boolean&nbsp;isPlayerCommand()</pre>
+</li>
+</ul>
+<a name="setPlayerCommand-boolean-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setPlayerCommand</h4>
+<pre>public&nbsp;void&nbsp;setPlayerCommand(boolean&nbsp;playerCommand)</pre>
+</li>
+</ul>
+<a name="isPlayerAdvancement--">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>isPlayerAdvancement</h4>
+<pre>public&nbsp;boolean&nbsp;isPlayerAdvancement()</pre>
+</li>
+</ul>
+<a name="setPlayerAdvancement-boolean-">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>setPlayerAdvancement</h4>
+<pre>public&nbsp;void&nbsp;setPlayerAdvancement(boolean&nbsp;playerAdvancement)</pre>
 </li>
 </ul>
 </li>
@@ -220,13 +419,13 @@ extends <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html
 <li>Nested&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor.summary">Constr</a>&nbsp;|&nbsp;</li>
-<li><a href="#methods.inherited.from.class.java.lang.Object">Method</a></li>
+<li><a href="#method.summary">Method</a></li>
 </ul>
 <ul class="subNavList">
 <li>Detail:&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor.detail">Constr</a>&nbsp;|&nbsp;</li>
-<li>Method</li>
+<li><a href="#method.detail">Method</a></li>
 </ul>
 </div>
 <a name="skip.navbar.bottom">
