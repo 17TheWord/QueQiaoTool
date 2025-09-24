@@ -1,0 +1,17 @@
+{
+  "name": "Java Development Container",
+  "image": "mcr.microsoft.com/devcontainers/java:0-8",
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash"
+  },
+  "postCreateCommand": "chmod +x ./gradlew && ./gradlew --version && java -version",
+  "extensions": [
+    "vscjava.vscode-java-pack",
+    "vscjava.vscode-gradle",
+    "redhat.vscode-yaml",
+
+    "PKief.material-icon-theme",
+    "oderwat.indent-rainbow",
+    "esbenp.prettier-vscode"
+  ]
+}
