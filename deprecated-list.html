@@ -71,6 +71,96 @@
 <div class="header">
 <h1 title="Deprecated API" class="title">Deprecated API</h1>
 <h2 title="Contents">Contents</h2>
+<ul>
+<li><a href="#field">Deprecated Fields</a></li>
+<li><a href="#method">Deprecated Methods</a></li>
+</ul>
+</div>
+<div class="contentContainer"><a name="field">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<table class="deprecatedSummary" border="0" cellpadding="3" cellspacing="0" summary="Deprecated Fields table, listing deprecated fields, and an explanation">
+<caption><span>Deprecated Fields</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colOne" scope="col">Field and Description</th>
+</tr>
+<tbody>
+<tr class="altColor">
+<td class="colOne"><a href="com/github/theword/queqiao/tool/utils/Tool.html#config">com.github.theword.queqiao.tool.utils.Tool.config</a>
+<div class="block"><span class="deprecationComment">请使用 <a href="com/github/theword/queqiao/tool/GlobalContext.html#getConfig--"><code>GlobalContext.getConfig()</code></a> 代替</span></div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><a href="com/github/theword/queqiao/tool/utils/Tool.html#handleApiService">com.github.theword.queqiao.tool.utils.Tool.handleApiService</a>
+<div class="block"><span class="deprecationComment">请使用 <a href="com/github/theword/queqiao/tool/GlobalContext.html#getHandleApiService--"><code>GlobalContext.getHandleApiService()</code></a> 代替</span></div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><a href="com/github/theword/queqiao/tool/utils/Tool.html#handleCommandReturnMessageService">com.github.theword.queqiao.tool.utils.Tool.handleCommandReturnMessageService</a>
+<div class="block"><span class="deprecationComment">请使用 <a href="com/github/theword/queqiao/tool/GlobalContext.html#getHandleCommandReturnMessageService--"><code>GlobalContext.getHandleCommandReturnMessageService()</code></a> 代替</span></div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><a href="com/github/theword/queqiao/tool/utils/Tool.html#logger">com.github.theword.queqiao.tool.utils.Tool.logger</a>
+<div class="block"><span class="deprecationComment">请使用 <a href="com/github/theword/queqiao/tool/GlobalContext.html#getLogger--"><code>GlobalContext.getLogger()</code></a> 代替</span></div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><a href="com/github/theword/queqiao/tool/utils/Tool.html#SERVER_TYPE">com.github.theword.queqiao.tool.utils.Tool.SERVER_TYPE</a>
+<div class="block"><span class="deprecationComment">请使用 <a href="com/github/theword/queqiao/tool/GlobalContext.html#getServerType--"><code>GlobalContext.getServerType()</code></a> 代替</span></div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><a href="com/github/theword/queqiao/tool/utils/Tool.html#SERVER_VERSION">com.github.theword.queqiao.tool.utils.Tool.SERVER_VERSION</a>
+<div class="block"><span class="deprecationComment">请使用 <a href="com/github/theword/queqiao/tool/GlobalContext.html#getServerVersion--"><code>GlobalContext.getServerVersion()</code></a> 代替</span></div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><a href="com/github/theword/queqiao/tool/utils/Tool.html#websocketManager">com.github.theword.queqiao.tool.utils.Tool.websocketManager</a>
+<div class="block"><span class="deprecationComment">请使用 <a href="com/github/theword/queqiao/tool/GlobalContext.html#getWebsocketManager--"><code>GlobalContext.getWebsocketManager()</code></a> 代替</span></div>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+<a name="method">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<table class="deprecatedSummary" border="0" cellpadding="3" cellspacing="0" summary="Deprecated Methods table, listing deprecated methods, and an explanation">
+<caption><span>Deprecated Methods</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colOne" scope="col">Method and Description</th>
+</tr>
+<tbody>
+<tr class="altColor">
+<td class="colOne"><a href="com/github/theword/queqiao/tool/event/base/BaseEvent.html#getJson--">com.github.theword.queqiao.tool.event.base.BaseEvent.getJson()</a>
+<div class="block"><span class="deprecationComment">请使用 <a href="com/github/theword/queqiao/tool/utils/GsonUtils.html#buildGson--"><code>GsonUtils.buildGson()</code></a> 生成的 Gson 实例进行序列化</span></div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><a href="com/github/theword/queqiao/tool/event/base/BasePlayer.html#getJson--">com.github.theword.queqiao.tool.event.base.BasePlayer.getJson()</a>
+<div class="block"><span class="deprecationComment">请使用 <a href="com/github/theword/queqiao/tool/utils/GsonUtils.html#buildGson--"><code>GsonUtils.buildGson()</code></a> 生成的 Gson 对象进行转换</span></div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colOne"><a href="com/github/theword/queqiao/tool/utils/Tool.html#initTool-boolean-java.lang.String-java.lang.String-com.github.theword.queqiao.tool.handle.HandleApiService-com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService-">com.github.theword.queqiao.tool.utils.Tool.initTool(boolean, String, String, HandleApiService, HandleCommandReturnMessageService)</a>
+<div class="block"><span class="deprecationComment">请使用 <a href="com/github/theword/queqiao/tool/GlobalContext.html#init-boolean-java.lang.String-java.lang.String-com.github.theword.queqiao.tool.handle.HandleApiService-com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService-"><code>GlobalContext.init(boolean, String, String, HandleApiService, HandleCommandReturnMessageService)</code></a> 代替</span></div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colOne"><a href="com/github/theword/queqiao/tool/utils/Tool.html#sendWebsocketMessage-com.github.theword.queqiao.tool.event.base.BaseEvent-">com.github.theword.queqiao.tool.utils.Tool.sendWebsocketMessage(BaseEvent)</a>
+<div class="block"><span class="deprecationComment">请使用 <a href="com/github/theword/queqiao/tool/GlobalContext.html#getWebsocketManager--"><code>GlobalContext.getWebsocketManager()</code></a> 和 <a href="com/github/theword/queqiao/tool/utils/WebsocketManager.html#sendEvent-com.github.theword.queqiao.tool.event.base.BaseEvent-"><code>WebsocketManager.sendEvent(com.github.theword.queqiao.tool.event.base.BaseEvent)</code></a> 代替</span></div>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
 </div>
 <!-- ======= START OF BOTTOM NAVBAR ====== -->
 <div class="bottomNav"><a name="navbar.bottom">

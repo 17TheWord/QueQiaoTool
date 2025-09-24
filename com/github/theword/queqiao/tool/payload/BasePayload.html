@@ -18,6 +18,12 @@
     catch(err) {
     }
 //-->
+var methods = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
+var altColor = "altColor";
+var rowColor = "rowColor";
+var tableTab = "tableTab";
+var activeTableTab = "activeTableTab";
 </script>
 <noscript>
 <div>JavaScript is disabled on your browser.</div>
@@ -70,13 +76,13 @@
 <li>Nested&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor.summary">Constr</a>&nbsp;|&nbsp;</li>
-<li><a href="#methods.inherited.from.class.java.lang.Object">Method</a></li>
+<li><a href="#method.summary">Method</a></li>
 </ul>
 <ul class="subNavList">
 <li>Detail:&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor.detail">Constr</a>&nbsp;|&nbsp;</li>
-<li>Method</li>
+<li><a href="#method.detail">Method</a></li>
 </ul>
 </div>
 <a name="skip.navbar.top">
@@ -128,6 +134,11 @@ extends <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html
 <tr class="altColor">
 <td class="colOne"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/payload/BasePayload.html#BasePayload--">BasePayload</a></span>()</code>&nbsp;</td>
 </tr>
+<tr class="rowColor">
+<td class="colOne"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/payload/BasePayload.html#BasePayload-java.lang.String-com.google.gson.JsonElement-java.lang.String-">BasePayload</a></span>(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;api,
+           com.google.gson.JsonElement&nbsp;data,
+           <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;echo)</code>&nbsp;</td>
+</tr>
 </table>
 </li>
 </ul>
@@ -137,6 +148,37 @@ extends <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html
 <!--   -->
 </a>
 <h3>Method Summary</h3>
+<table class="memberSummary" border="0" cellpadding="3" cellspacing="0" summary="Method Summary table, listing methods, and an explanation">
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colLast" scope="col">Method and Description</th>
+</tr>
+<tr id="i0" class="altColor">
+<td class="colFirst"><code><a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/payload/BasePayload.html#getApi--">getApi</a></span>()</code>&nbsp;</td>
+</tr>
+<tr id="i1" class="rowColor">
+<td class="colFirst"><code>com.google.gson.JsonElement</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/payload/BasePayload.html#getData--">getData</a></span>()</code>&nbsp;</td>
+</tr>
+<tr id="i2" class="altColor">
+<td class="colFirst"><code><a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/payload/BasePayload.html#getEcho--">getEcho</a></span>()</code>&nbsp;</td>
+</tr>
+<tr id="i3" class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/payload/BasePayload.html#setApi-java.lang.String-">setApi</a></span>(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;api)</code>&nbsp;</td>
+</tr>
+<tr id="i4" class="altColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/payload/BasePayload.html#setData-com.google.gson.JsonElement-">setData</a></span>(com.google.gson.JsonElement&nbsp;data)</code>&nbsp;</td>
+</tr>
+<tr id="i5" class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/payload/BasePayload.html#setEcho-java.lang.String-">setEcho</a></span>(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;echo)</code>&nbsp;</td>
+</tr>
+</table>
 <ul class="blockList">
 <li class="blockList"><a name="methods.inherited.from.class.java.lang.Object">
 <!--   -->
@@ -161,10 +203,83 @@ extends <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html
 <a name="BasePayload--">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>BasePayload</h4>
 <pre>public&nbsp;BasePayload()</pre>
+</li>
+</ul>
+<a name="BasePayload-java.lang.String-com.google.gson.JsonElement-java.lang.String-">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>BasePayload</h4>
+<pre>public&nbsp;BasePayload(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;api,
+                   com.google.gson.JsonElement&nbsp;data,
+                   <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;echo)</pre>
+</li>
+</ul>
+</li>
+</ul>
+<!-- ============ METHOD DETAIL ========== -->
+<ul class="blockList">
+<li class="blockList"><a name="method.detail">
+<!--   -->
+</a>
+<h3>Method Detail</h3>
+<a name="getApi--">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getApi</h4>
+<pre>public&nbsp;<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;getApi()</pre>
+</li>
+</ul>
+<a name="setApi-java.lang.String-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setApi</h4>
+<pre>public&nbsp;void&nbsp;setApi(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;api)</pre>
+</li>
+</ul>
+<a name="getData--">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getData</h4>
+<pre>public&nbsp;com.google.gson.JsonElement&nbsp;getData()</pre>
+</li>
+</ul>
+<a name="setData-com.google.gson.JsonElement-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setData</h4>
+<pre>public&nbsp;void&nbsp;setData(com.google.gson.JsonElement&nbsp;data)</pre>
+</li>
+</ul>
+<a name="getEcho--">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getEcho</h4>
+<pre>public&nbsp;<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;getEcho()</pre>
+</li>
+</ul>
+<a name="setEcho-java.lang.String-">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>setEcho</h4>
+<pre>public&nbsp;void&nbsp;setEcho(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;echo)</pre>
 </li>
 </ul>
 </li>
@@ -222,13 +337,13 @@ extends <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html
 <li>Nested&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor.summary">Constr</a>&nbsp;|&nbsp;</li>
-<li><a href="#methods.inherited.from.class.java.lang.Object">Method</a></li>
+<li><a href="#method.summary">Method</a></li>
 </ul>
 <ul class="subNavList">
 <li>Detail:&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor.detail">Constr</a>&nbsp;|&nbsp;</li>
-<li>Method</li>
+<li><a href="#method.detail">Method</a></li>
 </ul>
 </div>
 <a name="skip.navbar.bottom">
