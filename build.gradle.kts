@@ -30,13 +30,10 @@ repositories {
 dependencies {
     implementation("com.google.code.gson:gson:${property("gsonVersion")}")
     implementation("commons-io:commons-io:${property("commonsIoVersion")}")
-    implementation("org.projectlombok:lombok:${property("lombokVersion")}")
     implementation("org.yaml:snakeyaml:${property("snakeyamlVersion")}")
     implementation("org.java-websocket:Java-WebSocket:${property("javaWebSocketVersion")}")
     implementation("org.slf4j:slf4j-api:${property("slf4jApiVersion")}")
     testImplementation("org.slf4j:slf4j-simple:${property("slf4jSimpleVersion")}")
-
-    annotationProcessor("org.projectlombok:lombok:${property("lombokVersion")}")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:${property("junitJupiterApiVersion")}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${property("junitJupiterApiVersion")}")

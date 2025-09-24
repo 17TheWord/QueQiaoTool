@@ -1,20 +1,15 @@
 package com.github.theword.queqiao.tool.config;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+
+import com.github.theword.queqiao.tool.GlobalContext;
 
 import java.util.List;
 import java.util.Map;
-
-import static com.github.theword.queqiao.tool.utils.Tool.config;
-import static com.github.theword.queqiao.tool.utils.Tool.logger;
 
 /**
  * 配置项
  * 服务器初始化阶段请调用 {@link #loadConfig(boolean)}
  */
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class Config extends CommonConfig {
     /**
      * 是否启用插件/模组
@@ -22,7 +17,7 @@ public class Config extends CommonConfig {
     private boolean enable = true;
     /**
      * 是否开启调试模式
-     * <p>对详部分简写日志进行 logger.info 输出</p>
+     * <p>对详部分简写日志进行 GlobalContext.getLogger().info 输出</p>
      */
     private boolean debug = false;
 
@@ -52,6 +47,69 @@ public class Config extends CommonConfig {
      */
     private SubscribeEventConfig subscribeEvent = new SubscribeEventConfig();
 
+    public boolean isEnable() {
+        return enable;
+    }
+
+    public void setEnable(boolean enable) {
+        this.enable = enable;
+    }
+
+    public boolean isDebug() {
+        return debug;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
+    }
+
+    public String getServerName() {
+        return serverName;
+    }
+
+    public void setServerName(String serverName) {
+        this.serverName = serverName;
+    }
+
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
+    }
+
+    public String getMessagePrefix() {
+        return messagePrefix;
+    }
+
+    public void setMessagePrefix(String messagePrefix) {
+        this.messagePrefix = messagePrefix;
+    }
+
+    public WebSocketServerConfig getWebsocketServer() {
+        return websocketServer;
+    }
+
+    public void setWebsocketServer(WebSocketServerConfig websocketServer) {
+        this.websocketServer = websocketServer;
+    }
+
+    public WebSocketClientConfig getWebsocketClient() {
+        return websocketClient;
+    }
+
+    public void setWebsocketClient(WebSocketClientConfig websocketClient) {
+        this.websocketClient = websocketClient;
+    }
+
+    public SubscribeEventConfig getSubscribeEvent() {
+        return subscribeEvent;
+    }
+
+    public void setSubscribeEvent(SubscribeEventConfig subscribeEvent) {
+        this.subscribeEvent = subscribeEvent;
+    }
 
     /**
      * Contractor
@@ -61,7 +119,7 @@ public class Config extends CommonConfig {
     public Config(boolean isModServer) {
         String configFolder = isModServer ? "config" : "plugins";
         String serverType = isModServer ? "模组" : "插件";
-        logger.info("当前服务端类型为：{}服", serverType);
+        GlobalContext.getLogger().info("当前服务端类型为：{}服", serverType);
         readConfigFile(configFolder, "config.yml");
     }
 
@@ -92,7 +150,8 @@ public class Config extends CommonConfig {
         loadWebsocketServerConfig(configMap);
         loadWebsocketClientConfig(configMap);
         loadSubscribeEventConfig(configMap);
-        config = this;
+
+        GlobalContext.setConfig(this);
     }
 
 

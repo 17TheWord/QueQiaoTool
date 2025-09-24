@@ -1,13 +1,13 @@
 package com.github.theword.queqiao.tool.websocket;
 
+import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.handle.HandleProtocolMessage;
 import com.github.theword.queqiao.tool.response.Response;
-import lombok.Getter;
-import lombok.SneakyThrows;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
+import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -15,7 +15,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import static com.github.theword.queqiao.tool.utils.Tool.*;
+import static com.github.theword.queqiao.tool.utils.Tool.debugLog;
+
 
 /**
  * WebSocket 客户端
@@ -24,12 +25,8 @@ public class WsClient extends WebSocketClient {
     /**
      * 重连定时器
      */
-    @Getter
     private final Timer timer = new Timer();
-    /**
-     * 处理协议消息
-     */
-    private final HandleProtocolMessage handleProtocolMessage = new HandleProtocolMessage();
+
     private int reconnectTimes = 1;
 
     /**
@@ -37,13 +34,16 @@ public class WsClient extends WebSocketClient {
      *
      * @param uri URI
      */
-    @SneakyThrows
     public WsClient(URI uri) {
         super(uri);
-        addHeader("x-self-name", URLEncoder.encode(config.getServerName(), StandardCharsets.UTF_8.toString()));
+        try {
+            addHeader("x-self-name", URLEncoder.encode(GlobalContext.getConfig().getServerName(), StandardCharsets.UTF_8.toString()));
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
         addHeader("x-client-origin", "minecraft");
-        if (!config.getAccessToken().isEmpty())
-            addHeader("Authorization", "Bearer " + config.getAccessToken());
+        if (!GlobalContext.getConfig().getAccessToken().isEmpty())
+            addHeader("Authorization", "Bearer " + GlobalContext.getConfig().getAccessToken());
     }
 
     /**
@@ -53,7 +53,7 @@ public class WsClient extends WebSocketClient {
      */
     @Override
     public void onOpen(ServerHandshake serverHandshake) {
-        logger.info(String.format(WebsocketConstantMessage.Client.CONNECT_SUCCESSFUL, getURI()));
+        GlobalContext.getLogger().info(WebsocketConstantMessage.Client.CONNECT_SUCCESSFUL, getURI());
         reconnectTimes = 1;
     }
 
@@ -63,8 +63,8 @@ public class WsClient extends WebSocketClient {
      */
     @Override
     public void onMessage(String message) {
-        if (config.isEnable()) {
-            Response response = handleProtocolMessage.handleWebSocketJson(this, message);
+        if (GlobalContext.getConfig().isEnable()) {
+            Response response = GlobalContext.getHandleProtocolMessage().handleWebSocketJson(this, message);
             this.send(response.getJson());
         }
     }
@@ -78,7 +78,7 @@ public class WsClient extends WebSocketClient {
      */
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        if (remote && reconnectTimes <= config.getWebsocketClient().getReconnectMaxTimes()) {
+        if (remote && reconnectTimes <= GlobalContext.getConfig().getWebsocketClient().getReconnectMaxTimes()) {
             reconnectWebsocket();
         }
     }
@@ -94,7 +94,7 @@ public class WsClient extends WebSocketClient {
                 reconnect();
             }
         };
-        timer.schedule(timerTask, config.getWebsocketClient().getReconnectInterval() * 1000L);
+        timer.schedule(timerTask, GlobalContext.getConfig().getWebsocketClient().getReconnectInterval() * 1000L);
     }
 
     /**
@@ -113,11 +113,11 @@ public class WsClient extends WebSocketClient {
      */
     @Override
     public void reconnect() {
-        debugLog(String.format(WebsocketConstantMessage.Client.RECONNECTING, getURI(), reconnectTimes));
+        debugLog(WebsocketConstantMessage.Client.RECONNECTING, getURI(), reconnectTimes);
         reconnectTimes++;
         super.reconnect();
-        if (reconnectTimes == config.getWebsocketClient().getReconnectMaxTimes() + 1) {
-            logger.info(String.format(WebsocketConstantMessage.Client.MAX_RECONNECT_ATTEMPTS_REACHED, getURI()));
+        if (reconnectTimes == GlobalContext.getConfig().getWebsocketClient().getReconnectMaxTimes() + 1) {
+            GlobalContext.getLogger().info(WebsocketConstantMessage.Client.MAX_RECONNECT_ATTEMPTS_REACHED, getURI());
         }
     }
 
@@ -128,8 +128,8 @@ public class WsClient extends WebSocketClient {
      */
     @Override
     public void onError(Exception exception) {
-        logger.warn(String.format(WebsocketConstantMessage.Client.CONNECTION_ERROR, getURI(), exception.getMessage()));
-        if (exception instanceof ConnectException && exception.getMessage().equals("Connection refused: connect") && reconnectTimes <= config.getWebsocketClient().getReconnectMaxTimes()) {
+        GlobalContext.getLogger().warn(WebsocketConstantMessage.Client.CONNECTION_ERROR, getURI(), exception.getMessage());
+        if (exception instanceof ConnectException && exception.getMessage().equals("Connection refused: connect") && reconnectTimes <= GlobalContext.getConfig().getWebsocketClient().getReconnectMaxTimes()) {
             reconnectWebsocket();
         }
     }
@@ -144,7 +144,7 @@ public class WsClient extends WebSocketClient {
     public void send(String text) {
         if (isOpen()) {
             super.send(text);
-            debugLog(String.format(WebsocketConstantMessage.Client.SEND_MESSAGE, getURI(), text));
+            debugLog(WebsocketConstantMessage.Client.SEND_MESSAGE, getURI(), text);
         } else {
             debugLog(WebsocketConstantMessage.Client.SEND_MESSAGE_FAILED, getURI(), text);
         }

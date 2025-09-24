@@ -1,9 +1,11 @@
 package com.github.theword.queqiao.tool.utils;
 
+import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
+import com.github.theword.queqiao.tool.event.base.BaseEvent;
 import com.github.theword.queqiao.tool.websocket.WsClient;
 import com.github.theword.queqiao.tool.websocket.WsServer;
-import lombok.Getter;
+import com.google.gson.Gson;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -11,18 +13,27 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.github.theword.queqiao.tool.utils.Tool.config;
 
-@Getter
 public class WebsocketManager {
     /**
      * Websocket Client 列表
      */
     private final List<WsClient> wsClientList = new ArrayList<>();
+
     /**
      * Websocket Server
      */
     private WsServer wsServer;
+
+    private final Gson gson = GsonUtils.buildGson();
+
+    public List<WsClient> getWsClientList() {
+        return wsClientList;
+    }
+
+    public WsServer getWsServer() {
+        return wsServer;
+    }
 
     /**
      * 启动 WebSocket 客户端
@@ -31,9 +42,9 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     private void startWebsocketClients(Object commandReturner) {
-        if (config.getWebsocketClient().isEnable()) {
+        if (GlobalContext.getConfig().getWebsocketClient().isEnable()) {
             Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
-            config.getWebsocketClient().getUrlList().forEach(websocketUrl -> {
+            GlobalContext.getConfig().getWebsocketClient().getUrlList().forEach(websocketUrl -> {
                 try {
                     WsClient wsClient = new WsClient(new URI(websocketUrl));
                     wsClient.connect();
@@ -54,10 +65,10 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     private void stopWebsocketClients(int code, String reason, Object commandReturner) {
-        wsClientList.forEach(wsClient -> {
+        for (WsClient wsClient : wsClientList) {
             Tool.commandReturn(commandReturner, String.format(reason, wsClient.getURI()));
             wsClient.stopWithoutReconnect(code, String.format(reason, wsClient.getURI()));
-        });
+        }
         wsClientList.clear();
         Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.CLEAR_WEBSOCKET_CLIENT_LIST);
     }
@@ -81,10 +92,10 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     private void startWebsocketServer(Object commandReturner) {
-        if (config.getWebsocketServer().isEnable()) {
-            wsServer = new WsServer(new InetSocketAddress(config.getWebsocketServer().getHost(), config.getWebsocketServer().getPort()));
+        if (GlobalContext.getConfig().getWebsocketServer().isEnable()) {
+            wsServer = new WsServer(new InetSocketAddress(GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()));
             wsServer.start();
-            Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Server.SERVER_STARTING, config.getWebsocketServer().getHost(), config.getWebsocketServer().getPort()));
+            Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Server.SERVER_STARTING, GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()));
         }
     }
 
@@ -117,6 +128,17 @@ public class WebsocketManager {
         stopWebsocketServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
         startWebsocketServer(commandReturner);
         Tool.commandReturn(commandReturner, WebsocketConstantMessage.Server.RELOADED);
+    }
+
+    /**
+     * 重载 Websocket
+     * reload 命令调用
+     *
+     * @param commandReturner 命令执行者
+     */
+    public void restartWebsocket(Object commandReturner) {
+        restartWebsocketServer(commandReturner);
+        restartWebsocketClients(commandReturner);
     }
 
     /**
@@ -157,5 +179,20 @@ public class WebsocketManager {
     public void stopWebsocket(int code, String reason, Object commandReturner) {
         stopWebsocketClients(code, reason, commandReturner);
         stopWebsocketServer(commandReturner, reason);
+    }
+
+    /**
+     * 发送消息
+     * 同时向所有 Websocket 客户端和服务端广播消息
+     *
+     * @param event 任何继承于 BaseEvent 的事件
+     */
+    public void sendEvent(BaseEvent event) {
+        if (GlobalContext.getConfig().isEnable()) {
+            String json = gson.toJson(event);
+            wsClientList.forEach(wsClient -> wsClient.send(json));
+            if (wsServer != null)
+                wsServer.broadcast(json);
+        }
     }
 }

@@ -1,9 +1,8 @@
 package com.github.theword.queqiao.tool.payload;
 
 import com.google.gson.annotations.SerializedName;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -11,8 +10,6 @@ import java.util.UUID;
  * <p>扩展自 {@link MessagePayload}，用于表示发送给单个目标玩家的私聊消息。</p>
  * <p>包含目标玩家的 UUID 和昵称信息，用于在日志或展示中标识接收者。</p>
  */
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class PrivateMessagePayload extends MessagePayload {
 
     /**
@@ -26,6 +23,40 @@ public class PrivateMessagePayload extends MessagePayload {
      */
     @SerializedName("nickname")
     private String nickname = null;
+
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public PrivateMessagePayload() {
+    }
+
+    public PrivateMessagePayload(List<MessageSegment> message) {
+        super(message);
+    }
+
+    public PrivateMessagePayload(UUID uuid, String nickname) {
+        this.uuid = uuid;
+        this.nickname = nickname;
+    }
+
+    public PrivateMessagePayload(List<MessageSegment> message, UUID uuid, String nickname) {
+        super(message);
+        this.uuid = uuid;
+        this.nickname = nickname;
+    }
 
     /**
      * 将私聊消息转换为描述字符串，用于日志输出。

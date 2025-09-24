@@ -1,8 +1,6 @@
 package com.github.theword.queqiao.tool.response;
 
-import lombok.Getter;
 
-@Getter
 public enum ResponseEnum {
     SUCCESS("success"),
     FAILED("failed");
@@ -11,6 +9,10 @@ public enum ResponseEnum {
 
     ResponseEnum(String value) {
         this.value = value;
+    }
+
+    public String getValue() {
+        return value;
     }
 
     @Override

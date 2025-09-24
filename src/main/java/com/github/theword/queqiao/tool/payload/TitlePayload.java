@@ -1,7 +1,5 @@
 package com.github.theword.queqiao.tool.payload;
 
-import lombok.Data;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -11,7 +9,6 @@ import java.util.stream.Collectors;
  * <p>title 与 subtitle 均为消息段列表，可包含富文本或格式化组件。</p>
  * <p>fadein、stay、fadeout 分别表示淡入、停留和淡出时长，单位为刻（ticks）。</p>
  */
-@Data
 public class TitlePayload {
     /**
      * 标题消息段列表
@@ -37,6 +34,57 @@ public class TitlePayload {
      * 淡出时间（ticks），默认 10
      */
     private int fadeout = 10;
+
+    public List<MessageSegment> getTitle() {
+        return title;
+    }
+
+    public void setTitle(List<MessageSegment> title) {
+        this.title = title;
+    }
+
+    public List<MessageSegment> getSubtitle() {
+        return subtitle;
+    }
+
+    public void setSubtitle(List<MessageSegment> subtitle) {
+        this.subtitle = subtitle;
+    }
+
+    public int getFadein() {
+        return fadein;
+    }
+
+    public void setFadein(int fadein) {
+        this.fadein = fadein;
+    }
+
+    public int getStay() {
+        return stay;
+    }
+
+    public void setStay(int stay) {
+        this.stay = stay;
+    }
+
+    public int getFadeout() {
+        return fadeout;
+    }
+
+    public void setFadeout(int fadeout) {
+        this.fadeout = fadeout;
+    }
+
+    public TitlePayload() {
+    }
+
+    public TitlePayload(List<MessageSegment> title, List<MessageSegment> subtitle, int fadein, int stay, int fadeout) {
+        this.title = title;
+        this.subtitle = subtitle;
+        this.fadein = fadein;
+        this.stay = stay;
+        this.fadeout = fadeout;
+    }
 
     /**
      * 将标题负载转换为字符串表示，用于日志或调试输出。
