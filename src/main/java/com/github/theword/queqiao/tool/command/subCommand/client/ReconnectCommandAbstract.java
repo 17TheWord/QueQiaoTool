@@ -1,5 +1,6 @@
 package com.github.theword.queqiao.tool.command.subCommand.client;
 
+import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.command.subCommand.ClientCommandAbstract;
 import com.github.theword.queqiao.tool.constant.CommandConstantMessage;
 import com.github.theword.queqiao.tool.utils.Tool;
@@ -8,7 +9,6 @@ import com.github.theword.queqiao.tool.websocket.WsClient;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.github.theword.queqiao.tool.utils.Tool.websocketManager;
 
 public abstract class ReconnectCommandAbstract extends ClientCommandAbstract {
 
@@ -77,7 +77,7 @@ public abstract class ReconnectCommandAbstract extends ClientCommandAbstract {
 
         AtomicInteger opened = new AtomicInteger();
 
-        List<WsClient> wsClientList = websocketManager.getWsClientList();
+        List<WsClient> wsClientList = GlobalContext.getWebsocketManager().getWsClientList();
 
         wsClientList.forEach(wsClient -> {
             if (all || !wsClient.isOpen()) {

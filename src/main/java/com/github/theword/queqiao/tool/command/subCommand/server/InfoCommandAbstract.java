@@ -1,13 +1,12 @@
 package com.github.theword.queqiao.tool.command.subCommand.server;
 
+import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.command.subCommand.ClientCommandAbstract;
 import com.github.theword.queqiao.tool.command.subCommand.ServerCommandAbstract;
 import com.github.theword.queqiao.tool.utils.Tool;
 import com.github.theword.queqiao.tool.websocket.WsServer;
 import org.java_websocket.WebSocket;
 
-import static com.github.theword.queqiao.tool.utils.Tool.config;
-import static com.github.theword.queqiao.tool.utils.Tool.websocketManager;
 
 public abstract class InfoCommandAbstract extends ServerCommandAbstract {
 
@@ -59,13 +58,13 @@ public abstract class InfoCommandAbstract extends ServerCommandAbstract {
      */
     @Override
     public void execute(Object commandReturner) {
-        if (!config.getWebsocketServer().isEnable()) {
+        if (!GlobalContext.getConfig().getWebsocketServer().isEnable()) {
             Tool.commandReturn(commandReturner, "Websocket Server 配置项未启用，如需开启，请在 config.yml 中启用 WebsocketServer 配置项");
-            Tool.commandReturn(commandReturner, String.format("配置项中地址为 %s:%d", config.getWebsocketServer().getHost(), config.getWebsocketServer().getPort()));
+            Tool.commandReturn(commandReturner, String.format("配置项中地址为 %s:%d", GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()));
             return;
         }
 
-        WsServer wsServer = websocketManager.getWsServer();
+        WsServer wsServer = GlobalContext.getWebsocketManager().getWsServer();
 
         if (wsServer == null) {
             Tool.commandReturn(commandReturner, "Websocket Server 为null，查询失败");

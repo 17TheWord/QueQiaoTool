@@ -2,17 +2,35 @@ package com.github.theword.queqiao.tool.response;
 
 import com.github.theword.queqiao.tool.event.base.BasePlayer;
 import com.google.gson.annotations.SerializedName;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class PrivateMessageResponse {
     @SerializedName("target_player")
     private BasePlayer player;
     private String message;
+
+    public PrivateMessageResponse() {
+    }
+
+    public PrivateMessageResponse(BasePlayer player, String message) {
+        this.player = player;
+        this.message = message;
+    }
+
+    public BasePlayer getPlayer() {
+        return player;
+    }
+
+    public void setPlayer(BasePlayer player) {
+        this.player = player;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
 
     public static PrivateMessageResponse of(BasePlayer player, String message) {
         return new PrivateMessageResponse(player, message);

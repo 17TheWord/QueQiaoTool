@@ -1,8 +1,5 @@
 package com.github.theword.queqiao.tool.event.base;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 /**
  * 通用基础玩家进度事件
@@ -15,13 +12,25 @@ public class BasePlayerAdvancementEvent extends BaseNoticeEvent {
         this.advancement = advancement;
     }
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class BaseAdvancement {
         /**
          * Common field
          */
         private String text;
+
+        public BaseAdvancement() {
+        }
+
+        public BaseAdvancement(String text) {
+            this.text = text;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public void setText(String text) {
+            this.text = text;
+        }
     }
 }
