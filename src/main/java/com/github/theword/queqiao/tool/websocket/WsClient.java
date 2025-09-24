@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -38,7 +39,7 @@ public class WsClient extends WebSocketClient {
     /**
      * 当前重连第 N 次
      */
-    private int reconnectTimes = 0;
+    private final AtomicInteger reconnectTimes = new AtomicInteger(0);
     private volatile boolean stopped = false;
 
     public enum ReconnectReason {
@@ -64,7 +65,7 @@ public class WsClient extends WebSocketClient {
     @Override
     public void onOpen(ServerHandshake serverHandshake) {
         this.logger.info(WebsocketConstantMessage.Client.CONNECT_SUCCESSFUL, getURI());
-        reconnectTimes = 0;
+        reconnectTimes.set(0);
     }
 
     @Override
@@ -77,62 +78,53 @@ public class WsClient extends WebSocketClient {
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        this.logger.warn(WebsocketConstantMessage.Client.CLOSING_CONNECTION, getURI(), code, reason);
-        if (!stopped && remote) {
-            scheduleReconnect(ReconnectReason.REMOTE_CLOSE);
+        logger.warn(WebsocketConstantMessage.Client.CLOSING_CONNECTION, getURI(), code, reason);
+        if (remote) {
+            scheduleReconnect(nextDelay());
         }
     }
 
     @Override
     public void onError(Exception exception) {
-        this.logger.warn(WebsocketConstantMessage.Client.CONNECTION_ERROR, getURI(), exception.getMessage(), exception);
-        if (!stopped) {
-            scheduleReconnect(ReconnectReason.EXCEPTION);
-        }
+        logger.warn(WebsocketConstantMessage.Client.CONNECTION_ERROR, getURI(), exception.getMessage(), exception);
+        scheduleReconnect(nextDelay());
+    }
+
+    /**
+     * 计算下一次重连的延迟时间
+     *
+     * @return 延迟时间（秒）
+     */
+    private long nextDelay() {
+        return Math.min(reconnectInterval * (1L << reconnectTimes.get()), 60);
     }
 
     /**
      * 安排重连任务
      */
-    private void scheduleReconnect(ReconnectReason reason) {
-        // 手动触发则立即重连
-        if (reason == ReconnectReason.MANUAL) {
-            this.logger.info("手动触发重连 {}", getURI());
-            doReconnect();
+    private void scheduleReconnect(long delaySeconds) {
+        if (stopped || reconnectTimes.get() >= reconnectMaxTimes) {
+            logger.info(WebsocketConstantMessage.Client.MAX_RECONNECT_ATTEMPTS_REACHED, getURI());
             return;
         }
-
-        if (reconnectTimes >= this.reconnectMaxTimes) {
-            this.logger.info(WebsocketConstantMessage.Client.MAX_RECONNECT_ATTEMPTS_REACHED, getURI());
-            return;
-        }
-
-        reconnectTimes++;
-        long delay = Math.min(this.reconnectInterval * (1L << (reconnectTimes - 1)), 60);
-        scheduler.schedule(this::doReconnect, delay, TimeUnit.SECONDS);
-    }
-
-    /**
-     * 真正执行重连
-     */
-    private void doReconnect() {
-        if (!stopped) {
-            logger.debug(WebsocketConstantMessage.Client.RECONNECTING, getURI(), reconnectTimes);
-            super.reconnect();
-        }
+        reconnectTimes.incrementAndGet();
+        logger.debug(WebsocketConstantMessage.Client.RECONNECTING, getURI(), reconnectTimes);
+        scheduler.schedule(() -> {
+            if (!stopped) super.reconnect();
+        }, delaySeconds, TimeUnit.SECONDS);
     }
 
     /**
      * 主动立即重连（适用于 reload 等场景）
      */
     public void reconnectNow() {
-        scheduleReconnect(ReconnectReason.MANUAL);
+        scheduleReconnect(0);
     }
 
     /**
      * 停止并不再重连
      *
-     * @param code 关闭代码
+     * @param code   关闭代码
      * @param reason 关闭原因
      */
     public void stopWithoutReconnect(int code, String reason) {
