@@ -81,7 +81,7 @@ public abstract class ReconnectCommandAbstract extends ClientCommandAbstract {
 
         wsClientList.forEach(wsClient -> {
             if (all || !wsClient.isOpen()) {
-                wsClient.reconnectWebsocket();
+                wsClient.reconnectNow();
                 Tool.commandReturn(commandReturner, String.format(CommandConstantMessage.RECONNECT_MESSAGE, wsClient.getURI()));
             } else {
                 opened.getAndIncrement();

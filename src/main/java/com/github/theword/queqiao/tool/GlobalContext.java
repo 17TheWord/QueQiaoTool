@@ -28,7 +28,7 @@ public class GlobalContext {
     ) {
         logger = LoggerFactory.getLogger(BaseConstant.MODULE_NAME);
         logger.info(BaseConstant.LAUNCHING);
-        config = Config.loadConfig(isModServer);
+        config = Config.loadConfig(isModServer, logger);
         GlobalContext.serverVersion = serverVersion;
         GlobalContext.serverType = serverType;
         websocketManager = new WebsocketManager();
@@ -36,6 +36,7 @@ public class GlobalContext {
         handleProtocolMessage = new HandleProtocolMessage();
         handleCommandReturnMessageService = handleCommandReturnMessageImpl;
         logger.info(BaseConstant.INITIALIZED);
+        websocketManager.startWebsocket(null);
     }
 
     public static Config getConfig() {

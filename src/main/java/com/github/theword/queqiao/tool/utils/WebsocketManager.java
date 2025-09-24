@@ -46,11 +46,18 @@ public class WebsocketManager {
             Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
             GlobalContext.getConfig().getWebsocketClient().getUrlList().forEach(websocketUrl -> {
                 try {
-                    WsClient wsClient = new WsClient(new URI(websocketUrl));
+                    WsClient wsClient = new WsClient(
+                            new URI(websocketUrl),
+                            GlobalContext.getLogger(),
+                            GlobalContext.getConfig().getServerName(),
+                            GlobalContext.getConfig().getAccessToken(),
+                            GlobalContext.getConfig().getWebsocketClient().getReconnectMaxTimes(),
+                            GlobalContext.getConfig().getWebsocketClient().getReconnectInterval()
+                    );
                     wsClient.connect();
                     wsClientList.add(wsClient);
                 } catch (URISyntaxException e) {
-                    Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Client.URI_SYNTAX_ERROR, websocketUrl));
+                    Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Client.URI_SYNTAX_ERROR.replace("{}", "%s"), websocketUrl));
                 }
             });
         }
@@ -93,9 +100,15 @@ public class WebsocketManager {
      */
     private void startWebsocketServer(Object commandReturner) {
         if (GlobalContext.getConfig().getWebsocketServer().isEnable()) {
-            wsServer = new WsServer(new InetSocketAddress(GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()));
+            wsServer = new WsServer(
+                    new InetSocketAddress(
+                            GlobalContext.getConfig().getWebsocketServer().getHost(),
+                            GlobalContext.getConfig().getWebsocketServer().getPort()
+                    ),
+                    GlobalContext.getLogger()
+            );
             wsServer.start();
-            Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Server.SERVER_STARTING, GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()));
+            Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Server.SERVER_STARTING.replace("{}", "%s"), GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()));
         }
     }
 

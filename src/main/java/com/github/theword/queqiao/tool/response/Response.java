@@ -43,7 +43,9 @@ public class Response {
      * 将响应对象序列化为 JSON 字符串，用于发送给客户端。
      *
      * @return 响应的 JSON 表示
+     * @deprecated 请使用 {@link GsonUtils#buildGson()} 代替
      */
+    @Deprecated
     public String getJson() {
         return GsonUtils.buildGson().toJson(this);
     }

@@ -76,7 +76,7 @@ public abstract class ReloadCommandAbstract implements SubCommand {
      */
     @Override
     public void execute(Object commandReturner, boolean isModServer) {
-        GlobalContext.setConfig(Config.loadConfig(isModServer));
+        GlobalContext.setConfig(Config.loadConfig(isModServer, GlobalContext.getLogger()));
         Tool.commandReturn(commandReturner, CommandConstantMessage.RELOAD_CONFIG);
         GlobalContext.getWebsocketManager().restartWebsocket(commandReturner);
     }

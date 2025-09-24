@@ -13,7 +13,7 @@ public class WebsocketConstantMessage {
         public static final String RELOADING = "Websocket Client 正在重载";
         public static final String RELOADED = "Websocket Client 重载完毕";
         private static final String CONNECT_TO = "连接至：{} 的 ";
-        public static final String CLOSING_CONNECTION = CONNECT_TO + "WebSocket Client 正在关闭。";
+        public static final String CLOSING_CONNECTION = CONNECT_TO + "WebSocket Client 正在关闭，Code {}，Reason：{}。";
         public static final String RECONNECTING = CONNECT_TO + "WebSocket 连接已断开，尝试第 {} 次重连...";
         public static final String CONNECTION_ERROR = CONNECT_TO + "WebSocket 连接出现异常：{}";
         public static final String CONNECTION_NOT_OPEN = CONNECT_TO + "WebSocket 连接未打开";

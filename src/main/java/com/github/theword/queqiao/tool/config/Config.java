@@ -2,13 +2,14 @@ package com.github.theword.queqiao.tool.config;
 
 
 import com.github.theword.queqiao.tool.GlobalContext;
+import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Map;
 
 /**
  * 配置项
- * 服务器初始化阶段请调用 {@link #loadConfig(boolean)}
+ * 服务器初始化阶段请调用 {@link #loadConfig(boolean, Logger)} 方法加载配置文件
  */
 public class Config extends CommonConfig {
     /**
@@ -117,9 +118,23 @@ public class Config extends CommonConfig {
      * @param isModServer 是否为模组服务端
      */
     public Config(boolean isModServer) {
+        super(null);
         String configFolder = isModServer ? "config" : "plugins";
         String serverType = isModServer ? "模组" : "插件";
         GlobalContext.getLogger().info("当前服务端类型为：{}服", serverType);
+        readConfigFile(configFolder, "config.yml");
+    }
+
+    /**
+     * Contractor
+     *
+     * @param isModServer 是否为模组服务端
+     */
+    public Config(boolean isModServer, Logger logger) {
+        super(logger);
+        String configFolder = isModServer ? "config" : "plugins";
+        String serverType = isModServer ? "模组" : "插件";
+        logger.info("当前服务端类型为：{}服", serverType);
         readConfigFile(configFolder, "config.yml");
     }
 
@@ -129,9 +144,23 @@ public class Config extends CommonConfig {
      *
      * @param isModServer 是否为模组服务端
      * @return Config
+     * @deprecated 请使用 {@link #loadConfig(boolean, Logger)}
      */
+    @Deprecated
     public static Config loadConfig(boolean isModServer) {
         return new Config(isModServer);
+    }
+
+    /**
+     * 加载配置文件
+     * <p>服务端启动、初始化模组时调用</p>
+     *
+     * @param isModServer 是否为模组服务端
+     * @param logger      日志实现
+     * @return Config
+     */
+    public static Config loadConfig(boolean isModServer, Logger logger) {
+        return new Config(isModServer, logger);
     }
 
     /**
@@ -150,8 +179,6 @@ public class Config extends CommonConfig {
         loadWebsocketServerConfig(configMap);
         loadWebsocketClientConfig(configMap);
         loadSubscribeEventConfig(configMap);
-
-        GlobalContext.setConfig(this);
     }
 
 
