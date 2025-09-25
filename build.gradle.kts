@@ -53,6 +53,7 @@ tasks.withType<Javadoc> {
         this as StandardJavadocDocletOptions
         encoding = "UTF-8"
         charSet = "UTF-8"
+        docEncoding = "UTF-8"
         links("https://docs.oracle.com/javase/8/docs/api/")
         if (JavaVersion.current().isJava9Compatible) {
             addBooleanOption("html5", true)
