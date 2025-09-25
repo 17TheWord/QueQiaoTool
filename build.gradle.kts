@@ -12,9 +12,6 @@ group = property("projectGroup")!!
 version = property("projectVersion")!!
 
 java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(8))
-    }
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
     withJavadocJar()
@@ -43,6 +40,7 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:${property("junitJupiterApiVersion")}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${property("junitJupiterApiVersion")}")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:${property("junitJupiterPlatformLauncherVersion")}")
 }
 
 tasks.test {
