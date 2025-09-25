@@ -24,6 +24,9 @@ jobs:
 
       - name: Run Check
         run: ./gradlew check
+      
+      - name: Run Compile
+        run: ./gradlew compileJava
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
