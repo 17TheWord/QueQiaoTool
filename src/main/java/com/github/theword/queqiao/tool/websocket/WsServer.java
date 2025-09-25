@@ -41,6 +41,7 @@ public class WsServer extends WebSocketServer {
      * 构造函数
      *
      * @param address 地址
+     * @param logger  日志实现
      */
     public WsServer(InetSocketAddress address, Logger logger) {
         super(address);

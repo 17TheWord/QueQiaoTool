@@ -129,6 +129,7 @@ public class Config extends CommonConfig {
      * Contractor
      *
      * @param isModServer 是否为模组服务端
+     * @param logger      日志实现
      */
     public Config(boolean isModServer, Logger logger) {
         super(logger);
