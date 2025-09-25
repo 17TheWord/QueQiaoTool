@@ -35,7 +35,8 @@ class WsClientTest {
                 "Server",
                 "",
                 5,
-                5
+                5,
+                true
         );
         wsClient.connect();
         try {

@@ -52,7 +52,8 @@ public class WebsocketManager {
                             GlobalContext.getConfig().getServerName(),
                             GlobalContext.getConfig().getAccessToken(),
                             GlobalContext.getConfig().getWebsocketClient().getReconnectMaxTimes(),
-                            GlobalContext.getConfig().getWebsocketClient().getReconnectInterval()
+                            GlobalContext.getConfig().getWebsocketClient().getReconnectInterval(),
+                            GlobalContext.getConfig().isEnable()
                     );
                     wsClient.connect();
                     wsClientList.add(wsClient);
@@ -105,7 +106,10 @@ public class WebsocketManager {
                             GlobalContext.getConfig().getWebsocketServer().getHost(),
                             GlobalContext.getConfig().getWebsocketServer().getPort()
                     ),
-                    GlobalContext.getLogger()
+                    GlobalContext.getLogger(),
+                    GlobalContext.getConfig().getServerName(),
+                    GlobalContext.getConfig().getAccessToken(),
+                    GlobalContext.getConfig().isEnable()
             );
             wsServer.start();
             Tool.commandReturn(commandReturner, String.format(WebsocketConstantMessage.Server.SERVER_STARTING.replace("{}", "%s"), GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()));
@@ -203,9 +207,14 @@ public class WebsocketManager {
     public void sendEvent(BaseEvent event) {
         if (GlobalContext.getConfig().isEnable()) {
             String json = gson.toJson(event);
-            wsClientList.forEach(wsClient -> wsClient.send(json));
-            if (wsServer != null)
+            wsClientList.forEach(wsClient -> {
+                wsClient.send(json);
+                Tool.debugLog("WebSocket Client {} 发送消息: {}", wsClient.getURI(), json);
+            });
+            if (wsServer != null) {
                 wsServer.broadcast(json);
+                Tool.debugLog("WebSocket Server 广播消息: {}", json);
+            }
         }
     }
 }

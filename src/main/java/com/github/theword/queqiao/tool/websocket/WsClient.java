@@ -1,7 +1,7 @@
 package com.github.theword.queqiao.tool.websocket;
 
-import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
+import com.github.theword.queqiao.tool.handle.HandleProtocolMessage;
 import com.github.theword.queqiao.tool.response.Response;
 import com.github.theword.queqiao.tool.utils.GsonUtils;
 import org.java_websocket.client.WebSocketClient;
@@ -24,6 +24,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class WsClient extends WebSocketClient {
 
     private final Logger logger;
+    private final boolean enabled;
+    private final HandleProtocolMessage handleProtocolMessage = new HandleProtocolMessage();
+
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     /**
@@ -42,52 +45,57 @@ public class WsClient extends WebSocketClient {
     private final AtomicInteger reconnectTimes = new AtomicInteger(0);
     private volatile boolean stopped = false;
 
-    public enum ReconnectReason {
-        EXCEPTION, REMOTE_CLOSE, MANUAL
-    }
-
-    public WsClient(URI uri, Logger logger, String serverName, String accessToken, int reconnectMaxTimes, int reconnectInterval) {
+    public WsClient(
+            URI uri,
+            Logger logger,
+            String serverName,
+            String accessToken,
+            int reconnectMaxTimes,
+            int reconnectInterval,
+            boolean enabled
+    ) {
         super(uri);
         this.logger = logger;
         this.reconnectMaxTimes = reconnectMaxTimes;
         this.reconnectInterval = reconnectInterval;
+        this.enabled = enabled;
         try {
-            addHeader("x-self-name", URLEncoder.encode(serverName, StandardCharsets.UTF_8.toString()));
+            this.addHeader("x-self-name", URLEncoder.encode(serverName, StandardCharsets.UTF_8.toString()));
         } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
+            this.logger.error("WebSocket 客户端初始化失败，服务器名称编码异常", e);
         }
-        addHeader("x-client-origin", "minecraft");
+        this.addHeader("x-client-origin", "minecraft");
         if (!accessToken.isEmpty()) {
-            addHeader("Authorization", "Bearer " + accessToken);
+            this.addHeader("Authorization", "Bearer " + accessToken);
         }
     }
 
     @Override
     public void onOpen(ServerHandshake serverHandshake) {
         this.logger.info(WebsocketConstantMessage.Client.CONNECT_SUCCESSFUL, getURI());
-        reconnectTimes.set(0);
+        this.reconnectTimes.set(0);
     }
 
     @Override
     public void onMessage(String message) {
-        if (GlobalContext.getConfig().isEnable()) {
-            Response response = GlobalContext.getHandleProtocolMessage().handleWebSocketJson(this, message);
+        if (this.enabled) {
+            Response response = this.handleProtocolMessage.handleWebSocketJson(this, message);
             this.send(GsonUtils.buildGson().toJson(response));
         }
     }
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        logger.warn(WebsocketConstantMessage.Client.CLOSING_CONNECTION, getURI(), code, reason);
+        this.logger.warn(WebsocketConstantMessage.Client.CLOSING_CONNECTION, getURI(), code, reason);
         if (remote) {
-            scheduleReconnect(nextDelay());
+            this.scheduleReconnect(nextDelay());
         }
     }
 
     @Override
     public void onError(Exception exception) {
-        logger.warn(WebsocketConstantMessage.Client.CONNECTION_ERROR, getURI(), exception.getMessage(), exception);
-        scheduleReconnect(nextDelay());
+        this.logger.warn(WebsocketConstantMessage.Client.CONNECTION_ERROR, getURI(), exception.getMessage(), exception);
+        this.scheduleReconnect(nextDelay());
     }
 
     /**
@@ -96,21 +104,21 @@ public class WsClient extends WebSocketClient {
      * @return 延迟时间（秒）
      */
     private long nextDelay() {
-        return Math.min(reconnectInterval * (1L << reconnectTimes.get()), 60);
+        return Math.min(this.reconnectInterval * (1L << this.reconnectTimes.get()), 60);
     }
 
     /**
      * 安排重连任务
      */
     private void scheduleReconnect(long delaySeconds) {
-        if (stopped || reconnectTimes.get() >= reconnectMaxTimes) {
-            logger.info(WebsocketConstantMessage.Client.MAX_RECONNECT_ATTEMPTS_REACHED, getURI());
+        if (this.stopped || this.reconnectTimes.get() >= this.reconnectMaxTimes) {
+            this.logger.info(WebsocketConstantMessage.Client.MAX_RECONNECT_ATTEMPTS_REACHED, getURI());
             return;
         }
-        reconnectTimes.incrementAndGet();
-        logger.debug(WebsocketConstantMessage.Client.RECONNECTING, getURI(), reconnectTimes);
+        this.reconnectTimes.incrementAndGet();
+        this.logger.warn(WebsocketConstantMessage.Client.RECONNECTING, getURI(), reconnectTimes);
         scheduler.schedule(() -> {
-            if (!stopped) super.reconnect();
+            if (!this.stopped) super.reconnect();
         }, delaySeconds, TimeUnit.SECONDS);
     }
 
@@ -118,7 +126,7 @@ public class WsClient extends WebSocketClient {
      * 主动立即重连（适用于 reload 等场景）
      */
     public void reconnectNow() {
-        scheduleReconnect(0);
+        this.scheduleReconnect(0);
     }
 
     /**
@@ -128,19 +136,9 @@ public class WsClient extends WebSocketClient {
      * @param reason 关闭原因
      */
     public void stopWithoutReconnect(int code, String reason) {
-        stopped = true;
-        scheduler.shutdownNow();
+        this.stopped = true;
+        this.scheduler.shutdownNow();
         close(code, reason);
-    }
-
-    @Override
-    public void send(String text) {
-        if (isOpen()) {
-            super.send(text);
-            logger.debug(WebsocketConstantMessage.Client.SEND_MESSAGE, getURI(), text);
-        } else {
-            logger.debug(WebsocketConstantMessage.Client.SEND_MESSAGE_FAILED, getURI(), text);
-        }
     }
 }
 

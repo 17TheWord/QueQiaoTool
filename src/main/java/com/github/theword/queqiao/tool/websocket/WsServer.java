@@ -1,7 +1,7 @@
 package com.github.theword.queqiao.tool.websocket;
 
-import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
+import com.github.theword.queqiao.tool.handle.HandleProtocolMessage;
 import com.github.theword.queqiao.tool.response.Response;
 import com.github.theword.queqiao.tool.utils.GsonUtils;
 import org.java_websocket.WebSocket;
@@ -14,20 +14,22 @@ import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
-import static com.github.theword.queqiao.tool.utils.Tool.debugLog;
-
 
 public class WsServer extends WebSocketServer {
 
     private final String hostName;
     private final int port;
     private Logger logger;
+    private String serverName;
+    private String accessToken;
+    private boolean enabled;
+    private final HandleProtocolMessage handleProtocolMessage = new HandleProtocolMessage();
 
     /**
      * 构造函数
      *
      * @param address 地址
-     * @deprecated 请使用 {@link #WsServer(InetSocketAddress, Logger)} 代替
+     * @deprecated 请使用 {@link #WsServer(InetSocketAddress, Logger, String, String, boolean)} 代替
      */
     @Deprecated
     public WsServer(InetSocketAddress address) {
@@ -40,15 +42,26 @@ public class WsServer extends WebSocketServer {
     /**
      * 构造函数
      *
-     * @param address 地址
-     * @param logger  日志实现
+     * @param address     地址
+     * @param logger      日志实现
+     * @param serverName  服务器名称
+     * @param accessToken 访问令牌 (可选) 如果不需要访问令牌则传入空字符串
      */
-    public WsServer(InetSocketAddress address, Logger logger) {
+    public WsServer(
+            InetSocketAddress address,
+            Logger logger,
+            String serverName,
+            String accessToken,
+            boolean enabled
+    ) {
         super(address);
         super.setReuseAddr(true);
         this.logger = logger;
         this.hostName = address.getHostName();
         this.port = address.getPort();
+        this.serverName = serverName;
+        this.accessToken = accessToken;
+        this.enabled = enabled;
     }
 
     /**
@@ -72,14 +85,14 @@ public class WsServer extends WebSocketServer {
     public void onOpen(WebSocket webSocket, ClientHandshake clientHandshake) {
         String originServerName = clientHandshake.getFieldValue("x-self-name");
         if (originServerName.isEmpty()) {
-            logger.warn(WebsocketConstantMessage.Server.MISSING_SERVER_NAME_HEADER, getClientAddress(webSocket));
+            this.logger.warn(WebsocketConstantMessage.Server.MISSING_SERVER_NAME_HEADER, getClientAddress(webSocket));
             webSocket.close(1008, "Missing X-Self-name Header");
             return;
         }
 
         String clientOrigin = clientHandshake.getFieldValue("x-client-origin");
         if (clientOrigin.equalsIgnoreCase("minecraft")) {
-            logger.warn(WebsocketConstantMessage.Server.INVALID_CLIENT_ORIGIN_HEADER, getClientAddress(webSocket));
+            this.logger.warn(WebsocketConstantMessage.Server.INVALID_CLIENT_ORIGIN_HEADER, getClientAddress(webSocket));
             webSocket.close(1008, "X-Client-Origin Header cannot be minecraft");
             return;
         }
@@ -88,31 +101,31 @@ public class WsServer extends WebSocketServer {
         try {
             serverName = URLDecoder.decode(originServerName, StandardCharsets.UTF_8.toString());
         } catch (UnsupportedEncodingException e) {
-            logger.error(WebsocketConstantMessage.Server.SERVER_NAME_DECODE_FAILED_HEADER, getClientAddress(webSocket), originServerName, e.getMessage());
+            this.logger.error(WebsocketConstantMessage.Server.SERVER_NAME_DECODE_FAILED_HEADER, getClientAddress(webSocket), originServerName, e.getMessage());
             webSocket.close(1008, "X-Self-name Header decode failed");
             return;
         }
 
         if (serverName.isEmpty()) {
-            logger.warn(WebsocketConstantMessage.Server.SERVER_NAME_PARSE_FAILED_HEADER, getClientAddress(webSocket));
+            this.logger.warn(WebsocketConstantMessage.Server.SERVER_NAME_PARSE_FAILED_HEADER, getClientAddress(webSocket));
             webSocket.close(1008, "X-Self-name Header cannot be empty");
             return;
         }
 
-        if (!serverName.equals(GlobalContext.getConfig().getServerName())) {
-            logger.warn(WebsocketConstantMessage.Server.INVALID_SERVER_NAME_HEADER, getClientAddress(webSocket), serverName);
+        if (!serverName.equals(this.serverName)) {
+            this.logger.warn(WebsocketConstantMessage.Server.INVALID_SERVER_NAME_HEADER, getClientAddress(webSocket), serverName);
             webSocket.close(1008, "X-Self-name Header is wrong");
             return;
         }
 
         String accessToken = clientHandshake.getFieldValue("Authorization");
-        if (!GlobalContext.getConfig().getAccessToken().isEmpty() && !accessToken.equals("Bearer " + GlobalContext.getConfig().getAccessToken())) {
-            logger.warn(WebsocketConstantMessage.Server.INVALID_ACCESS_TOKEN_HEADER, getClientAddress(webSocket), accessToken);
+        if (!this.accessToken.isEmpty() && !accessToken.equals("Bearer " + this.accessToken)) {
+            this.logger.warn(WebsocketConstantMessage.Server.INVALID_ACCESS_TOKEN_HEADER, getClientAddress(webSocket), accessToken);
             webSocket.close(1008, "Authorization Header is wrong");
             return;
         }
 
-        logger.info(WebsocketConstantMessage.Server.CLIENT_CONNECTED, getClientAddress(webSocket));
+        this.logger.info(WebsocketConstantMessage.Server.CLIENT_CONNECTED, getClientAddress(webSocket));
     }
 
     /**
@@ -126,7 +139,7 @@ public class WsServer extends WebSocketServer {
     @Override
     public void onClose(WebSocket webSocket, int code, String reason, boolean remote) {
         String closeReason = remote ? WebsocketConstantMessage.Server.CLIENT_DISCONNECTED : WebsocketConstantMessage.Server.CLIENT_HAD_BEEN_DISCONNECTED;
-        logger.info(closeReason, getClientAddress(webSocket));
+        this.logger.info(closeReason, getClientAddress(webSocket));
     }
 
     /**
@@ -137,8 +150,8 @@ public class WsServer extends WebSocketServer {
      */
     @Override
     public void onMessage(WebSocket webSocket, String message) {
-        if (GlobalContext.getConfig().isEnable()) {
-            Response response = GlobalContext.getHandleProtocolMessage().handleWebSocketJson(webSocket, message);
+        if (this.enabled) {
+            Response response = this.handleProtocolMessage.handleWebSocketJson(webSocket, message);
             webSocket.send(GsonUtils.buildGson().toJson(response));
         }
     }
@@ -151,7 +164,7 @@ public class WsServer extends WebSocketServer {
      */
     @Override
     public void onError(WebSocket webSocket, Exception exception) {
-        logger.warn(WebsocketConstantMessage.Server.CONNECTION_ERROR, getClientAddress(webSocket), exception.getMessage());
+        this.logger.warn(WebsocketConstantMessage.Server.CONNECTION_ERROR, getClientAddress(webSocket), exception.getMessage());
     }
 
     /**
@@ -159,18 +172,16 @@ public class WsServer extends WebSocketServer {
      */
     @Override
     public void onStart() {
-        logger.info(WebsocketConstantMessage.Server.SERVER_STARTING, hostName, port);
+        this.logger.info(WebsocketConstantMessage.Server.SERVER_STARTING, hostName, port);
     }
 
     /**
      * 广播消息
-     * 发送内容在debugLog中
      *
      * @param text 消息
      */
     @Override
     public void broadcast(String text) {
         super.broadcast(text);
-        debugLog(WebsocketConstantMessage.Server.BROADCAST_MESSAGE, text);
     }
 }
