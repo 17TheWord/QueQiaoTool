@@ -17,7 +17,7 @@ runs:
         distribution: temurin
 
     - name: Validate Gradle Wrapper
-      uses: gradle/actions/wrapper-validation@v4
+      uses: gradle/actions/wrapper-validation@v9f8e7a6b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f
 
     - name: Make Gradle Wrapper Executable
       shell: bash
