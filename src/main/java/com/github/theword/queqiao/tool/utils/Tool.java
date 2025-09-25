@@ -105,8 +105,9 @@ public class Tool {
     public static void sendWebsocketMessage(BaseEvent event) {
         if (GlobalContext.getConfig().isEnable()) {
             websocketManager.getWsClientList().forEach(wsClient -> wsClient.send(event.getJson()));
-            if (websocketManager.getWsServer() != null)
+            if (websocketManager.getWsServer() != null) {
                 websocketManager.getWsServer().broadcast(event.getJson());
+            }
         }
     }
 
@@ -132,8 +133,9 @@ public class Tool {
      * @param message         消息
      */
     public static void commandReturn(Object commandReturner, String message) {
-        if (commandReturner != null)
+        if (commandReturner != null) {
             handleCommandReturnMessageService.handleCommandReturnMessage(commandReturner, message);
+        }
     }
 
     /**
@@ -143,8 +145,9 @@ public class Tool {
      * @param message 消息
      */
     public static void debugLog(String message) {
-        if (GlobalContext.getConfig().isDebug())
+        if (GlobalContext.getConfig().isDebug()) {
             GlobalContext.getLogger().info(message);
+        }
     }
 
     /**

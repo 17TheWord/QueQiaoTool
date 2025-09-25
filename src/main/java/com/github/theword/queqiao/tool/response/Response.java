@@ -43,7 +43,9 @@ public class Response {
      * 将响应对象序列化为 JSON 字符串，用于发送给客户端。
      *
      * @return 响应的 JSON 表示
+     * @deprecated 请使用 {@link GsonUtils#buildGson()} 代替
      */
+    @Deprecated
     public String getJson() {
         return GsonUtils.buildGson().toJson(this);
     }
@@ -94,5 +96,42 @@ public class Response {
 
     public void setEcho(String echo) {
         this.echo = echo;
+    }
+
+    public static Response success(Object data, String echo) {
+        return new Response(200, ResponseEnum.SUCCESS, "success", data, echo);
+    }
+
+    public static Response success(String message, Object data, String echo) {
+        return new Response(200, ResponseEnum.SUCCESS, message, data, echo);
+    }
+
+    public static Response failed(int code, String message, String echo) {
+        return new Response(code, ResponseEnum.FAILED, message, null, echo);
+    }
+
+    public static Response failed(int code, String message, Object data, String echo) {
+        return new Response(code, ResponseEnum.FAILED, message, data, echo);
+    }
+
+    // Convenience overloads for common uses
+    public static Response success() {
+        return success(null, null);
+    }
+
+    public static Response success(Object data) {
+        return success(data, null);
+    }
+
+    public static Response successMessage(String message) {
+        return success(message, null, null);
+    }
+
+    public static Response failed(int code, String message) {
+        return failed(code, message, (Object) null, null);
+    }
+
+    public static Response failed(String message) {
+        return failed(500, message, (Object) null, null);
     }
 }
