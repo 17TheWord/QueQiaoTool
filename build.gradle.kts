@@ -3,12 +3,18 @@ import org.gradle.external.javadoc.StandardJavadocDocletOptions
 plugins {
     java
     `maven-publish`
+    id("com.diffplug.spotless") version "6.25.0"
+    checkstyle
+    jacoco
 }
 
 group = property("projectGroup")!!
 version = property("projectVersion")!!
 
 java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(8))
+    }
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
     withJavadocJar()
@@ -41,6 +47,7 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport)
 }
 
 tasks.withType<Javadoc> {
@@ -54,6 +61,37 @@ tasks.withType<Javadoc> {
         }
     }
     classpath += sourceSets.main.get().output + sourceSets.main.get().compileClasspath
+}
+
+spotless {
+    java {
+        googleJavaFormat()
+        target("src/main/java/**/*.java", "src/test/java/**/*.java")
+    }
+}
+
+checkstyle {
+    configFile = file("${rootDir}/checkstyle.xml")
+}
+
+tasks.withType<Checkstyle> {
+    reports {
+        xml.required.set(false)
+        html.required.set(true)
+    }
+}
+
+tasks.named("check") {
+    dependsOn("spotlessCheck")
+    dependsOn("jacocoTestReport")
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
 }
 
 publishing {
