@@ -1,17 +1,17 @@
 {
   "name": "Java Development Container",
-  "image": "mcr.microsoft.com/devcontainers/java:0-8",
-  "settings": {
-    "terminal.integrated.shell.linux": "/bin/bash"
-  },
-  "postCreateCommand": "chmod +x ./gradlew && ./gradlew --version && java -version",
-  "extensions": [
-    "vscjava.vscode-java-pack",
-    "vscjava.vscode-gradle",
-    "redhat.vscode-yaml",
-
-    "PKief.material-icon-theme",
-    "oderwat.indent-rainbow",
-    "esbenp.prettier-vscode"
-  ]
+  "image": "mcr.microsoft.com/devcontainers/java:8",
+  "postCreateCommand": "sudo chmod +x ./gradlew && ./gradlew --version",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "oderwat.indent-rainbow",
+        "tamasfe.even-better-toml",
+        "redhat.vscode-yaml",
+        "frostime.git-emoji-frostime",
+        "PKief.material-icon-theme"
+      ]
+    }
+  }
 }
