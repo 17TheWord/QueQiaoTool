@@ -17,7 +17,7 @@ jobs:
       - name: Setup Java & Gradle
         uses: ./.github/actions/set-java
         with:
-          java-version: '11'
+          java-version: '17'
 
       - name: Run Check
         run: ./gradlew check
