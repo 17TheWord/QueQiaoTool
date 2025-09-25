@@ -13,35 +13,35 @@ import java.util.UUID;
  */
 public interface HandleApiService {
 
-  /**
-   * API: broadcast / send_msg
-   *
-   * @param messageList 消息列表
-   */
-  void handleBroadcastMessage(List<MessageSegment> messageList);
+    /**
+     * API: broadcast / send_msg
+     *
+     * @param messageList 消息列表
+     */
+    void handleBroadcastMessage(List<MessageSegment> messageList);
 
-  /**
-   * API: send_title
-   *
-   * @param titlePayload Title
-   */
-  void handleSendTitleMessage(TitlePayload titlePayload);
+    /**
+     * API: send_title
+     *
+     * @param titlePayload Title
+     */
+    void handleSendTitleMessage(TitlePayload titlePayload);
 
-  /**
-   * API: send_actionbar
-   *
-   * @param messageList Action Bar 消息列表
-   */
-  void handleSendActionBarMessage(List<MessageSegment> messageList);
+    /**
+     * API: send_actionbar
+     *
+     * @param messageList Action Bar 消息列表
+     */
+    void handleSendActionBarMessage(List<MessageSegment> messageList);
 
-  /**
-   * API: send_private_msg
-   *
-   * @param nickname 目标玩家名
-   * @param uuid 目标 UUID
-   * @param messageList 消息列表
-   * @return 私聊消息响应 {@link PrivateMessageResponse}
-   */
-  PrivateMessageResponse handleSendPrivateMessage(
-      String nickname, UUID uuid, List<MessageSegment> messageList);
+    /**
+     * API: send_private_msg
+     *
+     * @param nickname    目标玩家名
+     * @param uuid        目标 UUID
+     * @param messageList 消息列表
+     * @return 私聊消息响应 {@link PrivateMessageResponse}
+     */
+    PrivateMessageResponse handleSendPrivateMessage(
+                                                    String nickname, UUID uuid, List<MessageSegment> messageList);
 }

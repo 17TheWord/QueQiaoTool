@@ -9,16 +9,16 @@ package com.github.theword.queqiao.tool.event.base;
  */
 public class BasePlayerChatEvent extends BaseMessageEvent {
 
-  /**
-   * 构造函数
-   *
-   * @param eventName 事件名称
-   * @param messageId 消息ID，预留字段，目前为空
-   * @param player 发送消息的玩家
-   * @param message 消息内容
-   */
-  public BasePlayerChatEvent(
-      String eventName, String messageId, BasePlayer player, String message) {
-    super(eventName, "chat", messageId, player, message);
-  }
+    /**
+     * 构造函数
+     *
+     * @param eventName 事件名称
+     * @param messageId 消息ID，预留字段，目前为空
+     * @param player    发送消息的玩家
+     * @param message   消息内容
+     */
+    public BasePlayerChatEvent(
+                               String eventName, String messageId, BasePlayer player, String message) {
+        super(eventName, "chat", messageId, player, message);
+    }
 }
