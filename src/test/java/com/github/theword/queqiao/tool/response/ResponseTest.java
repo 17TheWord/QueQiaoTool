@@ -5,15 +5,13 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 class ResponseTest {
 
-    Logger logger = LoggerFactory.getLogger(getClass());
+  Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Test
-    void getJson() {
-        Response response = new Response(200, ResponseEnum.SUCCESS, "success", null, null);
-        logger.info(GsonUtils.buildGson().toJson(response));
-    }
-
+  @Test
+  void getJson() {
+    Response response = new Response(200, ResponseEnum.SUCCESS, "success", null, null);
+    logger.info(GsonUtils.buildGson().toJson(response));
+  }
 }
