@@ -2,7 +2,7 @@ name: Test
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [ opened, synchronize ]
 
 jobs:
   test:
@@ -17,7 +17,13 @@ jobs:
       - name: Setup Java & Gradle
         uses: ./.github/actions/set-java
         with:
-          java-version: '8'
+          java-version: '11'
 
-      - name: Run All Checks
+      - name: Run Check
         run: ./gradlew check
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: build/reports/jacoco/test/jacocoTestReport.xml

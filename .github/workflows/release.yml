@@ -24,7 +24,7 @@ jobs:
       - name: Setup Java & Gradle
         uses: ./.github/actions/set-java
         with:
-          java-version: '8'
+          java-version: '11'
 
       - name: Check if Release exists
         id: check_release
@@ -33,6 +33,9 @@ jobs:
             echo "Release v${{ env.VERSION }} already exists. Exiting gracefully."
             exit 0
           fi
+
+      - name: Run All Checks (Spotless, Checkstyle, Test)
+        run: ./gradlew check
 
       - name: Build and Publish with Gradle
         run: ./gradlew publish
