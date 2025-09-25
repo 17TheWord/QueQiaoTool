@@ -1,6 +1,6 @@
 {
   "name": "Java Development Container",
-  "image": "mcr.microsoft.com/devcontainers/java:8",
+  "image": "mcr.microsoft.com/devcontainers/java:17",
   "postCreateCommand": "sudo chmod +x ./gradlew && ./gradlew --version",
   "customizations": {
     "vscode": {
@@ -9,6 +9,7 @@
         "oderwat.indent-rainbow",
         "tamasfe.even-better-toml",
         "redhat.vscode-yaml",
+        "redhat.vscode-xml",
         "frostime.git-emoji-frostime",
         "PKief.material-icon-theme"
       ],

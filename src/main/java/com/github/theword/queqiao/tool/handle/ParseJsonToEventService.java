@@ -11,27 +11,27 @@ import java.util.List;
  */
 public interface ParseJsonToEventService {
 
-  /**
-   * 解析消息段列表
-   *
-   * @param messageList MessageSegment 消息列表 {@link MessageSegment}
-   * @return Object 服务端具体文本组件
-   */
-  Object parseMessageListToComponent(List<MessageSegment> messageList);
+    /**
+     * 解析消息段列表
+     *
+     * @param messageList MessageSegment 消息列表 {@link MessageSegment}
+     * @return Object 服务端具体文本组件
+     */
+    Object parseMessageListToComponent(List<MessageSegment> messageList);
 
-  /**
-   * 解析消息
-   *
-   * @param message 统一自定义文本组件 {@link CommonBaseComponent}
-   * @return 服务端具体文本组件
-   */
-  Object parsePerMessageToComponent(CommonBaseComponent message);
+    /**
+     * 解析消息
+     *
+     * @param message 统一自定义文本组件 {@link CommonBaseComponent}
+     * @return 服务端具体文本组件
+     */
+    Object parsePerMessageToComponent(CommonBaseComponent message);
 
-  /**
-   * 解析基础聊天组件列表
-   *
-   * @param message 统一自定义聊天组件列表 {@link CommonBaseComponent}
-   * @return 服务端具体文本组件
-   */
-  Object parseCommonBaseComponentListToComponent(List<CommonBaseComponent> message);
+    /**
+     * 解析基础聊天组件列表
+     *
+     * @param message 统一自定义聊天组件列表 {@link CommonBaseComponent}
+     * @return 服务端具体文本组件
+     */
+    Object parseCommonBaseComponentListToComponent(List<CommonBaseComponent> message);
 }

@@ -9,18 +9,18 @@ package com.github.theword.queqiao.tool.event.base;
  */
 public class BaseNoticeEvent extends BaseEvent {
 
-  /** 触发事件的玩家 */
-  private final BasePlayer player;
+    /** 触发事件的玩家 */
+    private final BasePlayer player;
 
-  /**
-   * 构造函数
-   *
-   * @param eventName 事件名称
-   * @param subType 事件子类型
-   * @param player 触发事件的玩家
-   */
-  public BaseNoticeEvent(String eventName, String subType, BasePlayer player) {
-    super(eventName, "notice", subType);
-    this.player = player;
-  }
+    /**
+     * 构造函数
+     *
+     * @param eventName 事件名称
+     * @param subType   事件子类型
+     * @param player    触发事件的玩家
+     */
+    public BaseNoticeEvent(String eventName, String subType, BasePlayer player) {
+        super(eventName, "notice", subType);
+        this.player = player;
+    }
 }

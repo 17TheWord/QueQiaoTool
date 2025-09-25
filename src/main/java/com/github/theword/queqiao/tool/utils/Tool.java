@@ -16,166 +16,164 @@ import org.slf4j.LoggerFactory;
  * <p>持有全局静态对象与公共工具方法，例如日志、配置、WebSocket 管理等。
  */
 public class Tool {
-  /**
-   * 日志
-   *
-   * @deprecated 请使用 {@link GlobalContext#getLogger()} 代替
-   */
-  @Deprecated public static Logger logger = null;
+    /**
+     * 日志
+     *
+     * @deprecated 请使用 {@link GlobalContext#getLogger()} 代替
+     */
+    @Deprecated
+    public static Logger logger = null;
 
-  /**
-   * 配置项
-   *
-   * @deprecated 请使用 {@link GlobalContext#getConfig()} 代替
-   */
-  @Deprecated public static Config config = null;
+    /**
+     * 配置项
+     *
+     * @deprecated 请使用 {@link GlobalContext#getConfig()} 代替
+     */
+    @Deprecated
+    public static Config config = null;
 
-  /**
-   * 服务端版本（初始化时设置）
-   *
-   * @deprecated 请使用 {@link GlobalContext#getServerVersion()} 代替
-   */
-  @Deprecated public static String SERVER_VERSION = "Unknown";
+    /**
+     * 服务端版本（初始化时设置）
+     *
+     * @deprecated 请使用 {@link GlobalContext#getServerVersion()} 代替
+     */
+    @Deprecated
+    public static String SERVER_VERSION = "Unknown";
 
-  /**
-   * 服务端类型（初始化时设置）
-   *
-   * @deprecated 请使用 {@link GlobalContext#getServerType()} 代替
-   */
-  @Deprecated public static String SERVER_TYPE = "Unknown";
+    /**
+     * 服务端类型（初始化时设置）
+     *
+     * @deprecated 请使用 {@link GlobalContext#getServerType()} 代替
+     */
+    @Deprecated
+    public static String SERVER_TYPE = "Unknown";
 
-  /**
-   * Websocket 管理器
-   *
-   * @deprecated 请使用 {@link GlobalContext#getWebsocketManager()} 代替
-   */
-  @Deprecated public static WebsocketManager websocketManager = null;
+    /**
+     * Websocket 管理器
+     *
+     * @deprecated 请使用 {@link GlobalContext#getWebsocketManager()} 代替
+     */
+    @Deprecated
+    public static WebsocketManager websocketManager = null;
 
-  /**
-   * api 消息处理
-   *
-   * @deprecated 请使用 {@link GlobalContext#getHandleApiService()} 代替
-   */
-  @Deprecated public static HandleApiService handleApiService = null;
+    /**
+     * api 消息处理
+     *
+     * @deprecated 请使用 {@link GlobalContext#getHandleApiService()} 代替
+     */
+    @Deprecated
+    public static HandleApiService handleApiService = null;
 
-  /**
-   * 命令消息处理
-   *
-   * @deprecated 请使用 {@link GlobalContext#getHandleCommandReturnMessageService()} 代替
-   */
-  @Deprecated
-  public static HandleCommandReturnMessageService handleCommandReturnMessageService = null;
+    /**
+     * 命令消息处理
+     *
+     * @deprecated 请使用 {@link GlobalContext#getHandleCommandReturnMessageService()} 代替
+     */
+    @Deprecated
+    public static HandleCommandReturnMessageService handleCommandReturnMessageService = null;
 
-  /**
-   * 组件初始化，以组件名作为日志名； 根据服务端类型读取配置文件与初始化配置项； 初始化 Websocket 管理器； 初始化 api 消息处理与命令消息处理； 初始化完成后，打印初始化完成日志
-   *
-   * @param isModServer 是否为模组服务器
-   * @param serverVersion 服务端版本
-   * @param serverType 服务端类型
-   * @param handleApiImpl api消息处理
-   * @param handleCommandReturnMessageImpl 命令消息处理
-   * @deprecated 请使用 {@link GlobalContext#init(boolean, String, String, HandleApiService,
-   *     HandleCommandReturnMessageService)} 代替
-   */
-  @Deprecated
-  public static void initTool(
-      boolean isModServer,
-      String serverVersion,
-      String serverType,
-      HandleApiService handleApiImpl,
-      HandleCommandReturnMessageService handleCommandReturnMessageImpl) {
-    logger = LoggerFactory.getLogger(BaseConstant.MODULE_NAME);
-    logger.info(BaseConstant.LAUNCHING);
-    config = Config.loadConfig(isModServer);
-    SERVER_VERSION = serverVersion;
-    SERVER_TYPE = serverType;
-    websocketManager = new WebsocketManager();
-    handleApiService = handleApiImpl;
-    handleCommandReturnMessageService = handleCommandReturnMessageImpl;
-    logger.info(BaseConstant.INITIALIZED);
-  }
-
-  /**
-   * 发送消息 同时向所有 Websocket 客户端和服务端广播消息
-   *
-   * @param event 任何继承于 BaseEvent 的事件
-   * @deprecated 请使用 {@link GlobalContext#getWebsocketManager()} 和 {@link
-   *     WebsocketManager#sendEvent(com.github.theword.queqiao.tool.event.base.BaseEvent)} 代替
-   */
-  @Deprecated
-  public static void sendWebsocketMessage(BaseEvent event) {
-    if (GlobalContext.getConfig().isEnable()) {
-      websocketManager.getWsClientList().forEach(wsClient -> wsClient.send(event.getJson()));
-      if (websocketManager.getWsServer() != null) {
-        websocketManager.getWsServer().broadcast(event.getJson());
-      }
+    /**
+     * 组件初始化，以组件名作为日志名； 根据服务端类型读取配置文件与初始化配置项； 初始化 Websocket 管理器； 初始化 api 消息处理与命令消息处理； 初始化完成后，打印初始化完成日志
+     *
+     * @param isModServer                    是否为模组服务器
+     * @param serverVersion                  服务端版本
+     * @param serverType                     服务端类型
+     * @param handleApiImpl                  api消息处理
+     * @param handleCommandReturnMessageImpl 命令消息处理
+     * @deprecated 请使用 {@link GlobalContext#init(boolean, String, String, HandleApiService,
+     *             HandleCommandReturnMessageService)} 代替
+     */
+    @Deprecated
+    public static void initTool(
+                                boolean isModServer, String serverVersion, String serverType, HandleApiService handleApiImpl, HandleCommandReturnMessageService handleCommandReturnMessageImpl) {
+        logger = LoggerFactory.getLogger(BaseConstant.MODULE_NAME);
+        logger.info(BaseConstant.LAUNCHING);
+        config = Config.loadConfig(isModServer);
+        SERVER_VERSION = serverVersion;
+        SERVER_TYPE = serverType;
+        websocketManager = new WebsocketManager();
+        handleApiService = handleApiImpl;
+        handleCommandReturnMessageService = handleCommandReturnMessageImpl;
+        logger.info(BaseConstant.INITIALIZED);
     }
-  }
 
-  /**
-   * 判断是否为注册或登录命令
-   *
-   * @param command 命令
-   * @return 是否为注册或登录命令，如果是，返回空字符串
-   */
-  public static String isRegisterOrLoginCommand(String command) {
-    if (command.startsWith("/")) command = command.substring(1);
-    if (command.startsWith("l ")
-        || command.startsWith("login ")
-        || command.startsWith("register ")
-        || command.startsWith("reg ")
-        || command.startsWith(BaseConstant.COMMAND_HEADER + " ")) return "";
-    return command;
-  }
-
-  /**
-   * 命令返回 当有执行者时，向执行者返回相应的消息作回执
-   *
-   * @param commandReturner 命令返回
-   * @param message 消息
-   */
-  public static void commandReturn(Object commandReturner, String message) {
-    if (commandReturner != null) {
-      handleCommandReturnMessageService.handleCommandReturnMessage(commandReturner, message);
+    /**
+     * 发送消息 同时向所有 Websocket 客户端和服务端广播消息
+     *
+     * @param event 任何继承于 BaseEvent 的事件
+     * @deprecated 请使用 {@link GlobalContext#getWebsocketManager()} 和 {@link
+     *             WebsocketManager#sendEvent(com.github.theword.queqiao.tool.event.base.BaseEvent)} 代替
+     */
+    @Deprecated
+    public static void sendWebsocketMessage(BaseEvent event) {
+        if (GlobalContext.getConfig().isEnable()) {
+            websocketManager.getWsClientList().forEach(wsClient -> wsClient.send(event.getJson()));
+            if (websocketManager.getWsServer() != null) {
+                websocketManager.getWsServer().broadcast(event.getJson());
+            }
+        }
     }
-  }
 
-  /**
-   * DEBUG模式 用于输出更多内容
-   *
-   * @param message 消息
-   */
-  public static void debugLog(String message) {
-    if (GlobalContext.getConfig().isDebug()) {
-      GlobalContext.getLogger().info(message);
+    /**
+     * 判断是否为注册或登录命令
+     *
+     * @param command 命令
+     * @return 是否为注册或登录命令，如果是，返回空字符串
+     */
+    public static String isRegisterOrLoginCommand(String command) {
+        if (command.startsWith("/")) command = command.substring(1);
+        if (command.startsWith("l ") || command.startsWith("login ") || command.startsWith("register ") || command.startsWith("reg ") || command.startsWith(BaseConstant.COMMAND_HEADER + " "))
+            return "";
+        return command;
     }
-  }
 
-  /**
-   * DEBUG模式 用于输出更多内容
-   *
-   * @param format 格式
-   * @param args 参数
-   */
-  public static void debugLog(String format, Object... args) {
-    if (GlobalContext.getConfig().isDebug()) {
-      GlobalContext.getLogger().info(format, args);
+    /**
+     * 命令返回 当有执行者时，向执行者返回相应的消息作回执
+     *
+     * @param commandReturner 命令返回
+     * @param message         消息
+     */
+    public static void commandReturn(Object commandReturner, String message) {
+        if (commandReturner != null) {
+            handleCommandReturnMessageService.handleCommandReturnMessage(commandReturner, message);
+        }
     }
-  }
 
-  /**
-   * 获取发送消息的前缀字符
-   *
-   * <p>可通过配置文件自定义
-   *
-   * <p>默认为：鹊桥
-   *
-   * @return 前缀
-   */
-  public static CommonTextComponent getPrefixComponent() {
-    CommonTextComponent CommonTextComponent =
-        new CommonTextComponent(GlobalContext.getConfig().getMessagePrefix());
-    CommonTextComponent.setColor("yellow");
-    return CommonTextComponent;
-  }
+    /**
+     * DEBUG模式 用于输出更多内容
+     *
+     * @param message 消息
+     */
+    public static void debugLog(String message) {
+        if (GlobalContext.getConfig().isDebug()) {
+            GlobalContext.getLogger().info(message);
+        }
+    }
+
+    /**
+     * DEBUG模式 用于输出更多内容
+     *
+     * @param format 格式
+     * @param args   参数
+     */
+    public static void debugLog(String format, Object... args) {
+        if (GlobalContext.getConfig().isDebug()) {
+            GlobalContext.getLogger().info(format, args);
+        }
+    }
+
+    /**
+     * 获取发送消息的前缀字符
+     *
+     * <p>可通过配置文件自定义
+     *
+     * <p>默认为：鹊桥
+     *
+     * @return 前缀
+     */
+    public static CommonTextComponent getPrefixComponent() {
+        CommonTextComponent CommonTextComponent = new CommonTextComponent(GlobalContext.getConfig().getMessagePrefix());
+        CommonTextComponent.setColor("yellow");
+        return CommonTextComponent;
+    }
 }

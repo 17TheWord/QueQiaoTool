@@ -12,23 +12,18 @@ import java.lang.reflect.Modifier;
 /** Gson Utils */
 public class GsonUtils {
 
-  /**
-   * Gson builder with custom deserializer
-   *
-   * <p>adapter: {@link MessagePayloadDeserializer}
-   *
-   * <p>adapter: {@link TitlePayloadDeserializer}
-   *
-   * <p>excludeFieldsWithModifiers: {@link Modifier#STATIC}
-   *
-   * @return Gson
-   */
-  public static Gson buildGson() {
-    return new GsonBuilder()
-        .registerTypeAdapter(MessagePayload.class, new MessagePayloadDeserializer())
-        .registerTypeAdapter(TitlePayload.class, new TitlePayloadDeserializer())
-        .registerTypeAdapter(PrivateMessagePayload.class, new MessagePayloadDeserializer())
-        .excludeFieldsWithModifiers(Modifier.STATIC, Modifier.TRANSIENT)
-        .create();
-  }
+    /**
+     * Gson builder with custom deserializer
+     *
+     * <p>adapter: {@link MessagePayloadDeserializer}
+     *
+     * <p>adapter: {@link TitlePayloadDeserializer}
+     *
+     * <p>excludeFieldsWithModifiers: {@link Modifier#STATIC}
+     *
+     * @return Gson
+     */
+    public static Gson buildGson() {
+        return new GsonBuilder().registerTypeAdapter(MessagePayload.class, new MessagePayloadDeserializer()).registerTypeAdapter(TitlePayload.class, new TitlePayloadDeserializer()).registerTypeAdapter(PrivateMessagePayload.class, new MessagePayloadDeserializer()).excludeFieldsWithModifiers(Modifier.STATIC, Modifier.TRANSIENT).create();
+    }
 }

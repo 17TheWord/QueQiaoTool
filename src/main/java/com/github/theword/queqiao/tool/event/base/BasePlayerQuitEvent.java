@@ -9,13 +9,13 @@ package com.github.theword.queqiao.tool.event.base;
  */
 public class BasePlayerQuitEvent extends BaseNoticeEvent {
 
-  /**
-   * 构造函数
-   *
-   * @param eventName 事件名称
-   * @param player 触发事件的玩家
-   */
-  public BasePlayerQuitEvent(String eventName, BasePlayer player) {
-    super(eventName, "quit", player);
-  }
+    /**
+     * 构造函数
+     *
+     * @param eventName 事件名称
+     * @param player    触发事件的玩家
+     */
+    public BasePlayerQuitEvent(String eventName, BasePlayer player) {
+        super(eventName, "quit", player);
+    }
 }

@@ -64,7 +64,7 @@ tasks.withType<Javadoc> {
 
 spotless {
     java {
-        googleJavaFormat()
+        eclipse().configFile("formatter-custom.xml")
         target("src/main/java/**/*.java", "src/test/java/**/*.java")
     }
 }

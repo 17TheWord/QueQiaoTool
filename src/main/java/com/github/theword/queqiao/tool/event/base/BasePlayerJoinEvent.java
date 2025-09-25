@@ -9,13 +9,13 @@ package com.github.theword.queqiao.tool.event.base;
  */
 public class BasePlayerJoinEvent extends BaseNoticeEvent {
 
-  /**
-   * 构造函数
-   *
-   * @param eventName 事件名称
-   * @param player 触发事件的玩家
-   */
-  public BasePlayerJoinEvent(String eventName, BasePlayer player) {
-    super(eventName, "join", player);
-  }
+    /**
+     * 构造函数
+     *
+     * @param eventName 事件名称
+     * @param player    触发事件的玩家
+     */
+    public BasePlayerJoinEvent(String eventName, BasePlayer player) {
+        super(eventName, "join", player);
+    }
 }
