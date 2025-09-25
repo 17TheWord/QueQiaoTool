@@ -1,6 +1,6 @@
 {
   "name": "Java Development Container",
-  "image": "mcr.microsoft.com/devcontainers/java:8",
+  "image": "mcr.microsoft.com/devcontainers/java:17",
   "postCreateCommand": "sudo chmod +x ./gradlew && ./gradlew --version",
   "customizations": {
     "vscode": {
