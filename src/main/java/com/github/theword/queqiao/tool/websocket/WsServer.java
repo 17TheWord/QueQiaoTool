@@ -19,25 +19,11 @@ public class WsServer extends WebSocketServer {
 
     private final String hostName;
     private final int port;
-    private Logger logger;
-    private String serverName;
-    private String accessToken;
-    private boolean enabled;
-    private final HandleProtocolMessage handleProtocolMessage = new HandleProtocolMessage();
-
-    /**
-     * 构造函数
-     *
-     * @param address 地址
-     * @deprecated 请使用 {@link #WsServer(InetSocketAddress, Logger, String, String, boolean)} 代替
-     */
-    @Deprecated
-    public WsServer(InetSocketAddress address) {
-        super(address);
-        super.setReuseAddr(true);
-        this.hostName = address.getHostName();
-        this.port = address.getPort();
-    }
+    private final Logger logger;
+    private final String serverName;
+    private final String accessToken;
+    private final boolean enabled;
+    private final HandleProtocolMessage handleProtocolMessage;
 
     /**
      * 构造函数
@@ -62,6 +48,7 @@ public class WsServer extends WebSocketServer {
         this.serverName = serverName;
         this.accessToken = accessToken;
         this.enabled = enabled;
+        this.handleProtocolMessage = new HandleProtocolMessage(logger);
     }
 
     /**
@@ -151,8 +138,10 @@ public class WsServer extends WebSocketServer {
     @Override
     public void onMessage(WebSocket webSocket, String message) {
         if (this.enabled) {
-            Response response = this.handleProtocolMessage.handleWebSocketJson(webSocket, message);
-            webSocket.send(GsonUtils.buildGson().toJson(response));
+            String response = this.handleProtocolMessage.handleWebsocketJson(webSocket, message);
+            if (response != null && !response.isEmpty()) {
+                webSocket.send(response);
+            }
         }
     }
 

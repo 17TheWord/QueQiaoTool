@@ -14,7 +14,6 @@ public class GlobalContext {
     private static Logger logger;
     private static WebsocketManager websocketManager;
     private static HandleApiService handleApiService;
-    private static HandleProtocolMessage handleProtocolMessage;
     private static HandleCommandReturnMessageService handleCommandReturnMessageService;
     private static String serverVersion;
     private static String serverType;
@@ -33,7 +32,6 @@ public class GlobalContext {
         GlobalContext.serverType = serverType;
         websocketManager = new WebsocketManager();
         handleApiService = handleApiImpl;
-        handleProtocolMessage = new HandleProtocolMessage();
         handleCommandReturnMessageService = handleCommandReturnMessageImpl;
         logger.info(BaseConstant.INITIALIZED);
         websocketManager.startWebsocket(null);
@@ -61,10 +59,6 @@ public class GlobalContext {
 
     public static HandleApiService getHandleApiService() {
         return handleApiService;
-    }
-
-    public static HandleProtocolMessage getHandleProtocolMessage() {
-        return handleProtocolMessage;
     }
 
     public static HandleCommandReturnMessageService getHandleCommandReturnMessageService() {

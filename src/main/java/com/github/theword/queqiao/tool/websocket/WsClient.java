@@ -25,7 +25,7 @@ public class WsClient extends WebSocketClient {
 
     private final Logger logger;
     private final boolean enabled;
-    private final HandleProtocolMessage handleProtocolMessage = new HandleProtocolMessage();
+    private final HandleProtocolMessage handleProtocolMessage;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
@@ -59,6 +59,7 @@ public class WsClient extends WebSocketClient {
         this.reconnectMaxTimes = reconnectMaxTimes;
         this.reconnectInterval = reconnectInterval;
         this.enabled = enabled;
+        this.handleProtocolMessage = new HandleProtocolMessage(logger);
         try {
             this.addHeader("x-self-name", URLEncoder.encode(serverName, StandardCharsets.UTF_8.toString()));
         } catch (UnsupportedEncodingException e) {
@@ -79,8 +80,10 @@ public class WsClient extends WebSocketClient {
     @Override
     public void onMessage(String message) {
         if (this.enabled) {
-            Response response = this.handleProtocolMessage.handleWebSocketJson(this, message);
-            this.send(GsonUtils.buildGson().toJson(response));
+            String response = this.handleProtocolMessage.handleWebsocketJson(this, message);
+            if (response != null && !response.isEmpty()) {
+                send(response);
+            }
         }
     }
 
