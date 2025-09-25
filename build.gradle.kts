@@ -3,6 +3,9 @@ import org.gradle.external.javadoc.StandardJavadocDocletOptions
 plugins {
     java
     `maven-publish`
+    id("com.diffplug.spotless") version "6.25.0"
+    checkstyle
+    jacoco
 }
 
 group = property("projectGroup")!!
@@ -37,10 +40,12 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:${property("junitJupiterApiVersion")}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${property("junitJupiterApiVersion")}")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:${property("junitJupiterPlatformLauncherVersion")}")
 }
 
 tasks.test {
     useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport)
 }
 
 tasks.withType<Javadoc> {
@@ -54,6 +59,37 @@ tasks.withType<Javadoc> {
         }
     }
     classpath += sourceSets.main.get().output + sourceSets.main.get().compileClasspath
+}
+
+spotless {
+    java {
+        googleJavaFormat()
+        target("src/main/java/**/*.java", "src/test/java/**/*.java")
+    }
+}
+
+checkstyle {
+    configFile = file("${rootDir}/checkstyle.xml")
+}
+
+tasks.withType<Checkstyle> {
+    reports {
+        xml.required.set(false)
+        html.required.set(true)
+    }
+}
+
+tasks.named("check") {
+    dependsOn("spotlessCheck")
+    dependsOn("jacocoTestReport")
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
 }
 
 publishing {

@@ -7,29 +7,28 @@ import com.github.theword.queqiao.tool.payload.PrivateMessagePayload;
 import com.github.theword.queqiao.tool.payload.TitlePayload;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
 import java.lang.reflect.Modifier;
 
-/**
- * Gson Utils
- */
+/** Gson Utils */
 public class GsonUtils {
 
-    /**
-     * Gson builder with custom deserializer
-     * <p> adapter: {@link MessagePayloadDeserializer} </p>
-     * <p> adapter: {@link TitlePayloadDeserializer} </p>
-     * <p> excludeFieldsWithModifiers: {@link Modifier#STATIC} </p>
-     *
-     * @return Gson
-     */
-    public static Gson buildGson() {
-        return new GsonBuilder()
-                .registerTypeAdapter(MessagePayload.class, new MessagePayloadDeserializer())
-                .registerTypeAdapter(TitlePayload.class, new TitlePayloadDeserializer())
-                .registerTypeAdapter(PrivateMessagePayload.class, new MessagePayloadDeserializer())
-                .excludeFieldsWithModifiers(Modifier.STATIC, Modifier.TRANSIENT)
-                .create();
-    }
-
+  /**
+   * Gson builder with custom deserializer
+   *
+   * <p>adapter: {@link MessagePayloadDeserializer}
+   *
+   * <p>adapter: {@link TitlePayloadDeserializer}
+   *
+   * <p>excludeFieldsWithModifiers: {@link Modifier#STATIC}
+   *
+   * @return Gson
+   */
+  public static Gson buildGson() {
+    return new GsonBuilder()
+        .registerTypeAdapter(MessagePayload.class, new MessagePayloadDeserializer())
+        .registerTypeAdapter(TitlePayload.class, new TitlePayloadDeserializer())
+        .registerTypeAdapter(PrivateMessagePayload.class, new MessagePayloadDeserializer())
+        .excludeFieldsWithModifiers(Modifier.STATIC, Modifier.TRANSIENT)
+        .create();
+  }
 }

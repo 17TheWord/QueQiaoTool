@@ -18,7 +18,10 @@ jobs:
       - name: Setup Java & Gradle
         uses: ./.github/actions/set-java
         with:
-          java-version: '8'
+          java-version: '17'
+
+      - name: Run All Checks (Spotless, Checkstyle, Test)
+        run: ./gradlew check
 
       - name: Generate Javadoc
         run: ./gradlew javadoc

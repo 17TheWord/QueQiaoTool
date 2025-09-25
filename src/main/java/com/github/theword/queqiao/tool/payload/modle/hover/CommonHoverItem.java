@@ -1,65 +1,60 @@
 package com.github.theword.queqiao.tool.payload.modle.hover;
 
-
 public class CommonHoverItem {
-    /**
-     * Spigot, Forge, Fabric
-     * <p>
-     * 使用int类型时，转一次类型
-     */
-    String id;
-    /**
-     * Spigot, Forge, Fabric
-     */
-    Integer count;
-    /**
-     * Spigot
-     */
-    String tag;
-    /**
-     * Velocity
-     */
-    String key;
+  /**
+   * Spigot, Forge, Fabric
+   *
+   * <p>使用int类型时，转一次类型
+   */
+  String id;
 
-    public CommonHoverItem() {
-    }
+  /** Spigot, Forge, Fabric */
+  Integer count;
 
-    public CommonHoverItem(String id, Integer count, String tag, String key) {
-        this.id = id;
-        this.count = count;
-        this.tag = tag;
-        this.key = key;
-    }
+  /** Spigot */
+  String tag;
 
-    public String getId() {
-        return id;
-    }
+  /** Velocity */
+  String key;
 
-    public void setId(String id) {
-        this.id = id;
-    }
+  public CommonHoverItem() {}
 
-    public Integer getCount() {
-        return count;
-    }
+  public CommonHoverItem(String id, Integer count, String tag, String key) {
+    this.id = id;
+    this.count = count;
+    this.tag = tag;
+    this.key = key;
+  }
 
-    public void setCount(Integer count) {
-        this.count = count;
-    }
+  public String getId() {
+    return id;
+  }
 
-    public String getTag() {
-        return tag;
-    }
+  public void setId(String id) {
+    this.id = id;
+  }
 
-    public void setTag(String tag) {
-        this.tag = tag;
-    }
+  public Integer getCount() {
+    return count;
+  }
 
-    public String getKey() {
-        return key;
-    }
+  public void setCount(Integer count) {
+    this.count = count;
+  }
 
-    public void setKey(String key) {
-        this.key = key;
-    }
+  public String getTag() {
+    return tag;
+  }
+
+  public void setTag(String tag) {
+    this.tag = tag;
+  }
+
+  public String getKey() {
+    return key;
+  }
+
+  public void setKey(String key) {
+    this.key = key;
+  }
 }

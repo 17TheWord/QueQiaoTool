@@ -1,80 +1,73 @@
 package com.github.theword.queqiao.tool.payload.modle.hover;
 
 import com.github.theword.queqiao.tool.payload.modle.component.CommonBaseComponent;
-
 import java.util.List;
 import java.util.UUID;
 
 public class CommonHoverEntity {
-    /**
-     * Spigot, Forge, Fabric
-     */
-    String type;
-    /**
-     * Spigot
-     */
-    String id;
-    /**
-     * Spigot, Forge, Fabric
-     */
-    List<CommonBaseComponent> name;
-    /**
-     * Velocity
-     */
-    UUID uuid;
-    /**
-     * Velocity
-     */
-    String key;
+  /** Spigot, Forge, Fabric */
+  String type;
 
-    public String getType() {
-        return type;
-    }
+  /** Spigot */
+  String id;
 
-    public void setType(String type) {
-        this.type = type;
-    }
+  /** Spigot, Forge, Fabric */
+  List<CommonBaseComponent> name;
 
-    public String getId() {
-        return id;
-    }
+  /** Velocity */
+  UUID uuid;
 
-    public void setId(String id) {
-        this.id = id;
-    }
+  /** Velocity */
+  String key;
 
-    public List<CommonBaseComponent> getName() {
-        return name;
-    }
+  public String getType() {
+    return type;
+  }
 
-    public void setName(List<CommonBaseComponent> name) {
-        this.name = name;
-    }
+  public void setType(String type) {
+    this.type = type;
+  }
 
-    public UUID getUuid() {
-        return uuid;
-    }
+  public String getId() {
+    return id;
+  }
 
-    public void setUuid(UUID uuid) {
-        this.uuid = uuid;
-    }
+  public void setId(String id) {
+    this.id = id;
+  }
 
-    public String getKey() {
-        return key;
-    }
+  public List<CommonBaseComponent> getName() {
+    return name;
+  }
 
-    public void setKey(String key) {
-        this.key = key;
-    }
+  public void setName(List<CommonBaseComponent> name) {
+    this.name = name;
+  }
 
-    public CommonHoverEntity() {
-    }
+  public UUID getUuid() {
+    return uuid;
+  }
 
-    public CommonHoverEntity(String type, String id, List<CommonBaseComponent> name, UUID uuid, String key) {
-        this.type = type;
-        this.id = id;
-        this.name = name;
-        this.uuid = uuid;
-        this.key = key;
-    }
+  public void setUuid(UUID uuid) {
+    this.uuid = uuid;
+  }
+
+  public String getKey() {
+    return key;
+  }
+
+  public void setKey(String key) {
+    this.key = key;
+  }
+
+  public CommonHoverEntity() {}
+
+  public CommonHoverEntity(
+      String type, String id, List<CommonBaseComponent> name, UUID uuid, String key) {
+    this.type = type;
+    this.id = id;
+    this.name = name;
+    this.uuid = uuid;
+    this.key = key;
+  }
 }
