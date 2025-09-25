@@ -18,8 +18,8 @@
     catch(err) {
     }
 //-->
-var methods = {"i0":10,"i1":10,"i2":10,"i3":42,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
+var methods = {"i0":9,"i1":9,"i2":9,"i3":9,"i4":10,"i5":10,"i6":10,"i7":42,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10,"i14":10,"i15":10,"i16":10,"i17":9,"i18":9,"i19":9,"i20":9,"i21":9};
+var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -154,24 +154,46 @@ extends <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary" border="0" cellpadding="3" cellspacing="0" summary="Method Summary table, listing methods, and an explanation">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colLast" scope="col">Method and Description</th>
 </tr>
 <tr id="i0" class="altColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a></code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#failed-int-java.lang.String-">failed</a></span>(int&nbsp;code,
+      <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;message)</code>&nbsp;</td>
+</tr>
+<tr id="i1" class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a></code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#failed-int-java.lang.String-java.lang.Object-java.lang.String-">failed</a></span>(int&nbsp;code,
+      <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;message,
+      <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a>&nbsp;data,
+      <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;echo)</code>&nbsp;</td>
+</tr>
+<tr id="i2" class="altColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a></code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#failed-int-java.lang.String-java.lang.String-">failed</a></span>(int&nbsp;code,
+      <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;message,
+      <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;echo)</code>&nbsp;</td>
+</tr>
+<tr id="i3" class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a></code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#failed-java.lang.String-">failed</a></span>(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;message)</code>&nbsp;</td>
+</tr>
+<tr id="i4" class="altColor">
 <td class="colFirst"><code><a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Integer.html?is-external=true" title="class or interface in java.lang">Integer</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#getCode--">getCode</a></span>()</code>&nbsp;</td>
 </tr>
-<tr id="i1" class="rowColor">
+<tr id="i5" class="rowColor">
 <td class="colFirst"><code><a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#getData--">getData</a></span>()</code>&nbsp;</td>
 </tr>
-<tr id="i2" class="altColor">
+<tr id="i6" class="altColor">
 <td class="colFirst"><code><a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#getEcho--">getEcho</a></span>()</code>&nbsp;</td>
 </tr>
-<tr id="i3" class="rowColor">
+<tr id="i7" class="rowColor">
 <td class="colFirst"><code><a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#getJson--">getJson</a></span>()</code>
 <div class="block"><span class="deprecatedLabel">Deprecated.</span>&nbsp;
@@ -179,41 +201,64 @@ extends <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html
 </div>
 </td>
 </tr>
-<tr id="i4" class="altColor">
+<tr id="i8" class="altColor">
 <td class="colFirst"><code><a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#getMessage--">getMessage</a></span>()</code>&nbsp;</td>
 </tr>
-<tr id="i5" class="rowColor">
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code><a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#getPostType--">getPostType</a></span>()</code>&nbsp;</td>
 </tr>
-<tr id="i6" class="altColor">
+<tr id="i10" class="altColor">
 <td class="colFirst"><code><a href="../../../../../../com/github/theword/queqiao/tool/response/ResponseEnum.html" title="enum in com.github.theword.queqiao.tool.response">ResponseEnum</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#getStatus--">getStatus</a></span>()</code>&nbsp;</td>
 </tr>
-<tr id="i7" class="rowColor">
+<tr id="i11" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#setCode-java.lang.Integer-">setCode</a></span>(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Integer.html?is-external=true" title="class or interface in java.lang">Integer</a>&nbsp;code)</code>&nbsp;</td>
 </tr>
-<tr id="i8" class="altColor">
+<tr id="i12" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#setData-java.lang.Object-">setData</a></span>(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a>&nbsp;data)</code>&nbsp;</td>
 </tr>
-<tr id="i9" class="rowColor">
+<tr id="i13" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#setEcho-java.lang.String-">setEcho</a></span>(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;echo)</code>&nbsp;</td>
 </tr>
-<tr id="i10" class="altColor">
+<tr id="i14" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#setMessage-java.lang.String-">setMessage</a></span>(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;message)</code>&nbsp;</td>
 </tr>
-<tr id="i11" class="rowColor">
+<tr id="i15" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#setPostType-java.lang.String-">setPostType</a></span>(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;postType)</code>&nbsp;</td>
 </tr>
-<tr id="i12" class="altColor">
+<tr id="i16" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#setStatus-com.github.theword.queqiao.tool.response.ResponseEnum-">setStatus</a></span>(<a href="../../../../../../com/github/theword/queqiao/tool/response/ResponseEnum.html" title="enum in com.github.theword.queqiao.tool.response">ResponseEnum</a>&nbsp;status)</code>&nbsp;</td>
+</tr>
+<tr id="i17" class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a></code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#success--">success</a></span>()</code>&nbsp;</td>
+</tr>
+<tr id="i18" class="altColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a></code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#success-java.lang.Object-">success</a></span>(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a>&nbsp;data)</code>&nbsp;</td>
+</tr>
+<tr id="i19" class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a></code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#success-java.lang.Object-java.lang.String-">success</a></span>(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a>&nbsp;data,
+       <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;echo)</code>&nbsp;</td>
+</tr>
+<tr id="i20" class="altColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a></code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#success-java.lang.String-java.lang.Object-java.lang.String-">success</a></span>(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;message,
+       <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a>&nbsp;data,
+       <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;echo)</code>&nbsp;</td>
+</tr>
+<tr id="i21" class="rowColor">
+<td class="colFirst"><code>static <a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a></code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html#successMessage-java.lang.String-">successMessage</a></span>(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;message)</code>&nbsp;</td>
 </tr>
 </table>
 <ul class="blockList">
@@ -394,10 +439,100 @@ public&nbsp;<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.
 <a name="setEcho-java.lang.String-">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>setEcho</h4>
 <pre>public&nbsp;void&nbsp;setEcho(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;echo)</pre>
+</li>
+</ul>
+<a name="success-java.lang.Object-java.lang.String-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>success</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a>&nbsp;success(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a>&nbsp;data,
+                               <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;echo)</pre>
+</li>
+</ul>
+<a name="success-java.lang.String-java.lang.Object-java.lang.String-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>success</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a>&nbsp;success(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;message,
+                               <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a>&nbsp;data,
+                               <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;echo)</pre>
+</li>
+</ul>
+<a name="failed-int-java.lang.String-java.lang.String-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>failed</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a>&nbsp;failed(int&nbsp;code,
+                              <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;message,
+                              <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;echo)</pre>
+</li>
+</ul>
+<a name="failed-int-java.lang.String-java.lang.Object-java.lang.String-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>failed</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a>&nbsp;failed(int&nbsp;code,
+                              <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;message,
+                              <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a>&nbsp;data,
+                              <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;echo)</pre>
+</li>
+</ul>
+<a name="success--">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>success</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a>&nbsp;success()</pre>
+</li>
+</ul>
+<a name="success-java.lang.Object-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>success</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a>&nbsp;success(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html?is-external=true" title="class or interface in java.lang">Object</a>&nbsp;data)</pre>
+</li>
+</ul>
+<a name="successMessage-java.lang.String-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>successMessage</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a>&nbsp;successMessage(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;message)</pre>
+</li>
+</ul>
+<a name="failed-int-java.lang.String-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>failed</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a>&nbsp;failed(int&nbsp;code,
+                              <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;message)</pre>
+</li>
+</ul>
+<a name="failed-java.lang.String-">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>failed</h4>
+<pre>public static&nbsp;<a href="../../../../../../com/github/theword/queqiao/tool/response/Response.html" title="class in com.github.theword.queqiao.tool.response">Response</a>&nbsp;failed(<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>&nbsp;message)</pre>
 </li>
 </ul>
 </li>
