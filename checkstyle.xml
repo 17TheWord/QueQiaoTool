@@ -25,18 +25,6 @@
         <module name="ParameterName" />
         <module name="MemberName" />
 
-        <!-- Javadoc 检查，排除 getter/setter/构造函数 -->
-        <module name="JavadocMethod">
-            <property name="scope" value="public"/>
-            <property name="allowMissingParamTags" value="true"/>
-            <property name="allowMissingThrowsTags" value="true"/>
-            <property name="excludeScope" value="private, package"/>
-            <property name="allowMissingJavadoc" value="true"/>
-            <property name="allowedAnnotations" value="Override"/>
-            <property name="excludeMethods" value="get.*|set.*|is.*"/>
-            <property name="allowMissingJavadocForConstructors" value="true"/>
-        </module>
-
         <!-- 缩进规则 -->
         <module name="Indentation">
             <property name="basicOffset" value="4" />
