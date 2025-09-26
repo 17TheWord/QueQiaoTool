@@ -141,7 +141,9 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#stop()" class="member-name-link">stop</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">关闭 Rcon 连接</div>
+</div>
 </div>
 </div>
 </div>
@@ -211,6 +213,12 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="stop()">
 <h3>stop</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">stop</span>()</div>
+<div class="block">关闭 Rcon 连接
+ <p> 1. 先判断 client 是否为 null </p>
+ <p> 2. 调用 client.close() </p>
+ <p> 3. 捕获异常并打印日志 </p>
+ <p> 4. 将 client 置为 null </p>
+ <p> 5. 打印关闭成功日志 </p></div>
 </section>
 </li>
 <li>
