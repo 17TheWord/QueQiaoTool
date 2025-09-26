@@ -2,7 +2,6 @@ package com.github.theword.queqiao.tool.command.subCommand.client;
 
 import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.command.subCommand.ClientCommandAbstract;
-import com.github.theword.queqiao.tool.utils.Tool;
 import com.github.theword.queqiao.tool.websocket.WsClient;
 import java.util.List;
 
@@ -70,12 +69,12 @@ public abstract class ListCommandAbstract extends ClientCommandAbstract {
     @Override
     public void execute(Object commandReturner) {
         if (!GlobalContext.getConfig().getWebsocketClient().isEnable()) {
-            Tool.commandReturn(
+            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
                     commandReturner, "Websocket Client 配置项未启用，如需开启，请在 config.yml 中启用 WebsocketClient 配置项");
-            Tool.commandReturn(
+            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
                     commandReturner, "配置文件中连接列表如下共 " + GlobalContext.getConfig().getWebsocketClient().getUrlList().size() + " 个 Client");
             for (int i = 0; i < GlobalContext.getConfig().getWebsocketClient().getUrlList().size(); i++) {
-                Tool.commandReturn(
+                GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
                         commandReturner, String.format(
                                 "%d 连接至 %s", i + 1, GlobalContext.getConfig().getWebsocketClient().getUrlList().get(i)));
             }
@@ -84,12 +83,12 @@ public abstract class ListCommandAbstract extends ClientCommandAbstract {
 
         List<WsClient> wsClientList = GlobalContext.getWebsocketManager().getWsClientList();
 
-        Tool.commandReturn(
+        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
                 commandReturner, "Websocket Client 列表，共 " + wsClientList.size() + " 个 Client");
 
         for (int i = 0; i < wsClientList.size(); i++) {
             WsClient wsClient = wsClientList.get(i);
-            Tool.commandReturn(
+            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
                     commandReturner, String.format(
                             "%d 连接至 %s 的 Client，状态：%s", i, wsClient.getURI(), wsClient.isOpen() ? "已连接" : "未连接"));
         }
