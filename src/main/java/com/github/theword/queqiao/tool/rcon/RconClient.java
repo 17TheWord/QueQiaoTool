@@ -38,6 +38,9 @@ public class RconClient {
     }
 
     public String sendCommand(String command) throws IOException {
+        if (client == null) {
+            throw new IllegalArgumentException("Rcon 未连接");
+        }
         return client.command(command);
     }
 
