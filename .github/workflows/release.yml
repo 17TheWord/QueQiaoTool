@@ -44,4 +44,4 @@ jobs:
         run: gh release create v${{ env.VERSION }} --generate-notes
 
       - name: Upload to Release
-        run: gh release upload v${{ env.VERSION }} build/libs/queqiao-tool-${{ env.VERSION }}.jar --clobber
+        run: gh release upload v${{ env.VERSION }} build/libs/queqiao-tool-${{ env.VERSION }}*.jar --clobber
