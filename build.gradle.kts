@@ -36,10 +36,10 @@ dependencies {
     implementation("org.java-websocket:Java-WebSocket:${property("javaWebSocketVersion")}")
     implementation("org.slf4j:slf4j-api:${property("slf4jApiVersion")}")
     implementation("org.glavo:rcon-java:${property("glavoRconVersion")}")
-    
+
     testImplementation("org.slf4j:slf4j-simple:${property("slf4jSimpleVersion")}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${property("junitJupiterApiVersion")}")
-    
+
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${property("junitJupiterApiVersion")}")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:${property("junitJupiterPlatformLauncherVersion")}")
 }
