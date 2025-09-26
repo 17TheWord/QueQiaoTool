@@ -3,7 +3,7 @@ import org.gradle.external.javadoc.StandardJavadocDocletOptions
 plugins {
     java
     `maven-publish`
-    id("com.diffplug.spotless") version "6.25.0"
+    id("com.diffplug.spotless") version "8.0.0"
     checkstyle
     jacoco
 }
