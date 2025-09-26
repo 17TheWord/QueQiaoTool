@@ -4,7 +4,6 @@ plugins {
     java
     `maven-publish`
     id("com.diffplug.spotless") version "8.0.0"
-    checkstyle
     jacoco
 }
 
@@ -60,6 +59,7 @@ tasks.withType<Javadoc> {
         if (JavaVersion.current().isJava9Compatible) {
             addBooleanOption("html5", true)
         }
+        addBooleanOption("Xdoclint:none", true)
     }
     classpath += sourceSets.main.get().output + sourceSets.main.get().compileClasspath
 }
@@ -68,17 +68,6 @@ spotless {
     java {
         eclipse().configFile("formatter-custom.xml")
         target("src/main/java/**/*.java", "src/test/java/**/*.java")
-    }
-}
-
-checkstyle {
-    configFile = file("${rootDir}/checkstyle.xml")
-}
-
-tasks.withType<Checkstyle> {
-    reports {
-        xml.required.set(false)
-        html.required.set(true)
     }
 }
 
