@@ -81,11 +81,11 @@ public class Tool {
      * @param handleApiImpl                  api消息处理
      * @param handleCommandReturnMessageImpl 命令消息处理
      * @deprecated 请使用 {@link GlobalContext#init(boolean, String, String, HandleApiService,
-     *             HandleCommandReturnMessageService)} 代替
+     * HandleCommandReturnMessageService)} 代替
      */
     @Deprecated
     public static void initTool(
-                                boolean isModServer, String serverVersion, String serverType, HandleApiService handleApiImpl, HandleCommandReturnMessageService handleCommandReturnMessageImpl) {
+            boolean isModServer, String serverVersion, String serverType, HandleApiService handleApiImpl, HandleCommandReturnMessageService handleCommandReturnMessageImpl) {
         logger = LoggerFactory.getLogger(BaseConstant.MODULE_NAME);
         logger.info(BaseConstant.LAUNCHING);
         config = Config.loadConfig(isModServer);
@@ -102,7 +102,7 @@ public class Tool {
      *
      * @param event 任何继承于 BaseEvent 的事件
      * @deprecated 请使用 {@link GlobalContext#getWebsocketManager()} 和 {@link
-     *             WebsocketManager#sendEvent(com.github.theword.queqiao.tool.event.base.BaseEvent)} 代替
+     * WebsocketManager#sendEvent(com.github.theword.queqiao.tool.event.base.BaseEvent)} 代替
      */
     @Deprecated
     public static void sendWebsocketMessage(BaseEvent event) {
@@ -132,7 +132,10 @@ public class Tool {
      *
      * @param commandReturner 命令返回
      * @param message         消息
+     * @deprecated 请使用 {@link GlobalContext#getHandleCommandReturnMessageService()} 和 {@link
+     * HandleCommandReturnMessageService#sendReturnMessage(Object, String)} 代替
      */
+    @Deprecated
     public static void commandReturn(Object commandReturner, String message) {
         if (commandReturner != null) {
             handleCommandReturnMessageService.handleCommandReturnMessage(commandReturner, message);

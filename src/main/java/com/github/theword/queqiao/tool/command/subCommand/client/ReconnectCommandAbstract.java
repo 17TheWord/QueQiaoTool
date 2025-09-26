@@ -70,7 +70,7 @@ public abstract class ReconnectCommandAbstract extends ClientCommandAbstract {
     @Override
     public void execute(Object commandReturner, boolean all) {
         String reconnectCount = all ? CommandConstantMessage.RECONNECT_ALL_CLIENT : CommandConstantMessage.RECONNECT_NOT_OPEN_CLIENT;
-        GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(commandReturner, reconnectCount);
+        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, reconnectCount);
 
         AtomicInteger opened = new AtomicInteger();
 
@@ -80,16 +80,16 @@ public abstract class ReconnectCommandAbstract extends ClientCommandAbstract {
                 wsClient -> {
                     if (all || !wsClient.isOpen()) {
                         wsClient.reconnectNow();
-                        GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(
+                        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
                                 commandReturner, String.format(CommandConstantMessage.RECONNECT_MESSAGE, wsClient.getURI()));
                     } else {
                         opened.getAndIncrement();
                     }
                 });
         if (opened.get() == wsClientList.size()) {
-            GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(
+            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
                     commandReturner, CommandConstantMessage.RECONNECT_NO_CLIENT_NEED_RECONNECT);
         }
-        GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(commandReturner, CommandConstantMessage.RECONNECTED);
+        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, CommandConstantMessage.RECONNECTED);
     }
 }

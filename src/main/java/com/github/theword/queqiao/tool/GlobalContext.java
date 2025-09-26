@@ -45,7 +45,7 @@ public class GlobalContext {
      */
     public static void executeReloadCommand(Object commandReturner, boolean isModServer) {
         setConfig(Config.loadConfig(isModServer, logger));
-        handleCommandReturnMessageService.handleCommandReturnMessage(commandReturner, CommandConstantMessage.RELOAD_CONFIG);
+        handleCommandReturnMessageService.sendReturnMessage(commandReturner, CommandConstantMessage.RELOAD_CONFIG);
         websocketManager.restartWebsocket(commandReturner);
 
         rconClient.stop();
