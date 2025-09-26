@@ -49,16 +49,12 @@ public class GlobalContext {
         setConfig(Config.loadConfig(isModServer, logger));
         handleCommandReturnMessageService.sendReturnMessage(commandReturner, CommandConstantMessage.RELOAD_CONFIG);
         websocketManager.restartWebsocket(commandReturner);
-
-        rconClient.stop();
-        rconClient.setPort(config.getRcon().getPort());
-        rconClient.setPassword(config.getRcon().getPassword());
-        rconClient.connect();
+        restartRconClient();
     }
 
     public static void shutdown() {
         websocketManager.stopWebsocketByServerClose();
-        if (config.getRcon().isEnable()) rconClient.stop();
+        if (config.getRcon().isEnable() && rconClient != null) rconClient.stop();
         logger.info("鹊桥已关闭");
     }
 
@@ -83,17 +79,43 @@ public class GlobalContext {
     }
 
     /**
+     * 重启 Rcon 客户端
+     * <p> 1. 先判断 Rcon 是否启用 </p>
+     * <p> 2. 调用 rconClient.stop() </p>
+     * <p> 3. 重新设置端口和密码 </p>
+     * <p> 4. 调用 rconClient.connect() </p>
+     * <p> 5. 若未启用则打印日志并跳过 </p>
+     */
+    private static void restartRconClient() {
+        if (config.getRcon().isEnable()) {
+            rconClient.stop();
+            rconClient.setPort(config.getRcon().getPort());
+            rconClient.setPassword(config.getRcon().getPassword());
+            rconClient.connect();
+        } else {
+            logger.info("Rcon 未启用，跳过 Rcon 客户端重连");
+        }
+    }
+
+    /**
      * 发送 Rcon 命令
      *
      * @param command 命令
      * @return 命令返回结果
      */
     public static String sendRconCommand(String command) throws IOException {
-        if (config.getRcon().isEnable()) {
-            return rconClient.sendCommand(command);
-        } else {
+        if (!config.getRcon().isEnable()) {
             logger.warn("Rcon 未启用，无法发送命令");
             return "Rcon 未启用，无法发送命令";
+        } else if (!rconClient.isConnected()) {
+            logger.warn("Rcon 未连接，无法发送命令");
+            return "Rcon 未连接，无法发送命令";
+        } else if (rconClient == null) {
+            logger.warn("Rcon 客户端未初始化，无法发送命令");
+            return "Rcon 客户端未初始化，无法发送命令";
+        } else {
+            logger.info("发送 Rcon 命令: {}", command);
+            return rconClient.sendCommand(command);
         }
     }
 

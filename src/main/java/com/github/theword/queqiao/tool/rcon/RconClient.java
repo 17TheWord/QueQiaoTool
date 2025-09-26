@@ -24,7 +24,7 @@ public class RconClient {
      * 尝试连接 Rcon，返回是否成功
      */
     public void connect() {
-        if (client != null) {
+        if (isConnected()) {
             logger.warn("Rcon 已连接，无需重复连接");
         }
         try {
@@ -38,14 +38,22 @@ public class RconClient {
     }
 
     public String sendCommand(String command) throws IOException {
-        if (client == null) {
+        if (!isConnected()) {
             throw new IllegalArgumentException("Rcon 未连接");
         }
         return client.command(command);
     }
 
+    /**
+     * 关闭 Rcon 连接
+     * <p> 1. 先判断 client 是否为 null </p>
+     * <p> 2. 调用 client.close() </p>
+     * <p> 3. 捕获异常并打印日志 </p>
+     * <p> 4. 将 client 置为 null </p>
+     * <p> 5. 打印关闭成功日志 </p>
+     */
     public void stop() {
-        if (client == null) {
+        if (!isConnected()) {
             logger.info("Rcon 未连接，无需关闭");
             return;
         }
