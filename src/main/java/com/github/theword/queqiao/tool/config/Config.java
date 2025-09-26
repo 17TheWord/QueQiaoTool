@@ -35,6 +35,9 @@ public class Config extends CommonConfig {
     /** 订阅事件配置项 */
     private SubscribeEventConfig subscribeEvent = new SubscribeEventConfig();
 
+    /** Rcon 客户端配置项 */
+    private RconConfig rcon = new RconConfig();
+
     public boolean isEnable() {
         return enable;
     }
@@ -97,6 +100,14 @@ public class Config extends CommonConfig {
 
     public void setSubscribeEvent(SubscribeEventConfig subscribeEvent) {
         this.subscribeEvent = subscribeEvent;
+    }
+
+    public RconConfig getRcon() {
+        return rcon;
+    }
+
+    public void setRcon(RconConfig rcon) {
+        this.rcon = rcon;
     }
 
     /**
@@ -169,6 +180,24 @@ public class Config extends CommonConfig {
         loadWebsocketServerConfig(configMap);
         loadWebsocketClientConfig(configMap);
         loadSubscribeEventConfig(configMap);
+        loadRconConfig(configMap);
+    }
+
+    /**
+     * 加载 Rcon 客户端配置项
+     *
+     * @param configMap Rcon
+     */
+    @SuppressWarnings("unchecked")
+    private void loadRconConfig(Map<String, Object> configMap) {
+        Map<String, Object> rconConfig = (Map<String, Object>) configMap.get("rcon");
+        if (rconConfig == null) return;
+        rcon.setEnable((Boolean) rconConfig.getOrDefault("enable", false));
+        rcon.setHost((String) rconConfig.getOrDefault("host", "127.0.0.1"));
+        rcon.setPort((Integer) rconConfig.getOrDefault("port", 25575));
+        rcon.setPassword((String) rconConfig.getOrDefault("password", ""));
+        rcon.setReconnectMaxTimes((Integer) rconConfig.getOrDefault("reconnect_max_times", 5));
+        rcon.setReconnectInterval((Integer) rconConfig.getOrDefault("reconnect_interval", 5));
     }
 
     /**
