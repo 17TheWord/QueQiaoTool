@@ -36,7 +36,7 @@ public class WebsocketManager {
      */
     private void startWebsocketClients(Object commandReturner) {
         if (GlobalContext.getConfig().getWebsocketClient().isEnable()) {
-            Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
+            GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
             GlobalContext.getConfig().getWebsocketClient().getUrlList().forEach(
                     websocketUrl -> {
                         try {
@@ -45,7 +45,7 @@ public class WebsocketManager {
                             wsClient.connect();
                             wsClientList.add(wsClient);
                         } catch (URISyntaxException e) {
-                            Tool.commandReturn(
+                            GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(
                                     commandReturner, String.format(
                                             WebsocketConstantMessage.Client.URI_SYNTAX_ERROR.replace("{}", "%s"), websocketUrl));
                         }
@@ -62,11 +62,11 @@ public class WebsocketManager {
      */
     private void stopWebsocketClients(int code, String reason, Object commandReturner) {
         for (WsClient wsClient : wsClientList) {
-            Tool.commandReturn(commandReturner, String.format(reason, wsClient.getURI()));
+            GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(commandReturner, String.format(reason, wsClient.getURI()));
             wsClient.stopWithoutReconnect(code, String.format(reason, wsClient.getURI()));
         }
         wsClientList.clear();
-        Tool.commandReturn(
+        GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(
                 commandReturner, WebsocketConstantMessage.Client.CLEAR_WEBSOCKET_CLIENT_LIST);
     }
 
@@ -76,10 +76,10 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     public void restartWebsocketClients(Object commandReturner) {
-        Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.RELOADING);
+        GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(commandReturner, WebsocketConstantMessage.Client.RELOADING);
         stopWebsocketClients(1000, WebsocketConstantMessage.CLOSE_BY_RELOAD, commandReturner);
         startWebsocketClients(commandReturner);
-        Tool.commandReturn(commandReturner, WebsocketConstantMessage.Client.RELOADED);
+        GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(commandReturner, WebsocketConstantMessage.Client.RELOADED);
     }
 
     /**
@@ -93,7 +93,7 @@ public class WebsocketManager {
                     new InetSocketAddress(
                             GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()), GlobalContext.getLogger(), GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().isEnable());
             wsServer.start();
-            Tool.commandReturn(
+            GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(
                     commandReturner, String.format(
                             WebsocketConstantMessage.Server.SERVER_STARTING.replace("{}", "%s"), GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()));
         }
@@ -109,9 +109,9 @@ public class WebsocketManager {
         if (wsServer != null) {
             try {
                 wsServer.stop(0, reason);
-                Tool.commandReturn(commandReturner, reason);
+                GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(commandReturner, reason);
             } catch (InterruptedException e) {
-                Tool.commandReturn(commandReturner, WebsocketConstantMessage.Server.ERROR_ON_STOPPING);
+                GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(commandReturner, WebsocketConstantMessage.Server.ERROR_ON_STOPPING);
                 Tool.debugLog(e.getMessage());
             }
             wsServer = null;
@@ -126,7 +126,7 @@ public class WebsocketManager {
     public void restartWebsocketServer(Object commandReturner) {
         stopWebsocketServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
         startWebsocketServer(commandReturner);
-        Tool.commandReturn(commandReturner, WebsocketConstantMessage.Server.RELOADED);
+        GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
     }
 
     /**
