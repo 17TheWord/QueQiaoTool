@@ -13,7 +13,11 @@ import com.google.gson.JsonElement;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 
-/** 处理协议消息 */
+import java.io.IOException;
+
+/**
+ * 处理协议消息
+ */
 public class HandleProtocolMessage {
 
     private static final Gson gson = GsonUtils.buildGson();
@@ -24,7 +28,9 @@ public class HandleProtocolMessage {
         this.logger = logger;
     }
 
-    /** 消息来源枚举 */
+    /**
+     * 消息来源枚举
+     */
     private enum MessageSource {
         HTTP, WEBSOCKET;
 
@@ -111,8 +117,17 @@ public class HandleProtocolMessage {
             case "send_command":
                 return Response.failed(500, api + " is not supported now", null, echo);
             case "send_rcon_command":
-                String result = GlobalContext.sendRconCommand(data.getAsString());
-                return Response.success(result, echo);
+                String result;
+                try {
+                    result = GlobalContext.sendRconCommand(data.getAsString());
+                    return Response.success(result, echo);
+                } catch (IllegalArgumentException e) {
+                    logger.warn("Rcon 执行命令时出现问题，命令发送失败：{}", e.getMessage());
+                    return Response.failed(400, e.getMessage(), null, echo);
+                } catch (IOException e) {
+                    logger.warn("Rcon 执行命令时出现问题，命令发送失败！", e);
+                    return Response.failed(500, "failed", null, echo);
+                }
             default:
                 this.logger.warn(BaseConstant.UNKNOWN_API + "{}", api);
                 return Response.failed(404, BaseConstant.UNKNOWN_API + api, null, echo);

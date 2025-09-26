@@ -10,6 +10,8 @@ import com.github.theword.queqiao.tool.utils.WebsocketManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+
 public class GlobalContext {
     private static Config config;
     private static Logger logger;
@@ -86,7 +88,7 @@ public class GlobalContext {
      * @param command 命令
      * @return 命令返回结果
      */
-    public static String sendRconCommand(String command) {
+    public static String sendRconCommand(String command) throws IOException {
         if (config.getRcon().isEnable()) {
             return rconClient.sendCommand(command);
         } else {

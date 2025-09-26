@@ -37,22 +37,8 @@ public class RconClient {
         }
     }
 
-    public String sendCommand(String command) {
-        if (client == null) {
-            logger.error("Rcon 未连接，无法发送命令");
-            return "Rcon 未连接，无法发送命令";
-        }
-        String result;
-        try {
-            result = client.command(command);
-        } catch (IllegalArgumentException e) {
-            logger.error("Rcon 发送命令时出现异常：{}", e.getMessage(), e);
-            result = e.getMessage();
-        } catch (IOException e) {
-            logger.error("RCON 出现IO异常：", e);
-            result = e.getMessage();
-        }
-        return result;
+    public String sendCommand(String command) throws IOException {
+        return client.command(command);
     }
 
     public void stop() {
