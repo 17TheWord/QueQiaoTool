@@ -110,6 +110,9 @@ public class HandleProtocolMessage {
             }
             case "send_command":
                 return Response.failed(500, api + " is not supported now", null, echo);
+            case "send_rcon_command":
+                String result = GlobalContext.sendRconCommand(data.getAsString());
+                return Response.success(result, echo);
             default:
                 this.logger.warn(BaseConstant.UNKNOWN_API + "{}", api);
                 return Response.failed(404, BaseConstant.UNKNOWN_API + api, null, echo);

@@ -1,79 +1,88 @@
 package com.github.theword.queqiao.tool.rcon;
 
-import com.github.theword.queqiao.tool.config.RconConfig;
-import org.glavo.rcon.RconClient;
+import org.glavo.rcon.AuthenticationException;
+import org.glavo.rcon.Rcon;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
-/** Rcon 客户端封装，支持自动重连与命令发送 */
 public class RconClient {
-    private final Logger logger;
-    private final RconConfig config;
-    private final AtomicInteger reconnectTimes = new AtomicInteger(0);
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private volatile RconClient client;
-    private volatile boolean stopped = false;
 
-    public RconClient(RconConfig config, Logger logger) {
-        this.config = config;
+    private final Logger logger;
+    public volatile Rcon client;
+
+    private int port;
+    private String password;
+
+    public RconClient(Logger logger, int port, String password) {
         this.logger = logger;
+        this.port = port;
+        this.password = password;
     }
 
     /**
-     * 连接 Rcon 服务器
+     * 尝试连接 Rcon，返回是否成功
      */
     public void connect() {
-        if (!config.isEnable())
-            return;
+        if (client != null) {
+            logger.warn("Rcon 已连接，无需重复连接");
+        }
         try {
-            client = RconClient.connect(config.getHost(), config.getPort(), config.getPassword());
-            reconnectTimes.set(0);
-            logger.info("Rcon 连接成功: {}:{}", config.getHost(), config.getPort());
+            client = new Rcon("localhost", port, password);
+            logger.info("Rcon 连接成功！[port: {}]", port);
+        } catch (AuthenticationException e) {
+            logger.error("Rcon 认证失败，请检查配置项是否正确");
         } catch (IOException e) {
-            logger.warn("Rcon 连接失败: {}:{}", config.getHost(), config.getPort(), e);
-            scheduleReconnect(nextDelay());
+            logger.warn("Rcon 连接失败：", e);
         }
     }
 
-    /**
-     * 发送命令
-     */
-    public String sendCommand(String command) throws IOException {
-        if (client == null)
-            throw new IOException("Rcon 未连接");
-        return client.sendCommand(command);
+    public String sendCommand(String command) {
+        if (client == null) {
+            logger.error("Rcon 未连接，无法发送命令");
+            return "Rcon 未连接，无法发送命令";
+        }
+        String result;
+        try {
+            result = client.command(command);
+        } catch (IllegalArgumentException e) {
+            logger.error("Rcon 发送命令时出现异常：{}", e.getMessage(), e);
+            result = e.getMessage();
+        } catch (IOException e) {
+            logger.error("RCON 出现IO异常：", e);
+            result = e.getMessage();
+        }
+        return result;
     }
 
-    private long nextDelay() {
-        return Math.min(config.getReconnectInterval() * (1L << reconnectTimes.get()), 60);
-    }
-
-    private void scheduleReconnect(long delaySeconds) {
-        if (stopped || reconnectTimes.get() >= config.getReconnectMaxTimes()) {
-            logger.info("Rcon 达到最大重连次数: {}:{}", config.getHost(), config.getPort());
+    public void stop() {
+        if (client == null) {
+            logger.info("Rcon 未连接，无需关闭");
             return;
         }
-        reconnectTimes.incrementAndGet();
-        scheduler.schedule(this::connect, delaySeconds, TimeUnit.SECONDS);
-    }
 
-    /**
-     * 主动断开并停止重连
-     */
-    public void stop() {
-        stopped = true;
-        scheduler.shutdownNow();
-        if (client != null)
+        try {
+            logger.info("正在关闭 Rcon 客户端...");
             client.close();
+            logger.info("Rcon 客户端已关闭");
+        } catch (IOException e) {
+            logger.warn("Rcon 关闭失败", e);
+        } catch (Exception e) {
+            logger.warn("Rcon close() 发生未知异常", e);
+        }
+        client = null;
+        logger.info("Rcon 已关闭");
     }
 
-    /**
-     * 判断是否已连接
-     */
     public boolean isConnected() {
-        return client != null && client.isOpen();
+        return client != null;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

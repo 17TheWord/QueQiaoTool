@@ -1,13 +1,19 @@
 package com.github.theword.queqiao.tool.config;
 
 import com.github.theword.queqiao.tool.GlobalContext;
+
 import java.util.List;
 import java.util.Map;
+
 import org.slf4j.Logger;
 
-/** 配置项 服务器初始化阶段请调用 {@link #loadConfig(boolean, Logger)} 方法加载配置文件 */
+/**
+ * 配置项 服务器初始化阶段请调用 {@link #loadConfig(boolean, Logger)} 方法加载配置文件
+ */
 public class Config extends CommonConfig {
-    /** 是否启用插件/模组 */
+    /**
+     * 是否启用插件/模组
+     */
     private boolean enable = true;
 
     /**
@@ -17,25 +23,39 @@ public class Config extends CommonConfig {
      */
     private boolean debug = false;
 
-    /** 服务器名 */
+    /**
+     * 服务器名
+     */
     private String serverName = "Server";
 
-    /** 访问令牌 */
+    /**
+     * 访问令牌
+     */
     private String accessToken = "";
 
-    /** 消息前缀 */
+    /**
+     * 消息前缀
+     */
     private String messagePrefix = "[鹊桥]";
 
-    /** WebSocket Server 配置项 */
+    /**
+     * WebSocket Server 配置项
+     */
     private WebSocketServerConfig websocketServer = new WebSocketServerConfig();
 
-    /** WebSocket Client 配置项 */
+    /**
+     * WebSocket Client 配置项
+     */
     private WebSocketClientConfig websocketClient = new WebSocketClientConfig();
 
-    /** 订阅事件配置项 */
+    /**
+     * 订阅事件配置项
+     */
     private SubscribeEventConfig subscribeEvent = new SubscribeEventConfig();
 
-    /** Rcon 客户端配置项 */
+    /**
+     * Rcon 客户端配置项
+     */
     private RconConfig rcon = new RconConfig();
 
     public boolean isEnable() {
@@ -114,7 +134,9 @@ public class Config extends CommonConfig {
      * Contractor
      *
      * @param isModServer 是否为模组服务端
+     * @deprecated 请使用 {@link #Config(boolean, Logger)}
      */
+    @Deprecated
     public Config(boolean isModServer) {
         super(null);
         String configFolder = isModServer ? "config" : "plugins";
@@ -193,11 +215,8 @@ public class Config extends CommonConfig {
         Map<String, Object> rconConfig = (Map<String, Object>) configMap.get("rcon");
         if (rconConfig == null) return;
         rcon.setEnable((Boolean) rconConfig.getOrDefault("enable", false));
-        rcon.setHost((String) rconConfig.getOrDefault("host", "127.0.0.1"));
         rcon.setPort((Integer) rconConfig.getOrDefault("port", 25575));
         rcon.setPassword((String) rconConfig.getOrDefault("password", ""));
-        rcon.setReconnectMaxTimes((Integer) rconConfig.getOrDefault("reconnect_max_times", 5));
-        rcon.setReconnectInterval((Integer) rconConfig.getOrDefault("reconnect_interval", 5));
     }
 
     /**
