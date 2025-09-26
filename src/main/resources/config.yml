@@ -25,6 +25,12 @@ websocket_client:
   url_list:
     - "ws://127.0.0.1:8080/minecraft/ws"
 
+# Rcon 客户端配置项
+rcon:
+  enable: false                # 是否启用
+  port: 25575                  # Rcon 端口
+  password: ""                # Rcon 密码
+
 # 订阅事件配置项
 subscribe_event:
   player_chat: true         # 玩家聊天事件监听

@@ -4,7 +4,6 @@ plugins {
     java
     `maven-publish`
     id("com.diffplug.spotless") version "8.0.0"
-    checkstyle
     jacoco
 }
 
@@ -36,9 +35,11 @@ dependencies {
     implementation("org.yaml:snakeyaml:${property("snakeyamlVersion")}")
     implementation("org.java-websocket:Java-WebSocket:${property("javaWebSocketVersion")}")
     implementation("org.slf4j:slf4j-api:${property("slf4jApiVersion")}")
+    implementation("org.glavo:rcon-java:${property("glavoRconVersion")}")
+    
     testImplementation("org.slf4j:slf4j-simple:${property("slf4jSimpleVersion")}")
-
     testImplementation("org.junit.jupiter:junit-jupiter-api:${property("junitJupiterApiVersion")}")
+    
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${property("junitJupiterApiVersion")}")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:${property("junitJupiterPlatformLauncherVersion")}")
 }
@@ -58,6 +59,7 @@ tasks.withType<Javadoc> {
         if (JavaVersion.current().isJava9Compatible) {
             addBooleanOption("html5", true)
         }
+        addBooleanOption("Xdoclint:none", true)
     }
     classpath += sourceSets.main.get().output + sourceSets.main.get().compileClasspath
 }
@@ -66,17 +68,6 @@ spotless {
     java {
         eclipse().configFile("formatter-custom.xml")
         target("src/main/java/**/*.java", "src/test/java/**/*.java")
-    }
-}
-
-checkstyle {
-    configFile = file("${rootDir}/checkstyle.xml")
-}
-
-tasks.withType<Checkstyle> {
-    reports {
-        xml.required.set(false)
-        html.required.set(true)
     }
 }
 

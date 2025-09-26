@@ -132,7 +132,10 @@ public class Tool {
      *
      * @param commandReturner 命令返回
      * @param message         消息
+     * @deprecated 请使用 {@link GlobalContext#getHandleCommandReturnMessageService()} 和 {@link
+     *             HandleCommandReturnMessageService#sendReturnMessage(Object, String)} 代替
      */
+    @Deprecated
     public static void commandReturn(Object commandReturner, String message) {
         if (commandReturner != null) {
             handleCommandReturnMessageService.handleCommandReturnMessage(commandReturner, message);
