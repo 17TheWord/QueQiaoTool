@@ -3,7 +3,6 @@ package com.github.theword.queqiao.tool.command.subCommand.server;
 import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.command.subCommand.ClientCommandAbstract;
 import com.github.theword.queqiao.tool.command.subCommand.ServerCommandAbstract;
-import com.github.theword.queqiao.tool.utils.Tool;
 import com.github.theword.queqiao.tool.websocket.WsServer;
 import org.java_websocket.WebSocket;
 
@@ -57,9 +56,9 @@ public abstract class InfoCommandAbstract extends ServerCommandAbstract {
     @Override
     public void execute(Object commandReturner) {
         if (!GlobalContext.getConfig().getWebsocketServer().isEnable()) {
-            Tool.commandReturn(
+            GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(
                     commandReturner, "Websocket Server 配置项未启用，如需开启，请在 config.yml 中启用 WebsocketServer 配置项");
-            Tool.commandReturn(
+            GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(
                     commandReturner, String.format(
                             "配置项中地址为 %s:%d", GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()));
             return;
@@ -68,26 +67,26 @@ public abstract class InfoCommandAbstract extends ServerCommandAbstract {
         WsServer wsServer = GlobalContext.getWebsocketManager().getWsServer();
 
         if (wsServer == null) {
-            Tool.commandReturn(commandReturner, "Websocket Server 为null，查询失败");
+            GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(commandReturner, "Websocket Server 为null，查询失败");
             return;
         }
 
-        Tool.commandReturn(
+        GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(
                 commandReturner, String.format(
                         "当前 Websocket Server 已开启，监听地址为 %s:%d", wsServer.getAddress().getHostString(), wsServer.getPort()));
 
         if (wsServer.getConnections().isEmpty()) {
-            Tool.commandReturn(commandReturner, "当前暂无 Websocket 连接到该 Server");
+            GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(commandReturner, "当前暂无 Websocket 连接到该 Server");
             return;
         }
 
-        Tool.commandReturn(
+        GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(
                 commandReturner, String.format("当前 Websocket Server 已有 %d 个连接", wsServer.getConnections().size()));
 
         int count = 0;
         for (WebSocket webSocket : wsServer.getConnections()) {
             count++;
-            Tool.commandReturn(
+            GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(
                     commandReturner, String.format(
                             "%d 来自 %s:%d 的连接", count, webSocket.getRemoteSocketAddress().getHostString(), webSocket.getRemoteSocketAddress().getPort()));
         }

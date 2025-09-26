@@ -3,7 +3,6 @@ package com.github.theword.queqiao.tool.command.subCommand.client;
 import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.command.subCommand.ClientCommandAbstract;
 import com.github.theword.queqiao.tool.constant.CommandConstantMessage;
-import com.github.theword.queqiao.tool.utils.Tool;
 import com.github.theword.queqiao.tool.websocket.WsClient;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -71,7 +70,7 @@ public abstract class ReconnectCommandAbstract extends ClientCommandAbstract {
     @Override
     public void execute(Object commandReturner, boolean all) {
         String reconnectCount = all ? CommandConstantMessage.RECONNECT_ALL_CLIENT : CommandConstantMessage.RECONNECT_NOT_OPEN_CLIENT;
-        Tool.commandReturn(commandReturner, reconnectCount);
+        GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(commandReturner, reconnectCount);
 
         AtomicInteger opened = new AtomicInteger();
 
@@ -81,16 +80,16 @@ public abstract class ReconnectCommandAbstract extends ClientCommandAbstract {
                 wsClient -> {
                     if (all || !wsClient.isOpen()) {
                         wsClient.reconnectNow();
-                        Tool.commandReturn(
+                        GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(
                                 commandReturner, String.format(CommandConstantMessage.RECONNECT_MESSAGE, wsClient.getURI()));
                     } else {
                         opened.getAndIncrement();
                     }
                 });
         if (opened.get() == wsClientList.size()) {
-            Tool.commandReturn(
+            GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(
                     commandReturner, CommandConstantMessage.RECONNECT_NO_CLIENT_NEED_RECONNECT);
         }
-        Tool.commandReturn(commandReturner, CommandConstantMessage.RECONNECTED);
+        GlobalContext.getHandleCommandReturnMessageService().handleCommandReturnMessage(commandReturner, CommandConstantMessage.RECONNECTED);
     }
 }
