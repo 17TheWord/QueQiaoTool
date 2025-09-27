@@ -210,10 +210,11 @@ public class Config extends CommonConfig {
      *
      * @param configMap Rcon
      */
-    @SuppressWarnings("unchecked")
     private void loadRconConfig(Map<String, Object> configMap) {
-        Map<String, Object> rconConfig = (Map<String, Object>) configMap.get("rcon");
-        if (rconConfig == null) return;
+        Object rconObj = configMap.get("rcon");
+        if (!(rconObj instanceof Map)) return;
+        @SuppressWarnings("unchecked")
+        Map<String, Object> rconConfig = (Map<String, Object>) rconObj;
         rcon.setEnable((Boolean) rconConfig.getOrDefault("enable", false));
         rcon.setPort((Integer) rconConfig.getOrDefault("port", 25575));
         rcon.setPassword((String) rconConfig.getOrDefault("password", ""));
