@@ -32,6 +32,10 @@
 
 - [`Wiki`](https://github.com/17TheWord/QueQiaoTool/wiki) 帮助
 
+## 社群
+
+- [`Discord`](https://discord.gg/SBUkMYsyf2)
+
 ## 许可证
 
 本项目使用 [MIT](./LICENSE) 作为开源许可证。
