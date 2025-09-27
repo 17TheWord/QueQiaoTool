@@ -117,9 +117,10 @@ public class HandleProtocolMessage {
             case "send_command":
                 return Response.failed(500, api + " is not supported now", null, echo);
             case "send_rcon_command":
+                CommandPayload commandPayload = gson.fromJson(data, CommandPayload.class);
                 String result;
                 try {
-                    result = GlobalContext.sendRconCommand(data.getAsString());
+                    result = GlobalContext.sendRconCommand(commandPayload.getCommand());
                     return Response.success(result, echo);
                 } catch (IllegalArgumentException e) {
                     logger.warn("Rcon 执行命令时出现问题，命令发送失败：{}", e.getMessage());
