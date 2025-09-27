@@ -87,13 +87,13 @@ public class GlobalContext {
      * <p> 5. 若未启用则打印日志并跳过 </p>
      */
     private static void restartRconClient() {
-        if (config.getRcon().isEnable()) {
+        if (rconClient == null) {
+            initRconClient();
+        } else {
             rconClient.stop();
             rconClient.setPort(config.getRcon().getPort());
             rconClient.setPassword(config.getRcon().getPassword());
             rconClient.connect();
-        } else {
-            logger.info("Rcon 未启用，跳过 Rcon 客户端重连");
         }
     }
 
