@@ -1,29 +1,28 @@
 package com.github.theword.queqiao.tool.utils;
 
-import com.github.theword.queqiao.tool.deserializer.MessagePayloadDeserializer;
-import com.github.theword.queqiao.tool.deserializer.TitlePayloadDeserializer;
-import com.github.theword.queqiao.tool.payload.MessagePayload;
-import com.github.theword.queqiao.tool.payload.PrivateMessagePayload;
-import com.github.theword.queqiao.tool.payload.TitlePayload;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
 import java.lang.reflect.Modifier;
 
-/** Gson Utils */
+/**
+ * Gson Utils
+ * <p>
+ * 提供全局唯一的 Gson 实例，避免重复初始化。
+ * 可在此统一配置 Gson（如字段排除、命名策略等）。
+ */
 public class GsonUtils {
+    /**
+     * 全局 Gson 实例
+     */
+    private static final Gson INSTANCE = new GsonBuilder().excludeFieldsWithModifiers(Modifier.STATIC, Modifier.TRANSIENT).create();
 
     /**
-     * Gson builder with custom deserializer
+     * 获取全局 Gson 实例
      *
-     * <p>adapter: {@link MessagePayloadDeserializer}
-     *
-     * <p>adapter: {@link TitlePayloadDeserializer}
-     *
-     * <p>excludeFieldsWithModifiers: {@link Modifier#STATIC}
-     *
-     * @return Gson
+     * @return Gson 单例
      */
-    public static Gson buildGson() {
-        return new GsonBuilder().registerTypeAdapter(MessagePayload.class, new MessagePayloadDeserializer()).registerTypeAdapter(TitlePayload.class, new TitlePayloadDeserializer()).registerTypeAdapter(PrivateMessagePayload.class, new MessagePayloadDeserializer()).excludeFieldsWithModifiers(Modifier.STATIC, Modifier.TRANSIENT).create();
+    public static Gson getGson() {
+        return INSTANCE;
     }
 }

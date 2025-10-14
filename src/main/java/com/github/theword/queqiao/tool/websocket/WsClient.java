@@ -10,6 +10,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.google.gson.Gson;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
@@ -35,13 +37,13 @@ public class WsClient extends WebSocketClient {
     private volatile boolean stopped = false;
 
     public WsClient(
-                    URI uri, Logger logger, String serverName, String accessToken, int reconnectMaxTimes, int reconnectInterval, boolean enabled) {
+                    URI uri, Logger logger, Gson gson, String serverName, String accessToken, int reconnectMaxTimes, int reconnectInterval, boolean enabled) {
         super(uri);
         this.logger = logger;
         this.reconnectMaxTimes = reconnectMaxTimes;
         this.reconnectInterval = reconnectInterval;
         this.enabled = enabled;
-        this.handleProtocolMessage = new HandleProtocolMessage(logger);
+        this.handleProtocolMessage = new HandleProtocolMessage(logger, gson);
         try {
             this.addHeader(
                     "x-self-name", URLEncoder.encode(serverName, StandardCharsets.UTF_8.toString()));

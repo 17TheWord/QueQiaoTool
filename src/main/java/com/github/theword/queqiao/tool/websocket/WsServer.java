@@ -6,6 +6,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+
+import com.google.gson.Gson;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -30,7 +32,7 @@ public class WsServer extends WebSocketServer {
      * @param accessToken 访问令牌 (可选) 如果不需要访问令牌则传入空字符串
      */
     public WsServer(
-                    InetSocketAddress address, Logger logger, String serverName, String accessToken, boolean enabled) {
+                    InetSocketAddress address, Logger logger, Gson gson, String serverName, String accessToken, boolean enabled) {
         super(address);
         super.setReuseAddr(true);
         this.logger = logger;
@@ -39,7 +41,7 @@ public class WsServer extends WebSocketServer {
         this.serverName = serverName;
         this.accessToken = accessToken;
         this.enabled = enabled;
-        this.handleProtocolMessage = new HandleProtocolMessage(logger);
+        this.handleProtocolMessage = new HandleProtocolMessage(logger, gson);
     }
 
     /**
