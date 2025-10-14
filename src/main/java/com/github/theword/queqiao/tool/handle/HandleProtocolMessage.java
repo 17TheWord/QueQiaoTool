@@ -7,7 +7,6 @@ import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.github.theword.queqiao.tool.payload.*;
 import com.github.theword.queqiao.tool.response.PrivateMessageResponse;
 import com.github.theword.queqiao.tool.response.Response;
-import com.github.theword.queqiao.tool.utils.GsonUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.java_websocket.WebSocket;
@@ -20,12 +19,13 @@ import java.io.IOException;
  */
 public class HandleProtocolMessage {
 
-    private static final Gson gson = GsonUtils.buildGson();
+    private final Gson gson;
     private static final HandleApiService handleApiService = GlobalContext.getHandleApiService();
     private final Logger logger;
 
-    public HandleProtocolMessage(Logger logger) {
+    public HandleProtocolMessage(Logger logger, Gson gson) {
         this.logger = logger;
+        this.gson = gson;
     }
 
     /**
@@ -48,8 +48,7 @@ public class HandleProtocolMessage {
      * @return 响应的JSON字符串
      */
     public String handleWebsocketJson(WebSocket webSocket, String rawJsonMessage) {
-        Response response = this.handle(
-                rawJsonMessage, webSocket.getRemoteSocketAddress().toString(), MessageSource.WEBSOCKET);
+        Response response = this.handle(rawJsonMessage, webSocket.getRemoteSocketAddress().toString(), MessageSource.WEBSOCKET);
         return gson.toJson(response);
     }
 
@@ -83,20 +82,20 @@ public class HandleProtocolMessage {
     public Response parseAndHandle(String rawJsonMessage) {
         BasePayload basePayload = gson.fromJson(rawJsonMessage, BasePayload.class);
 
+        String api = basePayload.getApi();
         JsonElement data = basePayload.getData();
         String echo = basePayload.getEcho();
 
-        String api = basePayload.getApi();
         switch (api) {
             case "broadcast":
             case "send_msg": {
-                MessagePayload messageList = gson.fromJson(data, MessagePayload.class);
-                handleApiService.handleBroadcastMessage(messageList.getMessage());
+                MessagePayload messagePayload = gson.fromJson(data, MessagePayload.class);
+                handleApiService.handleBroadcastMessage(messagePayload.getMessage());
                 return Response.success(null, echo);
             }
             case "send_title": {
                 TitlePayload titlePayload = gson.fromJson(data, TitlePayload.class);
-                handleApiService.handleSendTitleMessage(titlePayload);
+                handleApiService.handleSendTitleMessage(titlePayload.getTitle(), titlePayload.getSubtitle(), titlePayload.getFadein(), titlePayload.getStay(), titlePayload.getFadeout());
                 return Response.success(null, echo);
             }
             case "send_actionbar": {
@@ -107,11 +106,9 @@ public class HandleProtocolMessage {
             case "send_private_msg": {
                 PrivateMessagePayload privateMessagePayload = gson.fromJson(data, PrivateMessagePayload.class);
                 if ((privateMessagePayload.getNickname() == null || privateMessagePayload.getNickname().isEmpty()) && privateMessagePayload.getUuid() == null) {
-                    return Response.failed(
-                            400, PrivateMessageResponse.playerIsNull().getMessage(), PrivateMessageResponse.playerIsNull(), echo);
+                    return Response.failed(400, PrivateMessageResponse.playerIsNull().getMessage(), PrivateMessageResponse.playerIsNull(), echo);
                 }
-                PrivateMessageResponse privateMessageResponse = handleApiService.handleSendPrivateMessage(
-                        privateMessagePayload.getNickname(), privateMessagePayload.getUuid(), privateMessagePayload.getMessage());
+                PrivateMessageResponse privateMessageResponse = handleApiService.handleSendPrivateMessage(privateMessagePayload.getNickname(), privateMessagePayload.getUuid(), privateMessagePayload.getMessage());
                 return Response.success(privateMessageResponse, echo);
             }
             case "send_command":

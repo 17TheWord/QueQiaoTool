@@ -12,6 +12,6 @@ class ResponseTest {
     @Test
     void getJson() {
         Response response = new Response(200, ResponseEnum.SUCCESS, "success", null, null);
-        logger.info(GsonUtils.buildGson().toJson(response));
+        logger.info(GsonUtils.getGson().toJson(response));
     }
 }

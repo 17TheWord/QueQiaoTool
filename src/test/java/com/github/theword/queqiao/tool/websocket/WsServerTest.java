@@ -5,13 +5,16 @@ import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+
+import com.google.gson.Gson;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 class WsServerTest {
 
-    Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Gson gson = new Gson();
 
     @Test
     void testUnicodeServerName() throws UnsupportedEncodingException {
@@ -27,7 +30,7 @@ class WsServerTest {
     @Test
     void testOnOpen() {
         InetSocketAddress inetSocketAddress = new InetSocketAddress("127.0.0.1", 25565);
-        WsServer wsServer = new WsServer(inetSocketAddress, logger, "Server", "", true);
+        WsServer wsServer = new WsServer(inetSocketAddress, logger, gson, "Server", "", true);
         wsServer.start();
     }
 }

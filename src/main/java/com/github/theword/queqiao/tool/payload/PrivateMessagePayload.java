@@ -1,25 +1,33 @@
 package com.github.theword.queqiao.tool.payload;
 
+import com.google.gson.JsonElement;
 import com.google.gson.annotations.SerializedName;
-import java.util.List;
+
 import java.util.UUID;
 
 /**
- * 私聊消息负载（PrivateMessagePayload）
- *
- * <p>扩展自 {@link MessagePayload}，用于表示发送给单个目标玩家的私聊消息。
- *
- * <p>包含目标玩家的 UUID 和昵称信息，用于在日志或展示中标识接收者。
+ * 私聊消息负载
  */
 public class PrivateMessagePayload extends MessagePayload {
 
-    /** 目标玩家的 UUID（可为空） */
-    @SerializedName("uuid")
-    private UUID uuid = null;
+    /**
+     * 目标玩家的 UUID（可为空）
+     */
+    private UUID uuid;
 
-    /** 目标玩家的昵称（可为空） */
-    @SerializedName("nickname")
-    private String nickname = null;
+    /**
+     * 目标玩家的昵称（可为空）
+     */
+    private String nickname;
+
+    public PrivateMessagePayload() {
+    }
+
+    public PrivateMessagePayload(JsonElement message, UUID uuid, String nickname) {
+        super(message);
+        this.uuid = uuid;
+        this.nickname = nickname;
+    }
 
     public UUID getUuid() {
         return uuid;
@@ -34,24 +42,6 @@ public class PrivateMessagePayload extends MessagePayload {
     }
 
     public void setNickname(String nickname) {
-        this.nickname = nickname;
-    }
-
-    public PrivateMessagePayload() {
-    }
-
-    public PrivateMessagePayload(List<MessageSegment> message) {
-        super(message);
-    }
-
-    public PrivateMessagePayload(UUID uuid, String nickname) {
-        this.uuid = uuid;
-        this.nickname = nickname;
-    }
-
-    public PrivateMessagePayload(List<MessageSegment> message, UUID uuid, String nickname) {
-        super(message);
-        this.uuid = uuid;
         this.nickname = nickname;
     }
 

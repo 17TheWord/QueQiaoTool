@@ -12,10 +12,14 @@ import com.google.gson.JsonElement;
  * <p>echo：用于请求结果以及返回值
  */
 public class BasePayload {
-    /** API名称 */
+    /**
+     * API名称
+     */
     private String api;
 
-    /** Json对象 */
+    /**
+     * Json对象
+     */
     private JsonElement data;
 
     /**

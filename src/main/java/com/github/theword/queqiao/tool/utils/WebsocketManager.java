@@ -6,6 +6,8 @@ import com.github.theword.queqiao.tool.event.base.BaseEvent;
 import com.github.theword.queqiao.tool.websocket.WsClient;
 import com.github.theword.queqiao.tool.websocket.WsServer;
 import com.google.gson.Gson;
+import org.slf4j.Logger;
+
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -13,13 +15,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WebsocketManager {
-    /** Websocket Client 列表 */
-    private final List<WsClient> wsClientList = new ArrayList<>();
+    /**
+     * Websocket Client 列表
+     */
+    private final List<WsClient> wsClientList;
 
-    /** Websocket Server */
+    /**
+     * Websocket Server
+     */
     private WsServer wsServer;
 
-    private final Gson gson = GsonUtils.buildGson();
+    private final Logger logger;
+
+    private final Gson gson;
 
     public List<WsClient> getWsClientList() {
         return wsClientList;
@@ -27,6 +35,12 @@ public class WebsocketManager {
 
     public WsServer getWsServer() {
         return wsServer;
+    }
+
+    public WebsocketManager(Logger logger, Gson gson) {
+        this.logger = logger;
+        this.gson = gson;
+        this.wsClientList = new ArrayList<>();
     }
 
     /**
@@ -41,7 +55,7 @@ public class WebsocketManager {
                     websocketUrl -> {
                         try {
                             WsClient wsClient = new WsClient(
-                                    new URI(websocketUrl), GlobalContext.getLogger(), GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().getWebsocketClient().getReconnectMaxTimes(), GlobalContext.getConfig().getWebsocketClient().getReconnectInterval(), GlobalContext.getConfig().isEnable());
+                                    new URI(websocketUrl), logger, gson, GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().getWebsocketClient().getReconnectMaxTimes(), GlobalContext.getConfig().getWebsocketClient().getReconnectInterval(), GlobalContext.getConfig().isEnable());
                             wsClient.connect();
                             wsClientList.add(wsClient);
                         } catch (URISyntaxException e) {
@@ -90,8 +104,8 @@ public class WebsocketManager {
     private void startWebsocketServer(Object commandReturner) {
         if (GlobalContext.getConfig().getWebsocketServer().isEnable()) {
             wsServer = new WsServer(
-                    new InetSocketAddress(
-                            GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()), GlobalContext.getLogger(), GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().isEnable());
+                    new InetSocketAddress(GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()), logger, gson, GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().isEnable()
+            );
             wsServer.start();
             GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
                     commandReturner, String.format(
@@ -149,12 +163,16 @@ public class WebsocketManager {
         startWebsocketServer(commandReturner);
     }
 
-    /** 因 Minecraft Server 开启，启动 WebSocket 开服时调用 */
+    /**
+     * 因 Minecraft Server 开启，启动 WebSocket 开服时调用
+     */
     public void startWebsocketOnServerStart() {
         startWebsocket(null);
     }
 
-    /** 因 Minecraft Server 关闭，关闭 WebSocket 关服时调用 */
+    /**
+     * 因 Minecraft Server 关闭，关闭 WebSocket 关服时调用
+     */
     public void stopWebsocketByServerClose() {
         stopWebsocket(1000, WebsocketConstantMessage.Client.CLOSING_CONNECTION, null);
     }

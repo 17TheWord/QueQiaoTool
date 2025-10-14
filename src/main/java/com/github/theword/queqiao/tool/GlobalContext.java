@@ -6,7 +6,9 @@ import com.github.theword.queqiao.tool.constant.CommandConstantMessage;
 import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
 import com.github.theword.queqiao.tool.rcon.RconClient;
+import com.github.theword.queqiao.tool.utils.GsonUtils;
 import com.github.theword.queqiao.tool.utils.WebsocketManager;
+import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +17,7 @@ import java.io.IOException;
 public class GlobalContext {
     private static Config config;
     private static Logger logger;
+    private static Gson gson;
     private static WebsocketManager websocketManager;
     private static HandleApiService handleApiService;
     private static HandleCommandReturnMessageService handleCommandReturnMessageService;
@@ -25,6 +28,7 @@ public class GlobalContext {
     public static void init(boolean isModServer, String serverVersion, String serverType, HandleApiService handleApiImpl, HandleCommandReturnMessageService handleCommandReturnMessageImpl) {
         logger = LoggerFactory.getLogger(BaseConstant.MODULE_NAME);
         logger.info(BaseConstant.LAUNCHING);
+        gson = GsonUtils.getGson();
         config = Config.loadConfig(isModServer, logger);
         GlobalContext.serverVersion = serverVersion;
         GlobalContext.serverType = serverType;
@@ -40,7 +44,7 @@ public class GlobalContext {
      * 执行全局重载命令
      * <p> 1. 先重新读取配置文件 </p>
      * <p> 2. 再重新连接所有 Websocket Client </p>
-     * <p> 3. 重连Rcon </p>
+     * <p> 3. 重连 Rcon </p>
      *
      * @param commandReturner 命令返回者
      * @param isModServer     是否为模组服
@@ -62,7 +66,7 @@ public class GlobalContext {
     // Websocket
     //
     private static void initWebsocketManager() {
-        websocketManager = new WebsocketManager();
+        websocketManager = new WebsocketManager(logger, gson);
         websocketManager.startWebsocket(null);
     }
 
@@ -156,5 +160,9 @@ public class GlobalContext {
 
     public static String getServerType() {
         return serverType;
+    }
+
+    public static Gson getGson() {
+        return gson;
     }
 }

@@ -1,8 +1,6 @@
 package com.github.theword.queqiao.tool.event.base;
 
 import com.github.theword.queqiao.tool.GlobalContext;
-import com.github.theword.queqiao.tool.utils.GsonUtils;
-import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 
 /**
@@ -52,17 +50,5 @@ public class BaseEvent {
         this.eventName = eventName;
         this.postType = postType;
         this.subType = subType;
-    }
-
-    /**
-     * 将事件对象序列化为 JSON 字符串。
-     *
-     * @return 事件的 JSON 表示
-     * @deprecated 请使用 {@link GsonUtils#buildGson()} 生成的 Gson 实例进行序列化
-     */
-    @Deprecated
-    public String getJson() {
-        Gson gson = GsonUtils.buildGson();
-        return gson.toJson(this);
     }
 }
