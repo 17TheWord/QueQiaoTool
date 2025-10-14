@@ -8,33 +8,6 @@
 - 消息发送能力（`广播`、`ActionBar`、`Title` & `Subtitle`、`私聊`）。
 - `Rcon` 支持。
 
-## 构建与依赖
-
-- 前往 `Release` 查看最新版本。
-- 项目使用 GitHub Packages ，需配置凭证，参考 [GitHub Packages](https://docs.github.com/zh/packages) 配置。
-- 环境变量
-    - `GH_USERNAME`：GitHub 用户名。
-    - `PACKAGE_READ_ONLY_TOKEN`：GitHub 个人访问令牌。
-
-Gradle (Kotlin DSL)：
-
-```kotlin
-dependencies {
-    implementation("com.github.theword.queqiao:queqiao-tool:0.3.7")
-}
-```
-
-Maven：
-
-```xml
-
-<dependency>
-    <groupId>com.github.theword.queqiao</groupId>
-    <artifactId>queqiao-tool</artifactId>
-    <version>0.3.7</version>
-</dependency>
-```
-
 ## 快速开始
 
 1. 在服务端启动完成后阶段调用：
@@ -93,6 +66,32 @@ Maven：
     ./gradlew.bat test
     ./gradlew.bat build
     ```
+
+## 构建与依赖
+
+- 前往 `Release` 查看最新版本。
+- 项目使用 GitHub Packages ，需配置凭证，参考 [GitHub Packages](https://docs.github.com/zh/packages) 配置。
+- 环境变量
+    - `GH_USERNAME`：GitHub 用户名。
+    - `PACKAGE_READ_ONLY_TOKEN`：GitHub 个人访问令牌。
+
+Gradle (Kotlin DSL)：
+
+```kotlin
+repositories {
+    maven {
+        url = uri("https://maven.pkg.github.com/17TheWord/QueQiaoTool")
+        credentials {
+            username = System.getenv("GH_USERNAME")
+            password = System.getenv("PACKAGE_READ_ONLY_TOKEN")
+        }
+    }
+}
+
+dependencies {
+    implementation("com.github.theword.queqiao:queqiao-tool:0.3.7")
+}
+```
 
 ## 社群
 
