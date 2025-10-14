@@ -1,6 +1,6 @@
 package com.github.theword.queqiao.tool.event.base;
 
-import com.github.theword.queqiao.tool.utils.GsonUtils;
+
 import java.util.UUID;
 
 /**
@@ -12,10 +12,14 @@ import java.util.UUID;
  */
 public class BasePlayer {
 
-    /** 玩家昵称 */
+    /**
+     * 玩家昵称
+     */
     private String nickname;
 
-    /** 玩家 UUID */
+    /**
+     * 玩家 UUID
+     */
     private UUID uuid;
 
     public String getNickname() {
@@ -65,16 +69,5 @@ public class BasePlayer {
     @Override
     public int hashCode() {
         return nickname.hashCode();
-    }
-
-    /**
-     * 将玩家对象转换为 JSON 字符串
-     *
-     * @return JSON 字符串
-     * @deprecated 请使用 {@link GsonUtils#buildGson()} 生成的 Gson 对象进行转换
-     */
-    @Deprecated
-    public String getJson() {
-        return GsonUtils.buildGson().toJson(this);
     }
 }
