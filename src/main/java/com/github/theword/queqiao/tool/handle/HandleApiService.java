@@ -1,9 +1,8 @@
 package com.github.theword.queqiao.tool.handle;
 
-import com.github.theword.queqiao.tool.payload.MessageSegment;
-import com.github.theword.queqiao.tool.payload.TitlePayload;
 import com.github.theword.queqiao.tool.response.PrivateMessageResponse;
-import java.util.List;
+import com.google.gson.JsonElement;
+
 import java.util.UUID;
 
 /**
@@ -16,32 +15,35 @@ public interface HandleApiService {
     /**
      * API: broadcast / send_msg
      *
-     * @param messageList 消息列表
+     * @param jsonData Json消息
      */
-    void handleBroadcastMessage(List<MessageSegment> messageList);
+    void handleBroadcastMessage(JsonElement jsonData);
 
     /**
      * API: send_title
      *
-     * @param titlePayload Title
+     * @param titlePayload    Title
+     * @param subTitlePayload Subtitle
+     * @param fadeIn          淡入时间(ticks)
+     * @param stay            停留时间(ticks)
+     * @param fadeOut         淡出时间(ticks)
      */
-    void handleSendTitleMessage(TitlePayload titlePayload);
+    void handleSendTitleMessage(JsonElement titlePayload, JsonElement subTitlePayload, int fadeIn, int stay, int fadeOut);
 
     /**
      * API: send_actionbar
      *
-     * @param messageList Action Bar 消息列表
+     * @param jsonData Json消息
      */
-    void handleSendActionBarMessage(List<MessageSegment> messageList);
+    void handleSendActionBarMessage(JsonElement jsonData);
 
     /**
      * API: send_private_msg
      *
-     * @param nickname    目标玩家名
-     * @param uuid        目标 UUID
-     * @param messageList 消息列表
+     * @param nickname 目标玩家名
+     * @param uuid     目标 UUID
+     * @param jsonData Json消息
      * @return 私聊消息响应 {@link PrivateMessageResponse}
      */
-    PrivateMessageResponse handleSendPrivateMessage(
-                                                    String nickname, UUID uuid, List<MessageSegment> messageList);
+    PrivateMessageResponse handleSendPrivateMessage(String nickname, UUID uuid, JsonElement jsonData);
 }
