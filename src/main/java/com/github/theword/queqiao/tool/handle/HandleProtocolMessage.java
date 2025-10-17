@@ -95,7 +95,7 @@ public class HandleProtocolMessage {
             }
             case "send_title": {
                 TitlePayload titlePayload = gson.fromJson(data, TitlePayload.class);
-                handleApiService.handleSendTitleMessage(titlePayload.getTitle(), titlePayload.getSubtitle(), titlePayload.getFadein(), titlePayload.getStay(), titlePayload.getFadeout());
+                handleApiService.handleSendTitleMessage(titlePayload.getTitle(), titlePayload.getSubtitle(), titlePayload.getFadeIn(), titlePayload.getStay(), titlePayload.getFadeOut());
                 return Response.success(null, echo);
             }
             case "send_actionbar": {

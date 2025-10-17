@@ -20,7 +20,7 @@ public class TitlePayload {
     /**
      * 淡入时间（ticks），默认 10
      */
-    private int fadein = 10;
+    private int fadeIn = 20;
 
     /**
      * 停留时间（ticks），默认 70
@@ -30,7 +30,7 @@ public class TitlePayload {
     /**
      * 淡出时间（ticks），默认 10
      */
-    private int fadeout = 10;
+    private int fadeOut = 20;
 
 
     public JsonElement getTitle() {
@@ -49,12 +49,12 @@ public class TitlePayload {
         this.subtitle = subtitle;
     }
 
-    public int getFadein() {
-        return fadein;
+    public int getFadeIn() {
+        return fadeIn;
     }
 
-    public void setFadein(int fadein) {
-        this.fadein = fadein;
+    public void setFadeIn(int fadeIn) {
+        this.fadeIn = fadeIn;
     }
 
     public int getStay() {
@@ -65,22 +65,22 @@ public class TitlePayload {
         this.stay = stay;
     }
 
-    public int getFadeout() {
-        return fadeout;
+    public int getFadeOut() {
+        return fadeOut;
     }
 
-    public void setFadeout(int fadeout) {
-        this.fadeout = fadeout;
+    public void setFadeOut(int fadeOut) {
+        this.fadeOut = fadeOut;
     }
 
     public TitlePayload() {
     }
 
-    public TitlePayload(JsonElement title, JsonElement subtitle, int fadein, int stay, int fadeout) {
+    public TitlePayload(JsonElement title, JsonElement subtitle, int fadeIn, int stay, int fadeOut) {
         this.title = title;
         this.subtitle = subtitle;
-        this.fadein = fadein;
+        this.fadeIn = fadeIn;
         this.stay = stay;
-        this.fadeout = fadeout;
+        this.fadeOut = fadeOut;
     }
 }
