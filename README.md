@@ -34,10 +34,9 @@
 
 ## 接口说明
 
-- `V2` 协议接口：[`ApiFox`](https://vbnucidgma.apifox.cn/)
-- `V2` 事件接口：暂未支持，敬请期待
-- `V1` 协议接口：[`ApiFox`](https://rxylncffzr.apifox.cn)
-- `V1` 事件接口：[`QueQiao GitHub Wiki`](https://github.com/17TheWord/QueQiao/wiki/4.-%E5%9F%BA%E6%9C%AC%E4%BA%8B%E4%BB%B6%E7%B1%BB%E5%9E%8B)
+- `V2` 协议：[`ApiFox`](https://queqiao.apifox.cn/)
+- `V1` 协议：[`ApiFox`](https://rxylncffzr.apifox.cn)
+- `V1` 事件：[`QueQiao GitHub Wiki`](https://github.com/17TheWord/QueQiao/wiki/4.-%E5%9F%BA%E6%9C%AC%E4%BA%8B%E4%BB%B6%E7%B1%BB%E5%9E%8B)
 
 ## 配置文件说明
 
