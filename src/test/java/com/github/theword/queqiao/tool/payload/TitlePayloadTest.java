@@ -1,13 +1,16 @@
 package com.github.theword.queqiao.tool.payload;
 
 import com.github.theword.queqiao.tool.utils.GsonUtils;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.*;
 
 class TitlePayloadTest {
 
     @Test
-    void testSerializer() {
+    void testSerializerTitle() {
         String jsonData = "{\n" +
                 "        \"title\": {\n" +
                 "            \"text\": \"Title\",\n" +
@@ -21,10 +24,20 @@ class TitlePayloadTest {
                 "        \"fade_out\": 20\n" +
                 "    }";
         TitlePayload titlePayload = GsonUtils.getGson().fromJson(jsonData, TitlePayload.class);
-        System.out.println(titlePayload.getTitle());
-        System.out.println(titlePayload.getSubtitle());
-        System.out.println(titlePayload.getFadeIn());
-        System.out.println(titlePayload.getStay());
-        System.out.println(titlePayload.getFadeOut());
+        assertNotNull(titlePayload);
+        JsonElement title = titlePayload.getTitle();
+        assertNotNull(title);
+        assertTrue(title.isJsonObject());
+        JsonObject titleObj = title.getAsJsonObject();
+        assertEquals("Title", titleObj.get("text").getAsString());
+        assertEquals("aqua", titleObj.get("color").getAsString());
+        JsonElement subtitle = titlePayload.getSubtitle();
+        assertNotNull(subtitle);
+        assertTrue(subtitle.isJsonObject());
+        JsonObject subtitleObj = subtitle.getAsJsonObject();
+        assertEquals("Sub Title", subtitleObj.get("text").getAsString());
+        assertEquals(25, titlePayload.getFadeIn());
+        assertEquals(70, titlePayload.getStay());
+        assertEquals(20, titlePayload.getFadeOut());
     }
 }
