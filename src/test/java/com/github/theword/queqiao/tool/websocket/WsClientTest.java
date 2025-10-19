@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 class WsClientTest {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -19,12 +21,16 @@ class WsClientTest {
 
     @Test
     void testUnicodeServerName() throws UnsupportedEncodingException {
-        System.out.println("URLEncoder: " + URLEncoder.encode("服务器", StandardCharsets.UTF_8.toString()));
+        String encode = URLEncoder.encode("服务器", StandardCharsets.UTF_8.toString());
+        this.logger.info("URLEncoder: {}", encode);
+        assertEquals("%E6%9C%8D%E5%8A%A1%E5%99%A8", encode);
     }
 
     @Test
     void testDecodeServerName() throws UnsupportedEncodingException {
-        System.out.println("URLDecoder:" + URLDecoder.decode("%E6%9C%8D%E5%8A%A1%E5%99%A8", StandardCharsets.UTF_8.toString()));
+        String decode = URLDecoder.decode("%E6%9C%8D%E5%8A%A1%E5%99%A8", StandardCharsets.UTF_8.toString());
+        this.logger.info("URLDecoder:{}", decode);
+        assertEquals("服务器", decode);
     }
 
     //    @Test
