@@ -11,18 +11,7 @@ class TitlePayloadTest {
 
     @Test
     void testSerializerTitle() {
-        String jsonData = "{\n" +
-                "        \"title\": {\n" +
-                "            \"text\": \"Title\",\n" +
-                "            \"color\": \"aqua\"\n" +
-                "        },\n" +
-                "        \"subtitle\": {\n" +
-                "            \"text\": \"Sub Title\"\n" +
-                "        },\n" +
-                "        \"fade_in\": 25,\n" +
-                "        \"stay\": 70,\n" +
-                "        \"fade_out\": 20\n" +
-                "    }";
+        String jsonData = "{\"title\":{\"text\":\"Title\",\"color\":\"aqua\"},\"subtitle\":{\"text\":\"Sub Title\"},\"fade_in\":25,\"stay\":70,\"fade_out\":20}";
         TitlePayload titlePayload = GsonUtils.getGson().fromJson(jsonData, TitlePayload.class);
         assertNotNull(titlePayload);
         JsonElement title = titlePayload.getTitle();
