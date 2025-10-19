@@ -1,6 +1,7 @@
 package com.github.theword.queqiao.tool.payload;
 
 import com.google.gson.JsonElement;
+import com.google.gson.annotations.SerializedName;
 
 
 /**
@@ -18,8 +19,9 @@ public class TitlePayload {
     private JsonElement subtitle;
 
     /**
-     * 淡入时间（ticks），默认 10
+     * 淡入时间（ticks），默认 20
      */
+    @SerializedName("fade_in")
     private int fadeIn = 20;
 
     /**
@@ -28,8 +30,9 @@ public class TitlePayload {
     private int stay = 70;
 
     /**
-     * 淡出时间（ticks），默认 10
+     * 淡出时间（ticks），默认 20
      */
+    @SerializedName("fade_out")
     private int fadeOut = 20;
 
 
