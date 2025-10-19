@@ -1,7 +1,7 @@
 package com.github.theword.queqiao.tool.response;
 
 public enum ResponseEnum {
-    SUCCESS("success"), FAILED("failed");
+    SUCCESS("SUCCESS"), FAILED("FAILED");
 
     private final String value;
 
