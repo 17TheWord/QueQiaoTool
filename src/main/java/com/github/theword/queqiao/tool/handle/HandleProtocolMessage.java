@@ -13,6 +13,7 @@ import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * 处理协议消息
@@ -70,7 +71,7 @@ public class HandleProtocolMessage {
         } catch (Exception e) {
             this.logger.error("解析来自 {} 的 webSocket 消息时出现问题，消息内容： {}", address, rawJsonMessage);
             this.logger.error("错误信息：", e);
-            return Response.failed(500, "解析消息失败", null, null);
+            return Response.failed(500, "解析消息失败", new HashMap<String, String>().put("rawJsonMessage", rawJsonMessage), null);
         }
     }
 
