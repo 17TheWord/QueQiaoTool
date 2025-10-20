@@ -71,7 +71,9 @@ public class HandleProtocolMessage {
         } catch (Exception e) {
             this.logger.error("解析来自 {} 的 webSocket 消息时出现问题，消息内容： {}", address, rawJsonMessage);
             this.logger.error("错误信息：", e);
-            return Response.failed(500, "解析消息失败", new HashMap<String, String>().put("rawJsonMessage", rawJsonMessage), null);
+            HashMap<String, String> data = new HashMap<>();
+            data.put("rawJsonMessage", rawJsonMessage);
+            return Response.failed(500, "解析消息失败", data, null);
         }
     }
 
