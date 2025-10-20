@@ -12,7 +12,6 @@ import com.google.gson.JsonElement;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 
-import java.io.IOException;
 import java.util.HashMap;
 
 /**
@@ -125,12 +124,13 @@ public class HandleProtocolMessage {
                 try {
                     result = GlobalContext.sendRconCommand(commandPayload.getCommand());
                     return Response.success(result, echo);
-                } catch (IllegalArgumentException e) {
-                    logger.warn("Rcon 执行命令时出现问题，命令发送失败：{}", e.getMessage());
-                    return Response.failed(400, e.getMessage(), null, echo);
-                } catch (IOException e) {
+                } catch (Exception e) {
+                    String errorMessage = e.getMessage() != null ? e.getMessage() : "failed";
                     logger.warn("Rcon 执行命令时出现问题，命令发送失败！", e);
-                    return Response.failed(500, "failed", null, echo);
+                    HashMap<Object, Object> resultData = new HashMap<>();
+                    resultData.put("command", commandPayload.getCommand());
+                    resultData.put("error", errorMessage);
+                    return Response.failed(400, errorMessage, resultData, echo);
                 }
             default:
                 this.logger.warn(BaseConstant.UNKNOWN_API + "{}", api);
