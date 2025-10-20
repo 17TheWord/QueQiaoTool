@@ -123,10 +123,11 @@ public class HandleProtocolMessage {
                 String result;
                 try {
                     result = GlobalContext.sendRconCommand(commandPayload.getCommand());
+                    logger.info("发送 Rcon 命令: {}", commandPayload.getCommand());
                     return Response.success(result, echo);
                 } catch (Exception e) {
                     String errorMessage = e.getMessage() != null ? e.getMessage() : "failed";
-                    logger.warn("Rcon 执行命令时出现问题，命令发送失败！", e);
+                    logger.warn("Rcon 执行命令时出现问题，命令发送失败！{}", errorMessage);
                     HashMap<Object, Object> resultData = new HashMap<>();
                     resultData.put("command", commandPayload.getCommand());
                     resultData.put("error", errorMessage);
