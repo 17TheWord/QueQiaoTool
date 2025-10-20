@@ -97,7 +97,7 @@ public class HandleProtocolMessage {
             }
             case "send_title": {
                 TitlePayload titlePayload = gson.fromJson(data, TitlePayload.class);
-                if (titlePayload.getTitle() == null && titlePayload.getSubtitle() == null) {
+                if ((titlePayload.getTitle() == null || titlePayload.getTitle().isJsonNull()) && (titlePayload.getSubtitle() == null || titlePayload.getSubtitle().isJsonNull())) {
                     return Response.failed(400, "Title and Subtitle cannot both be null", null, echo);
                 }
                 handleApiService.handleSendTitleMessage(titlePayload.getTitle(), titlePayload.getSubtitle(), titlePayload.getFadeIn(), titlePayload.getStay(), titlePayload.getFadeOut());
