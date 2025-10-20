@@ -110,13 +110,13 @@ public class GlobalContext {
     public static String sendRconCommand(String command) throws IOException {
         if (!config.getRcon().isEnable()) {
             logger.warn("Rcon 未启用，无法发送命令");
-            return "Rcon 未启用，无法发送命令";
+            throw new IOException("Rcon 未启用，无法发送命令");
         } else if (rconClient == null) {
             logger.warn("Rcon 客户端未初始化，无法发送命令");
-            return "Rcon 客户端未初始化，无法发送命令";
+            throw new IOException("Rcon 未启用，无法发送命令");
         } else if (!rconClient.isConnected()) {
             logger.warn("Rcon 未连接，无法发送命令");
-            return "Rcon 未连接，无法发送命令";
+            throw new IOException("Rcon 未启用，无法发送命令");
         } else {
             logger.info("发送 Rcon 命令: {}", command);
             return rconClient.sendCommand(command);
