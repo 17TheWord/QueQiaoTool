@@ -3,6 +3,8 @@ package com.github.theword.queqiao.tool;
 import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.github.theword.queqiao.tool.constant.CommandConstantMessage;
+import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
+import com.github.theword.queqiao.tool.event.base.BaseEvent;
 import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
 import com.github.theword.queqiao.tool.rcon.RconClient;
@@ -52,12 +54,15 @@ public class GlobalContext {
     public static void executeReloadCommand(Object commandReturner, boolean isModServer) {
         setConfig(Config.loadConfig(isModServer, logger));
         handleCommandReturnMessageService.sendReturnMessage(commandReturner, CommandConstantMessage.RELOAD_CONFIG);
-        websocketManager.restartWebsocket(commandReturner);
+        websocketManager.restart(commandReturner);
         restartRconClient();
     }
 
+    /**
+     * 关闭鹊桥
+     */
     public static void shutdown() {
-        websocketManager.stopWebsocketByServerClose();
+        websocketManager.stop(1000, WebsocketConstantMessage.Client.CLOSING_CONNECTION, null);
         if (config.getRcon().isEnable() && rconClient != null) rconClient.stop();
         logger.info("鹊桥已关闭");
     }
@@ -66,8 +71,17 @@ public class GlobalContext {
     // Websocket
     //
     private static void initWebsocketManager() {
-        websocketManager = new WebsocketManager(logger, gson);
-        websocketManager.startWebsocket(null);
+        websocketManager = new WebsocketManager(logger, gson, handleCommandReturnMessageService);
+        websocketManager.start(null);
+    }
+
+    /**
+     * 同时向所有已连接的 WebSocket 客户端和服务端广播事件
+     *
+     * @param baseEvent 事件对象
+     */
+    public static void sendEvent(BaseEvent baseEvent) {
+        websocketManager.sendEvent(baseEvent);
     }
 
     //
