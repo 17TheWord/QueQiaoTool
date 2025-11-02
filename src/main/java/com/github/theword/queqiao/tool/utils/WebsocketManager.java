@@ -95,7 +95,9 @@ public class WebsocketManager {
     private void restartClients(Object commandReturner) {
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.RELOADING);
         stopClients(1000, WebsocketConstantMessage.CLOSE_BY_RELOAD, commandReturner);
-        startClients(commandReturner);
+        if (GlobalContext.getConfig().getWebsocketClient().isEnable()) {
+            startClients(commandReturner);
+        }
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.RELOADED);
     }
 
@@ -141,7 +143,9 @@ public class WebsocketManager {
      */
     private void restartServer(Object commandReturner) {
         stopServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
-        startServer(commandReturner);
+        if (GlobalContext.getConfig().getWebsocketServer().isEnable()) {
+            startServer(commandReturner);
+        }
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
     }
 
