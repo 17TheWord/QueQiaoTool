@@ -3,6 +3,7 @@ package com.github.theword.queqiao.tool.utils;
 import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.event.base.BaseEvent;
+import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
 import com.github.theword.queqiao.tool.websocket.WsClient;
 import com.github.theword.queqiao.tool.websocket.WsServer;
 import com.google.gson.Gson;
@@ -29,6 +30,8 @@ public class WebsocketManager {
 
     private final Gson gson;
 
+    private final HandleCommandReturnMessageService handleCommandReturnMessageService;
+
     public List<WsClient> getWsClientList() {
         return wsClientList;
     }
@@ -37,9 +40,10 @@ public class WebsocketManager {
         return wsServer;
     }
 
-    public WebsocketManager(Logger logger, Gson gson) {
+    public WebsocketManager(Logger logger, Gson gson, HandleCommandReturnMessageService handleCommandReturnMessageService) {
         this.logger = logger;
         this.gson = gson;
+        this.handleCommandReturnMessageService = handleCommandReturnMessageService;
         this.wsClientList = new ArrayList<>();
     }
 
@@ -48,23 +52,22 @@ public class WebsocketManager {
      *
      * @param commandReturner 命令执行者
      */
-    private void startWebsocketClients(Object commandReturner) {
-        if (GlobalContext.getConfig().getWebsocketClient().isEnable()) {
-            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
-            GlobalContext.getConfig().getWebsocketClient().getUrlList().forEach(
-                    websocketUrl -> {
-                        try {
-                            WsClient wsClient = new WsClient(
-                                    new URI(websocketUrl), logger, gson, GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().getWebsocketClient().getReconnectMaxTimes(), GlobalContext.getConfig().getWebsocketClient().getReconnectInterval(), GlobalContext.getConfig().isEnable());
-                            wsClient.connect();
-                            wsClientList.add(wsClient);
-                        } catch (URISyntaxException e) {
-                            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
-                                    commandReturner, String.format(
-                                            WebsocketConstantMessage.Client.URI_SYNTAX_ERROR.replace("{}", "%s"), websocketUrl));
-                        }
-                    });
-        }
+    private void startClients(Object commandReturner) {
+        this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
+        GlobalContext.getConfig().getWebsocketClient().getUrlList().forEach(
+                websocketUrl -> {
+                    try {
+                        WsClient wsClient = new WsClient(
+                                new URI(websocketUrl), logger, gson, GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().getWebsocketClient().getReconnectMaxTimes(), GlobalContext.getConfig().getWebsocketClient().getReconnectInterval(), GlobalContext.getConfig().isEnable());
+                        wsClient.connect();
+                        wsClientList.add(wsClient);
+                    } catch (URISyntaxException e) {
+                        this.handleCommandReturnMessageService.sendReturnMessage(
+                                commandReturner, String.format(
+                                        WebsocketConstantMessage.Client.URI_SYNTAX_ERROR.replace("{}", "%s"), websocketUrl));
+                    }
+                });
+
     }
 
     /**
@@ -74,13 +77,13 @@ public class WebsocketManager {
      * @param reason          原因
      * @param commandReturner 命令执行者
      */
-    private void stopWebsocketClients(int code, String reason, Object commandReturner) {
+    private void stopClients(int code, String reason, Object commandReturner) {
         for (WsClient wsClient : wsClientList) {
-            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, String.format(reason, wsClient.getURI()));
+            this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, String.format(reason, wsClient.getURI()));
             wsClient.stopWithoutReconnect(code, String.format(reason, wsClient.getURI()));
         }
         wsClientList.clear();
-        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
+        this.handleCommandReturnMessageService.sendReturnMessage(
                 commandReturner, WebsocketConstantMessage.Client.CLEAR_WEBSOCKET_CLIENT_LIST);
     }
 
@@ -89,11 +92,11 @@ public class WebsocketManager {
      *
      * @param commandReturner 命令执行者
      */
-    public void restartWebsocketClients(Object commandReturner) {
-        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.RELOADING);
-        stopWebsocketClients(1000, WebsocketConstantMessage.CLOSE_BY_RELOAD, commandReturner);
-        startWebsocketClients(commandReturner);
-        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.RELOADED);
+    public void restartClients(Object commandReturner) {
+        this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.RELOADING);
+        stopClients(1000, WebsocketConstantMessage.CLOSE_BY_RELOAD, commandReturner);
+        startClients(commandReturner);
+        this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.RELOADED);
     }
 
     /**
@@ -101,16 +104,15 @@ public class WebsocketManager {
      *
      * @param commandReturner 命令执行者
      */
-    private void startWebsocketServer(Object commandReturner) {
-        if (GlobalContext.getConfig().getWebsocketServer().isEnable()) {
-            wsServer = new WsServer(
-                    new InetSocketAddress(GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()), logger, gson, GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().isEnable()
-            );
-            wsServer.start();
-            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
-                    commandReturner, String.format(
-                            WebsocketConstantMessage.Server.SERVER_STARTING.replace("{}", "%s"), GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()));
-        }
+    private void startServer(Object commandReturner) {
+        wsServer = new WsServer(
+                new InetSocketAddress(GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()), logger, gson, GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().isEnable()
+        );
+        wsServer.start();
+        this.handleCommandReturnMessageService.sendReturnMessage(
+                commandReturner, String.format(
+                        WebsocketConstantMessage.Server.SERVER_STARTING.replace("{}", "%s"), GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()));
+
     }
 
     /**
@@ -123,9 +125,9 @@ public class WebsocketManager {
         if (wsServer != null) {
             try {
                 wsServer.stop(0, reason);
-                GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, reason);
+                this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, reason);
             } catch (InterruptedException e) {
-                GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.ERROR_ON_STOPPING);
+                this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.ERROR_ON_STOPPING);
                 Tool.debugLog(e.getMessage());
             }
             wsServer = null;
@@ -137,20 +139,10 @@ public class WebsocketManager {
      *
      * @param commandReturner 命令执行者
      */
-    public void restartWebsocketServer(Object commandReturner) {
+    public void restartServer(Object commandReturner) {
         stopWebsocketServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
-        startWebsocketServer(commandReturner);
-        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
-    }
-
-    /**
-     * 重载 Websocket reload 命令调用
-     *
-     * @param commandReturner 命令执行者
-     */
-    public void restartWebsocket(Object commandReturner) {
-        restartWebsocketServer(commandReturner);
-        restartWebsocketClients(commandReturner);
+        startServer(commandReturner);
+        this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
     }
 
     /**
@@ -159,22 +151,12 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     public void startWebsocket(Object commandReturner) {
-        startWebsocketClients(commandReturner);
-        startWebsocketServer(commandReturner);
-    }
-
-    /**
-     * 因 Minecraft Server 开启，启动 WebSocket 开服时调用
-     */
-    public void startWebsocketOnServerStart() {
-        startWebsocket(null);
-    }
-
-    /**
-     * 因 Minecraft Server 关闭，关闭 WebSocket 关服时调用
-     */
-    public void stopWebsocketByServerClose() {
-        stopWebsocket(1000, WebsocketConstantMessage.Client.CLOSING_CONNECTION, null);
+        if (GlobalContext.getConfig().getWebsocketClient().isEnable()) {
+            restartClients(commandReturner);
+        }
+        if (GlobalContext.getConfig().getWebsocketServer().isEnable()) {
+            startServer(commandReturner);
+        }
     }
 
     /**
@@ -184,8 +166,8 @@ public class WebsocketManager {
      * @param reason          原因
      * @param commandReturner 命令执行者
      */
-    public void stopWebsocket(int code, String reason, Object commandReturner) {
-        stopWebsocketClients(code, reason, commandReturner);
+    public void stop(int code, String reason, Object commandReturner) {
+        stopClients(code, reason, commandReturner);
         stopWebsocketServer(commandReturner, reason);
     }
 
