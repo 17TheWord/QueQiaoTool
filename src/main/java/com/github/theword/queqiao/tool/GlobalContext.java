@@ -76,7 +76,7 @@ public class GlobalContext {
     }
 
     /**
-     * 发送事件到所有已连接的 WebSocket 客户端
+     * 同时向所有已连接的 WebSocket 客户端和服务端广播事件
      *
      * @param baseEvent 事件对象
      */
