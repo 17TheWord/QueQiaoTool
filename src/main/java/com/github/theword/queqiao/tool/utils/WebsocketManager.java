@@ -171,6 +171,11 @@ public class WebsocketManager {
         stopServer(commandReturner, reason);
     }
 
+    /**
+     * 重载 WebSocket 同时重载客户端和服务端
+     *
+     * @param commandReturner 命令执行者
+     */
     public void restart(Object commandReturner) {
         restartClients(commandReturner);
         restartServer(commandReturner);
