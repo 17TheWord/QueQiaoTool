@@ -114,30 +114,25 @@ loadScripts(document, 'script');</script>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getWsServer()" class="member-name-link">getWsServer</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#restartClients(java.lang.Object)" class="member-name-link">restartClients</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;commandReturner)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#restart(java.lang.Object)" class="member-name-link">restart</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;commandReturner)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">重载 WebSocket 客户端</div>
+<div class="block">重载 WebSocket 同时重载客户端和服务端</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#restartServer(java.lang.Object)" class="member-name-link">restartServer</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;commandReturner)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sendEvent(com.github.theword.queqiao.tool.event.base.BaseEvent)" class="member-name-link">sendEvent</a><wbr>(<a href="../event/base/BaseEvent.html" title="class in com.github.theword.queqiao.tool.event.base">BaseEvent</a>&nbsp;event)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">重载 WebSocket 服务器 目前只有通过reload命令调用重载</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sendEvent(com.github.theword.queqiao.tool.event.base.BaseEvent)" class="member-name-link">sendEvent</a><wbr>(<a href="../event/base/BaseEvent.html" title="class in com.github.theword.queqiao.tool.event.base">BaseEvent</a>&nbsp;event)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">发送消息 同时向所有 Websocket 客户端和服务端广播消息</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#startWebsocket(java.lang.Object)" class="member-name-link">startWebsocket</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;commandReturner)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#start(java.lang.Object)" class="member-name-link">start</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;commandReturner)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">启动 WebSocket 开服时调用</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#stop(int,java.lang.String,java.lang.Object)" class="member-name-link">stop</a><wbr>(int&nbsp;code,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#stop(int,java.lang.String,java.lang.Object)" class="member-name-link">stop</a><wbr>(int&nbsp;code,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;reason,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;commandReturner)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">停止 WebSocket 除传入关闭码、关闭原因外，还需传入命令执行者（可为null）</div>
 </div>
 </div>
@@ -186,31 +181,9 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="restartClients(java.lang.Object)">
-<h3>restartClients</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">restartClients</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;commandReturner)</span></div>
-<div class="block">重载 WebSocket 客户端</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>commandReturner</code> - 命令执行者</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="restartServer(java.lang.Object)">
-<h3>restartServer</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">restartServer</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;commandReturner)</span></div>
-<div class="block">重载 WebSocket 服务器 目前只有通过reload命令调用重载</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>commandReturner</code> - 命令执行者</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="startWebsocket(java.lang.Object)">
-<h3>startWebsocket</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">startWebsocket</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;commandReturner)</span></div>
+<section class="detail" id="start(java.lang.Object)">
+<h3>start</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">start</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;commandReturner)</span></div>
 <div class="block">启动 WebSocket 开服时调用</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -229,6 +202,17 @@ loadScripts(document, 'script');</script>
 <dt>Parameters:</dt>
 <dd><code>code</code> - Code</dd>
 <dd><code>reason</code> - 原因</dd>
+<dd><code>commandReturner</code> - 命令执行者</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="restart(java.lang.Object)">
+<h3>restart</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">restart</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;commandReturner)</span></div>
+<div class="block">重载 WebSocket 同时重载客户端和服务端</div>
+<dl class="notes">
+<dt>Parameters:</dt>
 <dd><code>commandReturner</code> - 命令执行者</dd>
 </dl>
 </section>
