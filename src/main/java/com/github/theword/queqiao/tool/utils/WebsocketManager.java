@@ -92,7 +92,7 @@ public class WebsocketManager {
      *
      * @param commandReturner 命令执行者
      */
-    public void restartClients(Object commandReturner) {
+    private void restartClients(Object commandReturner) {
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.RELOADING);
         stopClients(1000, WebsocketConstantMessage.CLOSE_BY_RELOAD, commandReturner);
         startClients(commandReturner);
@@ -121,7 +121,7 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      * @param reason          原因
      */
-    private void stopWebsocketServer(Object commandReturner, String reason) {
+    private void stopServer(Object commandReturner, String reason) {
         if (wsServer != null) {
             try {
                 wsServer.stop(0, reason);
@@ -139,8 +139,8 @@ public class WebsocketManager {
      *
      * @param commandReturner 命令执行者
      */
-    public void restartServer(Object commandReturner) {
-        stopWebsocketServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
+    private void restartServer(Object commandReturner) {
+        stopServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
         startServer(commandReturner);
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
     }
@@ -150,9 +150,9 @@ public class WebsocketManager {
      *
      * @param commandReturner 命令执行者
      */
-    public void startWebsocket(Object commandReturner) {
+    public void start(Object commandReturner) {
         if (GlobalContext.getConfig().getWebsocketClient().isEnable()) {
-            restartClients(commandReturner);
+            startClients(commandReturner);
         }
         if (GlobalContext.getConfig().getWebsocketServer().isEnable()) {
             startServer(commandReturner);
@@ -168,7 +168,12 @@ public class WebsocketManager {
      */
     public void stop(int code, String reason, Object commandReturner) {
         stopClients(code, reason, commandReturner);
-        stopWebsocketServer(commandReturner, reason);
+        stopServer(commandReturner, reason);
+    }
+
+    public void restart(Object commandReturner) {
+        restartClients(commandReturner);
+        restartServer(commandReturner);
     }
 
     /**

@@ -54,8 +54,7 @@ public class GlobalContext {
     public static void executeReloadCommand(Object commandReturner, boolean isModServer) {
         setConfig(Config.loadConfig(isModServer, logger));
         handleCommandReturnMessageService.sendReturnMessage(commandReturner, CommandConstantMessage.RELOAD_CONFIG);
-        websocketManager.restartServer(commandReturner);
-        websocketManager.restartClients(commandReturner);
+        websocketManager.restart(commandReturner);
         restartRconClient();
     }
 
@@ -73,7 +72,7 @@ public class GlobalContext {
     //
     private static void initWebsocketManager() {
         websocketManager = new WebsocketManager(logger, gson, handleCommandReturnMessageService);
-        websocketManager.startWebsocket(null);
+        websocketManager.start(null);
     }
 
     /**
