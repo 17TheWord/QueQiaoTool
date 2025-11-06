@@ -4,7 +4,7 @@ import com.github.theword.queqiao.tool.event.model.PlayerModel;
 import com.github.theword.queqiao.tool.event.player.PlayerNoticeEvent;
 
 /**
- * 玩家加入事件
+ * 玩家离开事件
  *
  * @since 0.4.0
  */

@@ -19,7 +19,7 @@ public final class PlayerDeathEvent extends PlayerNoticeEvent {
      * @param playerModel 触发事件的玩家
      */
     public PlayerDeathEvent(PlayerModel playerModel, DeathModel deathModel) {
-        super("PlayerJoinEvent", "player_death", playerModel);
+        super("PlayerDeathEvent", "player_death", playerModel);
         this.death = deathModel;
     }
 
