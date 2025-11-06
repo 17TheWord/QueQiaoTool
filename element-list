@@ -5,7 +5,12 @@ com.github.theword.queqiao.tool.command.subCommand.client
 com.github.theword.queqiao.tool.command.subCommand.server
 com.github.theword.queqiao.tool.config
 com.github.theword.queqiao.tool.constant
+com.github.theword.queqiao.tool.event
 com.github.theword.queqiao.tool.event.base
+com.github.theword.queqiao.tool.event.model
+com.github.theword.queqiao.tool.event.model.achievement
+com.github.theword.queqiao.tool.event.model.death
+com.github.theword.queqiao.tool.event.player
 com.github.theword.queqiao.tool.handle
 com.github.theword.queqiao.tool.payload
 com.github.theword.queqiao.tool.rcon
