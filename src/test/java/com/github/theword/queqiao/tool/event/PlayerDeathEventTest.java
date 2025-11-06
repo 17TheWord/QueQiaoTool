@@ -80,7 +80,7 @@ class PlayerDeathEventTest {
         assertSame(death, event.getDeath(), "DeathModel should match");
         assertDeathModel(event.getDeath());
         // 验证事件本身属性
-        assertEquals("PlayerJoinEvent", event.getEventName());
+        assertEquals("PlayerDeathEvent", event.getEventName());
         assertEquals("notice", event.getPostType());
         assertEquals("player_death", event.getSubType());
         assertTrue(event.getTimestamp() > 0);
