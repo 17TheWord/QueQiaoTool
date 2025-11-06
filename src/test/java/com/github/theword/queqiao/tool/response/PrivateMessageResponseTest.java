@@ -2,8 +2,8 @@ package com.github.theword.queqiao.tool.response;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.theword.queqiao.tool.event.model.PlayerModel;
 import org.junit.jupiter.api.Test;
-import com.github.theword.queqiao.tool.event.base.BasePlayer;
 
 import java.util.UUID;
 
@@ -14,26 +14,26 @@ class PrivateMessageResponseTest {
         PrivateMessageResponse resp = new PrivateMessageResponse();
         assertNull(resp.getPlayer());
         assertNull(resp.getMessage());
-        BasePlayer player = new BasePlayer("Steve", UUID.randomUUID());
-        resp.setPlayer(player);
+        PlayerModel playerModel = new PlayerModel("Steve", UUID.randomUUID());
+        resp.setPlayer(playerModel);
         resp.setMessage("Hello");
-        assertEquals(player, resp.getPlayer());
+        assertEquals(playerModel, resp.getPlayer());
         assertEquals("Hello", resp.getMessage());
     }
 
     @Test
     void testAllArgsConstructorAndGetters() {
-        BasePlayer player = new BasePlayer("Alex", UUID.randomUUID());
-        PrivateMessageResponse resp = new PrivateMessageResponse(player, "Hi");
-        assertEquals(player, resp.getPlayer());
+        PlayerModel playerModel = new PlayerModel("Alex", UUID.randomUUID());
+        PrivateMessageResponse resp = new PrivateMessageResponse(playerModel, "Hi");
+        assertEquals(playerModel, resp.getPlayer());
         assertEquals("Hi", resp.getMessage());
     }
 
     @Test
     void testOfStaticMethod() {
-        BasePlayer player = new BasePlayer("Test", UUID.randomUUID());
-        PrivateMessageResponse resp = PrivateMessageResponse.of(player, "msg");
-        assertEquals(player, resp.getPlayer());
+        PlayerModel playerModel = new PlayerModel("Test", UUID.randomUUID());
+        PrivateMessageResponse resp = PrivateMessageResponse.of(playerModel, "msg");
+        assertEquals(playerModel, resp.getPlayer());
         assertEquals("msg", resp.getMessage());
     }
 

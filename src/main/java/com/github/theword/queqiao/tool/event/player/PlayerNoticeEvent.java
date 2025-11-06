@@ -1,0 +1,24 @@
+package com.github.theword.queqiao.tool.event.player;
+
+import com.github.theword.queqiao.tool.event.base.BaseNoticeEvent;
+import com.github.theword.queqiao.tool.event.model.PlayerModel;
+
+public class PlayerNoticeEvent extends BaseNoticeEvent {
+
+    private final PlayerModel player;
+
+    /**
+     * 构造函数
+     *
+     * @param eventName 事件名称
+     * @param subType   事件子类型
+     */
+    public PlayerNoticeEvent(String eventName, String subType, PlayerModel playerModel) {
+        super(eventName, subType);
+        this.player = playerModel;
+    }
+
+    public PlayerModel getPlayer() {
+        return player;
+    }
+}
