@@ -1,28 +1,28 @@
 package com.github.theword.queqiao.tool.response;
 
-import com.github.theword.queqiao.tool.event.base.BasePlayer;
+import com.github.theword.queqiao.tool.event.model.PlayerModel;
 import com.google.gson.annotations.SerializedName;
 
 public class PrivateMessageResponse {
     @SerializedName("target_player")
-    private BasePlayer player;
+    private PlayerModel player;
 
     private String message;
 
     public PrivateMessageResponse() {
     }
 
-    public PrivateMessageResponse(BasePlayer player, String message) {
-        this.player = player;
+    public PrivateMessageResponse(PlayerModel playerModel, String message) {
+        this.player = playerModel;
         this.message = message;
     }
 
-    public BasePlayer getPlayer() {
+    public PlayerModel getPlayer() {
         return player;
     }
 
-    public void setPlayer(BasePlayer player) {
-        this.player = player;
+    public void setPlayer(PlayerModel playerModel) {
+        this.player = playerModel;
     }
 
     public String getMessage() {
@@ -33,8 +33,8 @@ public class PrivateMessageResponse {
         this.message = message;
     }
 
-    public static PrivateMessageResponse of(BasePlayer player, String message) {
-        return new PrivateMessageResponse(player, message);
+    public static PrivateMessageResponse of(PlayerModel playerModel, String message) {
+        return new PrivateMessageResponse(playerModel, message);
     }
 
     public static PrivateMessageResponse playerNotFound() {
@@ -49,7 +49,7 @@ public class PrivateMessageResponse {
         return of(null, "Target player is null.");
     }
 
-    public static PrivateMessageResponse sendSuccess(BasePlayer player) {
-        return of(player, "Send private message success.");
+    public static PrivateMessageResponse sendSuccess(PlayerModel playerModel) {
+        return of(playerModel, "Send private message success.");
     }
 }

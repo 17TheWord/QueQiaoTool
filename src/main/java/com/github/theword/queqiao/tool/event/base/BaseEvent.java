@@ -8,34 +8,48 @@ import com.google.gson.annotations.SerializedName;
  *
  * <p>基础事件
  *
- * <p>所有事件均继承该类
+ * <p>所有事件的基类
  */
 public class BaseEvent {
 
-    /** 事件名称 */
+    /**
+     * 事件名称
+     */
     @SerializedName("event_name")
     private final String eventName;
 
-    /** 事件类型，如 message、notice、request 等 */
+    /**
+     * 事件类型，如 message、notice、request 等
+     */
     @SerializedName("post_type")
     private final String postType;
 
-    /** 事件子类型，如 chat、join、quit 等 */
+    /**
+     * 事件子类型，如 chat、join、quit 等
+     */
     @SerializedName("sub_type")
     private final String subType;
 
-    /** 时间戳，秒级 */
+    /**
+     * 时间戳，秒级
+     */
     private final int timestamp = (int) (System.currentTimeMillis() / 1000);
 
-    /** 服务器名，每次生成事件通过配置文件获取 */
+    /**
+     * 服务器名，每次生成事件通过配置文件获取
+     */
     @SerializedName("server_name")
     private String serverName = GlobalContext.getConfig().getServerName();
 
-    /** 服务器版本号，工具初始化阶段传入 */
+    /**
+     * 服务器版本号，工具初始化阶段传入
+     */
     @SerializedName("server_version")
     private String serverVersion = GlobalContext.getServerVersion();
 
-    /** 服务器类型，工具初始化阶段传入 */
+    /**
+     * 服务器类型，工具初始化阶段传入
+     */
     @SerializedName("server_type")
     private String serverType = GlobalContext.getServerType();
 
