@@ -65,4 +65,32 @@ public class BaseEvent {
         this.postType = postType;
         this.subType = subType;
     }
+
+    public String getEventName() {
+        return eventName;
+    }
+
+    public String getPostType() {
+        return postType;
+    }
+
+    public String getSubType() {
+        return subType;
+    }
+
+    public int getTimestamp() {
+        return timestamp;
+    }
+
+    public String getServerName() {
+        return serverName;
+    }
+
+    public String getServerVersion() {
+        return serverVersion;
+    }
+
+    public String getServerType() {
+        return serverType;
+    }
 }
