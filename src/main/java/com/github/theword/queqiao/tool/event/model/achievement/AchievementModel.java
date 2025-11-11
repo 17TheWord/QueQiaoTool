@@ -51,8 +51,7 @@ public class AchievementModel {
                 result = " has made the advancement ";
                 break;
         }
-        text = nickname + result + title;
-        return text;
+        return nickname + result + title;
     }
 
     public AchievementModel() {
