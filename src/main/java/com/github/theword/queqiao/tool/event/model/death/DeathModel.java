@@ -8,8 +8,26 @@ import java.util.List;
  * 死亡信息模型
  */
 public class DeathModel {
+
+    /**
+     * 死亡信息唯一标识
+     *
+     * <p>服务端支持：Fabric、Forge、Folia、NeoForge、Paper
+     */
     private String key;
+
+    /**
+     * 死亡信息参数
+     *
+     * <p>服务端支持：Fabric、Forge、Folia、NeoForge、Paper
+     */
     private List<?> args;
+
+    /**
+     * 死亡信息文本
+     *
+     * <p>服务端支持：Fabric、Forge、Folia、NeoForge、Paper、Spigot
+     */
     private String text;
 
     public DeathModel() {

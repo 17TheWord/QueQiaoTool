@@ -6,17 +6,23 @@ package com.github.theword.queqiao.tool.event.model.achievement;
 public class DisplayModel {
 
     /**
-     * 标题，Fabric、Forge、NeoForge、Spigot、Paper
+     * 展示信息标题
+     *
+     * <p>服务端支持：Fabric、Forge、Folia、NeoForge、Paper
      */
     private String title;
 
     /**
-     * 描述，Fabric、Forge、NeoForge、Spigot、Paper
+     * 展示信息描述
+     *
+     * <p>服务端支持：Fabric、Forge、Folia、NeoForge、Paper
      */
     private String description;
 
     /**
-     * Fabric、Forge、NeoForge、Paper
+     * 展示信息类型
+     *
+     * <p>服务端支持：Fabric、Forge、Folia、NeoForge、Paper
      */
     private String frame;
 
