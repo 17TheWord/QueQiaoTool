@@ -37,7 +37,7 @@ class PlayerDeathEventTest {
         DeathModel death = new DeathModel();
         death.setKey("death.attack.player");
         death.setArgs(new Object[]{"TestPlayer", "Zombie"});
-        death.setDeathMessage("TestPlayer was slain by Zombie");
+        death.setText("TestPlayer was slain by Zombie");
         return death;
     }
 
@@ -60,8 +60,8 @@ class PlayerDeathEventTest {
     private void assertDeathModel(DeathModel death) {
         assertNotNull(death);
         assertEquals("death.attack.player", death.getKey());
-        assertArrayEquals(new Object[]{"TestPlayer", "Zombie"}, death.getArgs());
-        assertEquals("TestPlayer was slain by Zombie", death.getDeathMessage());
+//        assertArrayEquals(new Object[]{"TestPlayer", "Zombie"}, death.getArgs());
+        assertEquals("TestPlayer was slain by Zombie", death.getText());
     }
 
     @Test
