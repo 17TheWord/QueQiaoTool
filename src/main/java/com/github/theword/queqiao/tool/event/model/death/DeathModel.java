@@ -1,23 +1,42 @@
 package com.github.theword.queqiao.tool.event.model.death;
 
-import com.google.gson.annotations.SerializedName;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * 死亡信息模型
  */
 public class DeathModel {
+
+    /**
+     * 死亡信息唯一标识
+     *
+     * <p>服务端支持：Fabric、Forge、Folia、NeoForge、Paper
+     */
     private String key;
-    private Object[] args;
-    @SerializedName("death_message")
-    private String deathMessage;
+
+    /**
+     * 死亡信息参数
+     *
+     * <p>服务端支持：Fabric、Forge、Folia、NeoForge、Paper
+     */
+    private List<?> args;
+
+    /**
+     * 死亡信息文本
+     *
+     * <p>服务端支持：Fabric、Forge、Folia、NeoForge、Paper、Spigot
+     */
+    private String text;
 
     public DeathModel() {
     }
 
-    public DeathModel(String key, Object[] args, String deathMessage) {
+    public DeathModel(String key, List<?> args, String text) {
         this.key = key;
         this.args = args;
-        this.deathMessage = deathMessage;
+        this.text = text;
     }
 
     public String getKey() {
@@ -28,19 +47,28 @@ public class DeathModel {
         this.key = key;
     }
 
-    public Object[] getArgs() {
+    public List<?> getArgs() {
         return args;
     }
 
-    public void setArgs(Object[] args) {
-        this.args = args;
+    public void setArgs(Object args) {
+        if (args == null) {
+            this.args = Collections.emptyList();
+        } else if (args instanceof List) {
+            this.args = (List<?>) args;
+        } else if (args instanceof Object[]) {
+            this.args = Arrays.asList((Object[]) args);
+        } else {
+            this.args = Collections.singletonList(args);
+        }
     }
 
-    public String getDeathMessage() {
-        return deathMessage;
+
+    public String getText() {
+        return text;
     }
 
-    public void setDeathMessage(String deathMessage) {
-        this.deathMessage = deathMessage;
+    public void setText(String text) {
+        this.text = text;
     }
 }

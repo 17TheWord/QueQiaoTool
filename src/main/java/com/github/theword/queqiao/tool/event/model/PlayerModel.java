@@ -8,6 +8,7 @@ import java.util.UUID;
  * 玩家模型
  */
 public class PlayerModel {
+
     /**
      * 昵称
      */
@@ -30,6 +31,8 @@ public class PlayerModel {
 
     /**
      * 最大血量
+     *
+     * <p>不支持的服务端：Folia、Spigot、Paper
      */
     @SerializedName("max_health")
     private Double maxHealth;

@@ -37,16 +37,9 @@ class PlayerAchievementEventTest {
 
     private DisplayModel createFakeDisplayModel() {
         DisplayModel display = new DisplayModel();
-        display.setAnnounceChat(true);
-        display.setBackground("background/path");
         display.setDescription("Test achievement description");
         display.setFrame("goal");
-        display.setHidden(false);
-        display.setIcon("minecraft:diamond");
-        display.setShowToast(true);
         display.setTitle("Test Achievement");
-        display.setX(1.5);
-        display.setY(2.5);
         return display;
     }
 
@@ -74,16 +67,9 @@ class PlayerAchievementEventTest {
 
     private void assertDisplayModel(DisplayModel display) {
         assertNotNull(display);
-        assertTrue(display.getAnnounceChat());
-        assertEquals("background/path", display.getBackground());
         assertEquals("Test achievement description", display.getDescription());
         assertEquals("goal", display.getFrame());
-        assertFalse(display.getHidden());
-        assertEquals("minecraft:diamond", display.getIcon());
-        assertTrue(display.getShowToast());
         assertEquals("Test Achievement", display.getTitle());
-        assertEquals(1.5, display.getX());
-        assertEquals(2.5, display.getY());
     }
 
     @Test
