@@ -55,6 +55,7 @@ public class Tool {
      * <p>默认为：[鹊桥]
      *
      * @return 前缀
+     * @deprecated 0.4.2，请使用 {@link GlobalContext#getMessagePrefixJsonObject()} 代替
      */
     public static JsonObject getPrefixComponent() {
         JsonObject prefixJsonElement = new JsonObject();

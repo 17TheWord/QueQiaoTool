@@ -10,7 +10,7 @@ import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
 import com.github.theword.queqiao.tool.rcon.RconClient;
 import com.github.theword.queqiao.tool.utils.GsonUtils;
 import com.github.theword.queqiao.tool.utils.WebsocketManager;
-import com.google.gson.Gson;
+import com.google.gson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +26,7 @@ public class GlobalContext {
     private static String serverVersion;
     private static String serverType;
     private static RconClient rconClient;
+    private static JsonObject messagePrefixJsonObject;
 
     public static void init(boolean isModServer, String serverVersion, String serverType, HandleApiService handleApiImpl, HandleCommandReturnMessageService handleCommandReturnMessageImpl) {
         logger = LoggerFactory.getLogger(BaseConstant.MODULE_NAME);
@@ -38,6 +39,7 @@ public class GlobalContext {
         handleCommandReturnMessageService = handleCommandReturnMessageImpl;
         logger.info(BaseConstant.INITIALIZED);
 
+        messagePrefixJsonObject = initMessagePrefixJsonObject();
         initWebsocketManager();
         initRconClient();
     }
@@ -54,6 +56,7 @@ public class GlobalContext {
     public static void executeReloadCommand(Object commandReturner, boolean isModServer) {
         setConfig(Config.loadConfig(isModServer, logger));
         handleCommandReturnMessageService.sendReturnMessage(commandReturner, CommandConstantMessage.RELOAD_CONFIG);
+        messagePrefixJsonObject = initMessagePrefixJsonObject();
         websocketManager.restart(commandReturner);
         restartRconClient();
     }
@@ -134,6 +137,41 @@ public class GlobalContext {
     }
 
     //
+    // Message Prefix
+    //
+
+    /**
+     * 初始化消息前缀 JsonObject
+     * @return JsonObject 消息前缀
+     * @since 0.4.2
+     */
+    public static JsonObject initMessagePrefixJsonObject() {
+        String messagePrefixText = config.getMessagePrefix();
+        if (messagePrefixText == null || messagePrefixText.isEmpty()) {
+            messagePrefixText = "[鹊桥]";
+        }
+        try {
+            JsonElement element = gson.fromJson(messagePrefixText, JsonElement.class);
+            if (element.isJsonObject()) {
+                return element.getAsJsonObject();
+            }
+            logger.info("消息前缀不是合法的 JSON 对象，使用纯文本前缀");
+            JsonObject obj = new JsonObject();
+            obj.addProperty("text", messagePrefixText);
+            obj.addProperty("color", "yellow");
+            obj.addProperty("bold", true);
+            return obj;
+        } catch (JsonSyntaxException e) {
+            logger.info("消息前缀不是合法的 JSON，使用纯文本前缀");
+            JsonObject obj = new JsonObject();
+            obj.addProperty("text", messagePrefixText);
+            obj.addProperty("color", "yellow");
+            obj.addProperty("bold", true);
+            return obj;
+        }
+    }
+
+    //
     // Getters and Setters
     //
     public static Config getConfig() {
@@ -174,5 +212,15 @@ public class GlobalContext {
 
     public static Gson getGson() {
         return gson;
+    }
+
+    /**
+     * 获取消息前缀 JsonObject
+     *
+     * @since 0.4.2
+     * @return JsonObject 消息前缀
+     */
+    public static JsonObject getMessagePrefixJsonObject() {
+        return messagePrefixJsonObject;
     }
 }
