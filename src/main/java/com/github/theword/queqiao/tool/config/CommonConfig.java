@@ -20,6 +20,10 @@ public abstract class CommonConfig {
         this.logger = logger;
     }
 
+    public Logger getLogger() {
+        return logger;
+    }
+
     /**
      * 读取配置文件
      *

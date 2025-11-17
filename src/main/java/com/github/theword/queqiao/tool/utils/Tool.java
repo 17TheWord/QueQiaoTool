@@ -16,11 +16,32 @@ public class Tool {
      *
      * @param command 命令
      * @return 是否为注册或登录命令，如果是，返回空字符串
+     * @deprecated 0.4.2，请使用 {@link #isIgnoredCommand(String)} 代替
      */
     public static String isRegisterOrLoginCommand(String command) {
         if (command.startsWith("/")) command = command.substring(1);
         if (command.startsWith("l ") || command.startsWith("login ") || command.startsWith("register ") || command.startsWith("reg ") || command.startsWith(BaseConstant.COMMAND_HEADER + " "))
             return "";
+        return command;
+    }
+
+    /**
+     * 判断是否为需要忽略的命令
+     *
+     * @param command 命令
+     * @return 如果是，返回空字符串，否则返回原命令
+     * @since 0.4.2
+     */
+    public static String isIgnoredCommand(String command) {
+        if (command == null) return "";
+
+        command = command.trim();
+        if (command.isEmpty()) return "";
+
+        if (command.startsWith("/")) command = command.substring(1);
+
+        String commandHeader = command.split(" ", 2)[0].toLowerCase();
+        if (GlobalContext.getConfig().getIgnoredCommands().contains(commandHeader)) return "";
         return command;
     }
 
