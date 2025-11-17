@@ -156,19 +156,15 @@ public class GlobalContext {
                 return element.getAsJsonObject();
             }
             logger.info("消息前缀不是合法的 JSON 对象，使用纯文本前缀");
-            JsonObject obj = new JsonObject();
-            obj.addProperty("text", messagePrefixText);
-            obj.addProperty("color", "yellow");
-            obj.addProperty("bold", true);
-            return obj;
+
         } catch (JsonSyntaxException e) {
             logger.info("消息前缀不是合法的 JSON，使用纯文本前缀");
-            JsonObject obj = new JsonObject();
-            obj.addProperty("text", messagePrefixText);
-            obj.addProperty("color", "yellow");
-            obj.addProperty("bold", true);
-            return obj;
         }
+        JsonObject obj = new JsonObject();
+        obj.addProperty("text", messagePrefixText);
+        obj.addProperty("color", "yellow");
+        obj.addProperty("bold", true);
+        return obj;
     }
 
     //
