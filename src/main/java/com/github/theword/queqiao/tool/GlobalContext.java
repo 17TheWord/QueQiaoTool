@@ -142,6 +142,7 @@ public class GlobalContext {
 
     /**
      * 初始化消息前缀 JsonObject
+     * 
      * @return JsonObject 消息前缀
      * @since 0.4.2
      */
