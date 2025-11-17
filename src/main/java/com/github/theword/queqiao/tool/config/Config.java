@@ -1,9 +1,9 @@
 package com.github.theword.queqiao.tool.config;
 
-import com.github.theword.queqiao.tool.GlobalContext;
-
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 
@@ -37,6 +37,11 @@ public class Config extends CommonConfig {
      * 消息前缀
      */
     private String messagePrefix = "[鹊桥]";
+
+    /**
+     * 忽略的命令列表
+     */
+    private Set<String> ignoredCommands;
 
     /**
      * WebSocket Server 配置项
@@ -94,6 +99,14 @@ public class Config extends CommonConfig {
         return messagePrefix;
     }
 
+    public Set<String> getIgnoredCommands() {
+        return ignoredCommands;
+    }
+
+    public void setIgnoredCommands(Set<String> ignoredCommands) {
+        this.ignoredCommands = ignoredCommands;
+    }
+
     public void setMessagePrefix(String messagePrefix) {
         this.messagePrefix = messagePrefix;
     }
@@ -134,21 +147,6 @@ public class Config extends CommonConfig {
      * Contractor
      *
      * @param isModServer 是否为模组服务端
-     * @deprecated 请使用 {@link #Config(boolean, Logger)}
-     */
-    @Deprecated
-    public Config(boolean isModServer) {
-        super(null);
-        String configFolder = isModServer ? "config" : "plugins";
-        String serverType = isModServer ? "模组" : "插件";
-        GlobalContext.getLogger().info("当前服务端类型为：{}服", serverType);
-        readConfigFile(configFolder, "config.yml");
-    }
-
-    /**
-     * Contractor
-     *
-     * @param isModServer 是否为模组服务端
      * @param logger      日志实现
      */
     public Config(boolean isModServer, Logger logger) {
@@ -157,20 +155,6 @@ public class Config extends CommonConfig {
         String serverType = isModServer ? "模组" : "插件";
         logger.info("当前服务端类型为：{}服", serverType);
         readConfigFile(configFolder, "config.yml");
-    }
-
-    /**
-     * 加载配置文件
-     *
-     * <p>服务端启动、初始化模组时调用
-     *
-     * @param isModServer 是否为模组服务端
-     * @return Config
-     * @deprecated 请使用 {@link #loadConfig(boolean, Logger)}
-     */
-    @Deprecated
-    public static Config loadConfig(boolean isModServer) {
-        return new Config(isModServer);
     }
 
     /**
@@ -199,10 +183,37 @@ public class Config extends CommonConfig {
         accessToken = (String) configMap.get("access_token");
         messagePrefix = (String) configMap.get("message_prefix");
 
+        loadIgnoredCommands(configMap);
         loadWebsocketServerConfig(configMap);
         loadWebsocketClientConfig(configMap);
         loadSubscribeEventConfig(configMap);
         loadRconConfig(configMap);
+    }
+
+    /**
+     * 加载忽略的命令列表配置项
+     *
+     * @param configMap ignored_commands
+     */
+    @SuppressWarnings("unchecked")
+    private void loadIgnoredCommands(Map<String, Object> configMap) {
+        if (ignoredCommands == null) {
+            ignoredCommands = new HashSet<>();
+        } else {
+            ignoredCommands.clear();
+        }
+        List<String> ignoredCommandList = (List<String>) configMap.get("ignored_commands");
+        if (ignoredCommandList == null) {
+            super.getLogger().info("配置项 ignored_commands 为空，将只忽略默认的注册和登录命令");
+        } else {
+            ignoredCommands.addAll(ignoredCommandList);
+            super.getLogger().info("已加载 {} 个忽略的命令", ignoredCommandList.size());
+        }
+
+        ignoredCommands.add("l");
+        ignoredCommands.add("login");
+        ignoredCommands.add("register");
+        ignoredCommands.add("reg");
     }
 
     /**

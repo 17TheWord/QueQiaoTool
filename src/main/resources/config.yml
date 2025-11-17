@@ -39,3 +39,7 @@ subscribe_event:
   player_quit: true         # 玩家退出事件监听
   player_command: true      # 玩家命令事件监听
   player_advancement: true  # 玩家成就事件监听
+
+# 忽略的命令列表
+# 例如：["tp"]，则所有以 /tp 起始的命令对应的事件均不会被广播
+ignore_commands: []
