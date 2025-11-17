@@ -1,4 +1,4 @@
-# 鹊桥 (QueQiao) 工具包
+# 鹊桥工具包
 
 一个用于 Minecraft 服务端（插件 / 模组）与外部应用之间进行实时通信与事件分发的轻量级工具库。
 
@@ -34,9 +34,9 @@
 
 ## 接口说明
 
-- `V2` 协议：[`ApiFox`](https://queqiao.apifox.cn/)
-- `V1` 协议：[`ApiFox`](https://rxylncffzr.apifox.cn)
-- `V1` 事件：[`QueQiao GitHub Wiki`](https://github.com/17TheWord/QueQiao/wiki/4.-%E5%9F%BA%E6%9C%AC%E4%BA%8B%E4%BB%B6%E7%B1%BB%E5%9E%8B)
+- `V2` 完整协议：[`ApiFox`](https://queqiao.apifox.cn/)：适用于 鹊桥 `0.3.0` 及以上版本
+- `V1` 协议：[`ApiFox`](https://rxylncffzr.apifox.cn)：适用于 鹊桥 `0.2.7` 及以下版本
+- `V1` 事件：[`QueQiao GitHub Wiki`](https://github.com/17TheWord/QueQiao/wiki/4.-%E5%9F%BA%E6%9C%AC%E4%BA%8B%E4%BB%B6%E7%B1%BB%E5%9E%8B)适用于 鹊桥 `0.2.7` 及以下版本
 
 ## 配置文件说明
 
@@ -48,6 +48,7 @@
 
 - 依赖 `org.glavo:rcon-java:3.0`
 - 为节约端口资源，直接将 `Rcon` 功能集成在本工具包中。
+- 开放 `send_rcon_command` 接口供外部应用调用。
 
 ## 开发与测试
 
