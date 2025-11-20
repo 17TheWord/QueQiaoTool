@@ -112,7 +112,12 @@ public class WsClient extends WebSocketClient {
 
     /** 主动立即重连（适用于 reload 等场景） */
     public void reconnectNow() {
-        this.scheduleReconnect(0);
+//        this.scheduleReconnect(0);
+        this.logger.info(WebsocketConstantMessage.Client.MANUAL_RECONNECTING, getURI());
+        scheduler.schedule(
+                () -> {
+                    if (!this.stopped) super.reconnect();
+                }, 0, TimeUnit.SECONDS);
     }
 
     /**

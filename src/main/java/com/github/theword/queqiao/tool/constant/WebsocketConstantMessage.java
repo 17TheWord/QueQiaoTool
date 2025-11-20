@@ -11,6 +11,7 @@ public class WebsocketConstantMessage {
         public static final String CLEAR_WEBSOCKET_CLIENT_LIST = "已清空 Websocket Client 列表。";
         public static final String RELOADING = "Websocket Client 正在重载";
         public static final String RELOADED = "Websocket Client 重载完毕";
+        public static final String MANUAL_RECONNECTING = "正在手动重新连接至 {} 的 WebSocket 服务器...";
         private static final String CONNECT_TO = "连接至：{} 的 ";
         public static final String CLOSING_CONNECTION = CONNECT_TO + "WebSocket Client 正在关闭，Code {}，Reason：{}。";
         public static final String RECONNECTING = CONNECT_TO + "WebSocket 连接已断开，尝试第 {} 次重连...";
