@@ -195,8 +195,12 @@ public class WebsocketManager {
             String json = gson.toJson(event);
             wsClientList.forEach(
                     wsClient -> {
-                        wsClient.send(json);
-                        Tool.debugLog("WebSocket Client {} 发送消息: {}", wsClient.getURI(), json);
+                        if (wsClient.isOpen()) {
+                            wsClient.send(json);
+                            Tool.debugLog("WebSocket Client {} 发送消息: {}", wsClient.getURI(), json);
+                        } else {
+                            Tool.debugLog("WebSocket Client {} 未连接，跳过发送消息: {}", wsClient.getURI(), json);
+                        }
                     });
             if (wsServer != null) {
                 wsServer.broadcast(json);
