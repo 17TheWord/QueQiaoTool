@@ -40,7 +40,7 @@ public class PlayerModel {
     /**
      * 经验值
      */
-    @SerializedName("exp_level")
+    @SerializedName("experience_level")
     private Integer experienceLevel;
 
     /**
