@@ -39,7 +39,7 @@ public class GlobalContext {
         handleCommandReturnMessageService = handleCommandReturnMessageImpl;
         logger.info(BaseConstant.INITIALIZED);
 
-        messagePrefixJsonObject = initMessagePrefixJsonObject();
+        messagePrefixJsonObject = initMessagePrefixJsonObject(config.getMessagePrefix());
         initWebsocketManager();
         initRconClient();
     }
@@ -56,7 +56,7 @@ public class GlobalContext {
     public static void executeReloadCommand(Object commandReturner, boolean isModServer) {
         setConfig(Config.loadConfig(isModServer, logger));
         handleCommandReturnMessageService.sendReturnMessage(commandReturner, CommandConstantMessage.RELOAD_CONFIG);
-        messagePrefixJsonObject = initMessagePrefixJsonObject();
+        messagePrefixJsonObject = initMessagePrefixJsonObject(config.getMessagePrefix());
         websocketManager.restart(commandReturner);
         restartRconClient();
     }
@@ -146,25 +146,24 @@ public class GlobalContext {
      * @return JsonObject 消息前缀
      * @since 0.4.2
      */
-    public static JsonObject initMessagePrefixJsonObject() {
-        String messagePrefixText = config.getMessagePrefix();
+    public static JsonObject initMessagePrefixJsonObject(String messagePrefixText) {
         if (messagePrefixText == null || messagePrefixText.isEmpty()) {
             messagePrefixText = "[鹊桥]";
         }
         try {
             JsonElement element = gson.fromJson(messagePrefixText, JsonElement.class);
             if (element.isJsonObject()) {
+                logger.info("消息前缀 {} 符合mc消息组件格式，将采用自定义风格的消息前缀", messagePrefixText);
                 return element.getAsJsonObject();
             }
-            logger.info("消息前缀不是合法的 JSON 对象，使用纯文本前缀");
+            logger.info("消息前缀 {} 不是合法的 JSON 对象，将使用默认风格的自定义文本前缀", messagePrefixText);
 
         } catch (JsonSyntaxException e) {
-            logger.info("消息前缀不是合法的 JSON，使用纯文本前缀");
+            logger.info("消息前缀 {} 未采用自定义风格，将使用默认风格的自定义文本前缀", messagePrefixText);
         }
         JsonObject obj = new JsonObject();
         obj.addProperty("text", messagePrefixText);
         obj.addProperty("color", "yellow");
-        obj.addProperty("bold", true);
         return obj;
     }
 
