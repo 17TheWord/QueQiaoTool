@@ -14,6 +14,7 @@ import com.google.gson.annotations.SerializedName;
  * <p>echo：请求的echo，从请求中获取
  */
 public class Response {
+    private String api;
     private Integer code;
 
     @SerializedName("post_type")
@@ -42,6 +43,14 @@ public class Response {
         this.message = message;
         this.data = data;
         this.echo = echo;
+    }
+
+    public String getApi() {
+        return api;
+    }
+
+    public void setApi(String api) {
+        this.api = api;
     }
 
     public Integer getCode() {
@@ -104,6 +113,10 @@ public class Response {
         return new Response(code, ResponseEnum.FAILED, message, null, echo);
     }
 
+    public static Response failed(int code, String message, Object data) {
+        return new Response(code, ResponseEnum.FAILED, message, data, null);
+    }
+
     public static Response failed(int code, String message, Object data, String echo) {
         return new Response(code, ResponseEnum.FAILED, message, data, echo);
     }
@@ -122,10 +135,10 @@ public class Response {
     }
 
     public static Response failed(int code, String message) {
-        return failed(code, message, (Object) null, null);
+        return failed(code, message, null, null);
     }
 
     public static Response failed(String message) {
-        return failed(500, message, (Object) null, null);
+        return failed(500, message, null, null);
     }
 }
