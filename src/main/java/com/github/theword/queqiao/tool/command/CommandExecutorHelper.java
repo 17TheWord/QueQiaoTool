@@ -101,10 +101,6 @@ public class CommandExecutorHelper {
         String lastArg = args[args.length - 1].toLowerCase();
 
         // 返回匹配前缀的子命令名称，并过滤无权限的命令
-        return current.getChildren().stream()
-                .filter(child -> GlobalContext.getHandleCommandReturnMessageService().hasPermission(sender, child.getPermissionNode()))
-                .map(SubCommand::getName)
-                .filter(name -> name.toLowerCase().startsWith(lastArg))
-                .collect(Collectors.toList());
+        return current.getChildren().stream().filter(child -> GlobalContext.getHandleCommandReturnMessageService().hasPermission(sender, child.getPermissionNode())).map(SubCommand::getName).filter(name -> name.toLowerCase().startsWith(lastArg)).collect(Collectors.toList());
     }
 }
