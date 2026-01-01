@@ -146,7 +146,19 @@ public abstract class SubCommand {
      * @param args            命令参数
      * @since 0.5.0
      */
-    public abstract void execute(Object commandReturner, List<String> args);
+    public void execute(Object commandReturner, List<String> args) {
+        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "========== 鹊桥帮助 ==========");
+        onExecute(commandReturner, args);
+        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "============================");
+    }
+
+    /**
+     * 执行命令逻辑
+     *
+     * @param commandReturner 命令执行者
+     * @param args            命令参数
+     */
+    protected abstract void onExecute(Object commandReturner, List<String> args);
 
 
     /**

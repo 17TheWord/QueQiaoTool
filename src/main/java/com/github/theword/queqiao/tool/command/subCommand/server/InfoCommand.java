@@ -35,7 +35,7 @@ public class InfoCommand extends SubCommand {
      * @param args            命令参数
      */
     @Override
-    public void execute(Object commandReturner, java.util.List<String> args) {
+    protected void onExecute(Object commandReturner, java.util.List<String> args) {
         if (!GlobalContext.getConfig().getWebsocketServer().isEnable()) {
             GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
                     commandReturner, "Websocket Server 配置项未启用，如需开启，请在 config.yml 中启用 WebsocketServer 配置项");

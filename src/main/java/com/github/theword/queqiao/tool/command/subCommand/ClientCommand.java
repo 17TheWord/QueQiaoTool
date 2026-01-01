@@ -42,7 +42,7 @@ public class ClientCommand extends SubCommand {
      * @param args            命令参数
      */
     @Override
-    public void execute(Object commandReturner, java.util.List<String> args) {
+    protected void onExecute(Object commandReturner, java.util.List<String> args) {
         sendCommandTree(commandReturner, this);
     }
 }

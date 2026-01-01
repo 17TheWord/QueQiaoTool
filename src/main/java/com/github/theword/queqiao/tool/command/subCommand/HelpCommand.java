@@ -1,6 +1,5 @@
 package com.github.theword.queqiao.tool.command.subCommand;
 
-import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.command.SubCommand;
 
 import java.util.List;
@@ -34,12 +33,11 @@ public class HelpCommand extends SubCommand {
      * @param args            命令参数
      */
     @Override
-    public void execute(Object commandReturner, List<String> args) {
+    protected void onExecute(Object commandReturner, List<String> args) {
         SubCommand root = this;
         while (root.getParent() != null) {
             root = root.getParent();
         }
-        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "========== 鹊桥帮助 ==========");
         sendCommandTree(commandReturner, root);
     }
 }

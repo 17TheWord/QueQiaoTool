@@ -34,7 +34,7 @@ public class ListCommand extends SubCommand {
      * @since 0.1.5
      */
     @Override
-    public void execute(Object commandReturner, List<String> args) {
+    protected void onExecute(Object commandReturner, List<String> args) {
         if (!GlobalContext.getConfig().getWebsocketClient().isEnable()) {
             GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
                     commandReturner, "Websocket Client 配置项未启用，如需开启，请在 config.yml 中启用 WebsocketClient 配置项");

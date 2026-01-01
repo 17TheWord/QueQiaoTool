@@ -32,7 +32,7 @@ public class ReconnectAllCommand extends SubCommand {
      * @param args            命令参数
      */
     @Override
-    public void execute(Object commandReturner, List<String> args) {
+    protected void onExecute(Object commandReturner, List<String> args) {
         ReconnectCommand.reconnect(commandReturner, true);
     }
 }
