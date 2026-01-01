@@ -25,10 +25,12 @@ public class GlobalContext {
     private static HandleCommandReturnMessageService handleCommandReturnMessageService;
     private static String serverVersion;
     private static String serverType;
+    private static boolean isModServer;
     private static RconClient rconClient;
     private static JsonObject messagePrefixJsonObject;
 
     public static void init(boolean isModServer, String serverVersion, String serverType, HandleApiService handleApiImpl, HandleCommandReturnMessageService handleCommandReturnMessageImpl) {
+        GlobalContext.isModServer = isModServer;
         logger = LoggerFactory.getLogger(BaseConstant.MODULE_NAME);
         logger.info(BaseConstant.LAUNCHING);
         gson = GsonUtils.getGson();
@@ -51,9 +53,8 @@ public class GlobalContext {
      * <p> 3. 重连 Rcon </p>
      *
      * @param commandReturner 命令返回者
-     * @param isModServer     是否为模组服
      */
-    public static void executeReloadCommand(Object commandReturner, boolean isModServer) {
+    public static void executeReloadCommand(Object commandReturner) {
         setConfig(Config.loadConfig(isModServer, logger));
         handleCommandReturnMessageService.sendReturnMessage(commandReturner, CommandConstantMessage.RELOAD_CONFIG);
         messagePrefixJsonObject = initMessagePrefixJsonObject(config.getMessagePrefix());

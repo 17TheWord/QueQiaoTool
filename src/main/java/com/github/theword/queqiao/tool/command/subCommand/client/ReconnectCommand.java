@@ -1,13 +1,18 @@
 package com.github.theword.queqiao.tool.command.subCommand.client;
 
 import com.github.theword.queqiao.tool.GlobalContext;
-import com.github.theword.queqiao.tool.command.subCommand.ClientCommandAbstract;
+import com.github.theword.queqiao.tool.command.SubCommand;
 import com.github.theword.queqiao.tool.constant.CommandConstantMessage;
 import com.github.theword.queqiao.tool.websocket.WsClient;
+
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class ReconnectCommandAbstract extends ClientCommandAbstract {
+public class ReconnectCommand extends SubCommand {
+
+    public ReconnectCommand() {
+        addChild(new ReconnectAllCommand());
+    }
 
     /**
      * 获取命令名称
@@ -26,54 +31,45 @@ public abstract class ReconnectCommandAbstract extends ClientCommandAbstract {
      */
     @Override
     public String getDescription() {
-        return "重新连接 Websocket Clients";
+        return "重新连接断开的 Websocket Clients";
     }
 
     /**
-     * 获取命令用法
+     * 获取命令用法（添加参数说明）
      *
-     * @return 使用：/{@link ClientCommandAbstract#getUsage()} reconnect [all]
+     * @return 使用说明
      */
     @Override
     public String getUsage() {
-        return super.getUsage() + " reconnect [all]";
+        return getFullPath();
     }
 
     /**
-     * 获取命令权限节点
-     *
-     * @return {@link ClientCommandAbstract#getPermissionNode()}.reconnect
-     */
-    @Override
-    public String getPermissionNode() {
-        return super.getPermissionNode() + ".reconnect";
-    }
-
-    /**
-     * 执行命令
-     *
-     * <p>Pass
+     * 重连 WebSocket 客户端 reconnect 命令调用
      *
      * @param commandReturner 命令执行者
+     * @param args            命令参数
      */
     @Override
-    public void execute(Object commandReturner) {
-        execute(commandReturner, false);
+    protected void onExecute(Object commandReturner, List<String> args) {
+        reconnect(commandReturner, false);
     }
 
-    /**
-     * 重连 WebSocket 客户端 reconnect [all] 命令调用
-     *
-     * @param all             是否全部重连
-     * @param commandReturner 命令执行者
-     */
-    @Override
-    public void execute(Object commandReturner, boolean all) {
+    public static void reconnect(Object commandReturner, boolean all) {
         String reconnectCount = all ? CommandConstantMessage.RECONNECT_ALL_CLIENT : CommandConstantMessage.RECONNECT_NOT_OPEN_CLIENT;
         GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, reconnectCount);
 
         AtomicInteger opened = new AtomicInteger();
 
+        List<WsClient> wsClientList = getClientList(commandReturner, all, opened);
+        if (opened.get() == wsClientList.size()) {
+            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
+                    commandReturner, CommandConstantMessage.RECONNECT_NO_CLIENT_NEED_RECONNECT);
+        }
+        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, CommandConstantMessage.RECONNECTED);
+    }
+
+    private static List<WsClient> getClientList(Object commandReturner, boolean all, AtomicInteger opened) {
         List<WsClient> wsClientList = GlobalContext.getWebsocketManager().getWsClientList();
 
         wsClientList.forEach(
@@ -86,10 +82,7 @@ public abstract class ReconnectCommandAbstract extends ClientCommandAbstract {
                         opened.getAndIncrement();
                     }
                 });
-        if (opened.get() == wsClientList.size()) {
-            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
-                    commandReturner, CommandConstantMessage.RECONNECT_NO_CLIENT_NEED_RECONNECT);
-        }
-        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, CommandConstantMessage.RECONNECTED);
+        return wsClientList;
     }
 }
+
