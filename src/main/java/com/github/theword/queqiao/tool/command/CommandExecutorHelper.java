@@ -1,6 +1,8 @@
 package com.github.theword.queqiao.tool.command;
 
 
+import com.github.theword.queqiao.tool.GlobalContext;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -98,7 +100,11 @@ public class CommandExecutorHelper {
         // 最后一个参数是用户正在输入的内容
         String lastArg = args[args.length - 1].toLowerCase();
 
-        // 返回匹配前缀的子命令名称
-        return current.getChildren().stream().map(SubCommand::getName).filter(name -> name.toLowerCase().startsWith(lastArg)).collect(Collectors.toList());
+        // 返回匹配前缀的子命令名称，并过滤无权限的命令
+        return current.getChildren().stream()
+                .filter(child -> GlobalContext.getHandleCommandReturnMessageService().hasPermission(sender, child.getPermissionNode()))
+                .map(SubCommand::getName)
+                .filter(name -> name.toLowerCase().startsWith(lastArg))
+                .collect(Collectors.toList());
     }
 }
