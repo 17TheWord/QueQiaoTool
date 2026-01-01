@@ -1,7 +1,6 @@
 package com.github.theword.queqiao.tool.command;
 
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -101,9 +100,6 @@ public class CommandExecutorHelper {
         String lastArg = args[args.length - 1].toLowerCase();
 
         // 返回匹配前缀的子命令名称
-        return current.getChildren().stream()
-                .map(SubCommand::getName)
-                .filter(name -> name.toLowerCase().startsWith(lastArg))
-                .collect(Collectors.toList());
+        return current.getChildren().stream().map(SubCommand::getName).filter(name -> name.toLowerCase().startsWith(lastArg)).collect(Collectors.toList());
     }
 }

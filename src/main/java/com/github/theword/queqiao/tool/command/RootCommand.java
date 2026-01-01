@@ -58,10 +58,8 @@ public class RootCommand extends SubCommand {
      */
     @Override
     protected void onExecute(Object commandReturner, List<String> args) {
-        GlobalContext.getHandleCommandReturnMessageService()
-                .sendReturnMessage(
-                        commandReturner,
-                        "请使用帮助命令查看可用子命令：" + BaseConstant.COMMAND_HEADER + " help"
-                );
+        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
+                commandReturner, "请使用帮助命令查看可用子命令：" + BaseConstant.COMMAND_HEADER + " help"
+        );
     }
 }
