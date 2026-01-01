@@ -1,12 +1,11 @@
 package com.github.theword.queqiao.tool.command.subCommand.server;
 
 import com.github.theword.queqiao.tool.GlobalContext;
-import com.github.theword.queqiao.tool.command.subCommand.ClientCommandAbstract;
-import com.github.theword.queqiao.tool.command.subCommand.ServerCommandAbstract;
+import com.github.theword.queqiao.tool.command.SubCommand;
 import com.github.theword.queqiao.tool.websocket.WsServer;
 import org.java_websocket.WebSocket;
 
-public abstract class InfoCommandAbstract extends ServerCommandAbstract {
+public class InfoCommand extends SubCommand {
 
     /**
      * 获取命令名称
@@ -28,33 +27,15 @@ public abstract class InfoCommandAbstract extends ServerCommandAbstract {
         return "获取 Websocket Server 信息";
     }
 
-    /**
-     * 获取命令用法
-     *
-     * @return 使用：/{@link ServerCommandAbstract#getUsage()} info
-     */
-    @Override
-    public String getUsage() {
-        return super.getUsage() + " info";
-    }
-
-    /**
-     * 获取命令权限节点
-     *
-     * @return {@link ClientCommandAbstract#getPermissionNode()}.info
-     */
-    @Override
-    public String getPermissionNode() {
-        return super.getPermissionNode() + ".info";
-    }
 
     /**
      * 获取 WebSocket 服务端状态 整合游戏内命令调用
      *
      * @param commandReturner 命令执行者
+     * @param args            命令参数
      */
     @Override
-    public void execute(Object commandReturner) {
+    public void execute(Object commandReturner, java.util.List<String> args) {
         if (!GlobalContext.getConfig().getWebsocketServer().isEnable()) {
             GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
                     commandReturner, "Websocket Server 配置项未启用，如需开启，请在 config.yml 中启用 WebsocketServer 配置项");
@@ -90,18 +71,5 @@ public abstract class InfoCommandAbstract extends ServerCommandAbstract {
                     commandReturner, String.format(
                             "%d 来自 %s:%d 的连接", count, webSocket.getRemoteSocketAddress().getHostString(), webSocket.getRemoteSocketAddress().getPort()));
         }
-    }
-
-    /**
-     * 占位
-     *
-     * <p>Pass
-     *
-     * @param commandReturner 命令执行者
-     * @param boolVar         布尔值占位符
-     */
-    @Override
-    public void execute(Object commandReturner, boolean boolVar) {
-        execute(commandReturner);
     }
 }
