@@ -25,10 +25,9 @@ public class CommandExecutorHelper {
      * @param sender 命令执行者
      * @param args   命令参数
      */
-    public void execute(Object sender, String[] args) {
+    public int execute(Object sender, String[] args) {
         if (args.length == 0) {
-            rootCommand.execute(sender, new ArrayList<>());
-            return;
+            return rootCommand.execute(sender, new ArrayList<>());
         }
 
         SubCommand current = rootCommand;
@@ -63,7 +62,7 @@ public class CommandExecutorHelper {
             remainingArgs.addAll(Arrays.asList(args).subList(index, args.length));
         }
 
-        current.execute(sender, remainingArgs);
+        return current.execute(sender, remainingArgs);
     }
 
     /**
