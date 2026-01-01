@@ -148,6 +148,10 @@ public abstract class SubCommand {
      */
     public int execute(Object commandReturner, List<String> args) {
         try {
+            if (!GlobalContext.getHandleCommandReturnMessageService().hasPermission(commandReturner, getPermissionNode())) {
+                GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "您没有权限执行此命令。");
+                return CommandConstant.FAIL_SIGNAL;
+            }
             GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "============ 鹊桥 ===========");
             onExecute(commandReturner, args);
             GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "============================");
