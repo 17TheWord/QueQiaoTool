@@ -1,6 +1,7 @@
 package com.github.theword.queqiao.tool.command;
 
 import com.github.theword.queqiao.tool.GlobalContext;
+import com.github.theword.queqiao.tool.constant.CommandConstant;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -145,10 +146,17 @@ public abstract class SubCommand {
      * @param args            命令参数
      * @since 0.5.0
      */
-    public void execute(Object commandReturner, List<String> args) {
-        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "========== 鹊桥帮助 ==========");
-        onExecute(commandReturner, args);
-        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "============================");
+    public int execute(Object commandReturner, List<String> args) {
+        try {
+            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "============ 鹊桥 ===========");
+            onExecute(commandReturner, args);
+            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "============================");
+            return CommandConstant.SUCCESS_SIGNAL;
+        } catch (Exception e) {
+            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "命令执行出错: " + e.getMessage());
+            GlobalContext.getLogger().error("命令执行出错", e);
+            return CommandConstant.FAIL_SIGNAL;
+        }
     }
 
     /**

@@ -2,7 +2,7 @@ package com.github.theword.queqiao.tool.command.subCommand.client;
 
 import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.command.SubCommand;
-import com.github.theword.queqiao.tool.constant.CommandConstantMessage;
+import com.github.theword.queqiao.tool.constant.CommandConstant;
 import com.github.theword.queqiao.tool.websocket.WsClient;
 
 import java.util.List;
@@ -56,7 +56,7 @@ public class ReconnectCommand extends SubCommand {
     }
 
     public static void reconnect(Object commandReturner, boolean all) {
-        String reconnectCount = all ? CommandConstantMessage.RECONNECT_ALL_CLIENT : CommandConstantMessage.RECONNECT_NOT_OPEN_CLIENT;
+        String reconnectCount = all ? CommandConstant.RECONNECT_ALL_CLIENT : CommandConstant.RECONNECT_NOT_OPEN_CLIENT;
         GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, reconnectCount);
 
         AtomicInteger opened = new AtomicInteger();
@@ -64,9 +64,9 @@ public class ReconnectCommand extends SubCommand {
         List<WsClient> wsClientList = getClientList(commandReturner, all, opened);
         if (opened.get() == wsClientList.size()) {
             GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
-                    commandReturner, CommandConstantMessage.RECONNECT_NO_CLIENT_NEED_RECONNECT);
+                    commandReturner, CommandConstant.RECONNECT_NO_CLIENT_NEED_RECONNECT);
         }
-        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, CommandConstantMessage.RECONNECTED);
+        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, CommandConstant.RECONNECTED);
     }
 
     private static List<WsClient> getClientList(Object commandReturner, boolean all, AtomicInteger opened) {
@@ -77,7 +77,7 @@ public class ReconnectCommand extends SubCommand {
                     if (all || !wsClient.isOpen()) {
                         wsClient.reconnectNow();
                         GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(
-                                commandReturner, String.format(CommandConstantMessage.RECONNECT_MESSAGE, wsClient.getURI()));
+                                commandReturner, String.format(CommandConstant.RECONNECT_MESSAGE, wsClient.getURI()));
                     } else {
                         opened.getAndIncrement();
                     }

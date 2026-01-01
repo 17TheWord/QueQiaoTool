@@ -6,6 +6,7 @@ import com.github.theword.queqiao.tool.command.subCommand.HelpCommand;
 import com.github.theword.queqiao.tool.command.subCommand.ReloadCommand;
 import com.github.theword.queqiao.tool.command.subCommand.ServerCommand;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
+import com.github.theword.queqiao.tool.constant.CommandConstant;
 
 import java.util.List;
 
@@ -51,7 +52,7 @@ public class RootCommand extends SubCommand {
     }
 
     /**
-     * 执行命令（显示帮助信息）
+     * 执行命令
      *
      * @param commandReturner 命令执行者
      * @param args            命令参数

@@ -2,7 +2,7 @@ package com.github.theword.queqiao.tool;
 
 import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
-import com.github.theword.queqiao.tool.constant.CommandConstantMessage;
+import com.github.theword.queqiao.tool.constant.CommandConstant;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.event.base.BaseEvent;
 import com.github.theword.queqiao.tool.handle.HandleApiService;
@@ -56,7 +56,7 @@ public class GlobalContext {
      */
     public static void executeReloadCommand(Object commandReturner) {
         setConfig(Config.loadConfig(isModServer, logger));
-        handleCommandReturnMessageService.sendReturnMessage(commandReturner, CommandConstantMessage.RELOAD_CONFIG);
+        handleCommandReturnMessageService.sendReturnMessage(commandReturner, CommandConstant.RELOAD_CONFIG);
         messagePrefixJsonObject = initMessagePrefixJsonObject(config.getMessagePrefix());
         websocketManager.restart(commandReturner);
         restartRconClient();
