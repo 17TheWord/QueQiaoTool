@@ -3,6 +3,7 @@ package com.github.theword.queqiao.tool.command;
 import com.github.theword.queqiao.tool.GlobalContext;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -29,12 +30,10 @@ public abstract class SubCommand {
      * 添加子命令
      *
      * @param child 子命令
-     * @return 当前命令（支持链式调用）
      */
-    public SubCommand addChild(SubCommand child) {
+    public void addChild(SubCommand child) {
         child.parent = this;
         this.children.add(child);
-        return this;
     }
 
     /**
@@ -43,7 +42,7 @@ public abstract class SubCommand {
      * @return 子命令列表
      */
     public List<SubCommand> getChildren() {
-        return children;
+        return Collections.unmodifiableList(children);
     }
 
     /**
