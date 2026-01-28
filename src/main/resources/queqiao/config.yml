@@ -13,6 +13,14 @@ access_token: "" # 用于连接时进行验证
 # 默认风格为 yellow
 message_prefix: "[鹊桥]"
 
+# 是否启用消息翻译功能
+# 该功能可将成就、死亡事件中的翻译键（Key）及其参数（Args）转换为本地化文本。
+# 启用步骤：
+# 1. 在当前 config.yml 同级目录下手动创建 translate 文件夹。
+# 2. 将对应的 JSON 语言文件（如 vanilla.json 或 模组翻译文件）放入 translate 文件夹中。
+# 注意：该功能需要配合本地翻译库文件使用，否则将保持原始翻译键显示。
+enable_translation: false
+
 # WebSocket Server配置项
 websocket_server:
   enable: true          # 是否启用

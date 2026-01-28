@@ -39,6 +39,11 @@ public class Config extends CommonConfig {
     private String messagePrefix = "[鹊桥]";
 
     /**
+     * 是否开启翻译
+     */
+    private boolean enableTranslation = false;
+
+    /**
      * 忽略的命令列表
      */
     private Set<String> ignoredCommands;
@@ -109,6 +114,14 @@ public class Config extends CommonConfig {
 
     public void setMessagePrefix(String messagePrefix) {
         this.messagePrefix = messagePrefix;
+    }
+
+    public boolean isEnableTranslation() {
+        return enableTranslation;
+    }
+
+    public void setEnableTranslation(boolean enableTranslation) {
+        this.enableTranslation = enableTranslation;
     }
 
     public WebSocketServerConfig getWebsocketServer() {
@@ -182,6 +195,7 @@ public class Config extends CommonConfig {
         serverName = (String) configMap.get("server_name");
         accessToken = (String) configMap.get("access_token");
         messagePrefix = (String) configMap.get("message_prefix");
+        enableTranslation = (boolean) configMap.get("enable_translation");
 
         loadIgnoredCommands(configMap);
         loadWebsocketServerConfig(configMap);

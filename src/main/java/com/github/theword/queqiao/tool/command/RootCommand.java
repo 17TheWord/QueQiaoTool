@@ -6,7 +6,6 @@ import com.github.theword.queqiao.tool.command.subCommand.HelpCommand;
 import com.github.theword.queqiao.tool.command.subCommand.ReloadCommand;
 import com.github.theword.queqiao.tool.command.subCommand.ServerCommand;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
-import com.github.theword.queqiao.tool.constant.CommandConstant;
 
 import java.util.List;
 
