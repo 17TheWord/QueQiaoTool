@@ -15,7 +15,10 @@ public class GsonUtils {
     /**
      * 全局 Gson 实例
      */
-    private static final Gson INSTANCE = new GsonBuilder().excludeFieldsWithModifiers(Modifier.STATIC, Modifier.TRANSIENT).create();
+    private static final Gson INSTANCE = new GsonBuilder()
+            .excludeFieldsWithModifiers(Modifier.STATIC, Modifier.TRANSIENT)
+            .serializeNulls()
+            .create();
 
     /**
      * 获取全局 Gson 实例
