@@ -53,22 +53,18 @@ public class RconClient {
      * <p> 5. 打印关闭成功日志 </p>
      */
     public void stop() {
-        if (!isConnected()) {
-            logger.info("Rcon 未连接，无需关闭");
-            return;
-        }
+        if (client == null) return;
+
+        Rcon tempClient = client; // 建立局部引用
+        client = null; // 立即将全局引用置空，让 isConnected() 瞬间失效
 
         try {
             logger.info("正在关闭 Rcon 客户端...");
-            client.close();
-            logger.info("Rcon 客户端已关闭");
-        } catch (IOException e) {
-            logger.warn("Rcon 关闭失败", e);
+            tempClient.close();
         } catch (Exception e) {
-            logger.warn("Rcon close() 发生未知异常", e);
+            logger.warn("Rcon 关闭过程中发生异常: {}", e.getMessage());
         }
-        client = null;
-        logger.info("Rcon 已关闭");
+        logger.info("Rcon 客户端资源已释放");
     }
 
     public boolean isConnected() {
