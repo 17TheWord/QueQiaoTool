@@ -12,6 +12,7 @@ com.github.theword.queqiao.tool.event.model.achievement
 com.github.theword.queqiao.tool.event.model.death
 com.github.theword.queqiao.tool.event.player
 com.github.theword.queqiao.tool.handle
+com.github.theword.queqiao.tool.localize
 com.github.theword.queqiao.tool.payload
 com.github.theword.queqiao.tool.rcon
 com.github.theword.queqiao.tool.response
