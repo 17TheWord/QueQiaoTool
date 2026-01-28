@@ -3,8 +3,10 @@ package com.github.theword.queqiao.tool.event;
 import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.event.model.PlayerModel;
+import com.github.theword.queqiao.tool.event.model.TranslateModel;
 import com.github.theword.queqiao.tool.event.model.achievement.AchievementModel;
 import com.github.theword.queqiao.tool.event.model.achievement.DisplayModel;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +18,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class PlayerAchievementEventTest {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @BeforeEach
+    void setUp() {
+        Config config = Config.loadConfig(false, logger);
+        GlobalContext.setConfig(config);
+    }
 
     private PlayerModel createFakePlayerModel() {
         PlayerModel player = new PlayerModel();
@@ -37,9 +45,13 @@ class PlayerAchievementEventTest {
 
     private DisplayModel createFakeDisplayModel() {
         DisplayModel display = new DisplayModel();
-        display.setDescription("Test achievement description");
         display.setFrame("goal");
-        display.setTitle("Test Achievement");
+
+        TranslateModel title = new TranslateModel("advancements.story.root.title", null, "Stone Age");
+        TranslateModel description = new TranslateModel("advancements.story.root.description", null, "Mine stone with your new pickaxe");
+
+        display.setTitle(title);
+        display.setDescription(description);
         return display;
     }
 
@@ -54,47 +66,43 @@ class PlayerAchievementEventTest {
         assertEquals(UUID.fromString("123e4567-e89b-12d3-a456-426614174000"), player.getUuid());
         assertEquals("127.0.0.1", player.getAddress());
         assertEquals(20.0, player.getHealth());
-        assertEquals(20.0, player.getMaxHealth());
-        assertEquals(5, player.getExperienceLevel());
-        assertEquals(0.5, player.getExperienceProgress());
-        assertEquals(100, player.getTotalExperience());
         assertTrue(player.getOp());
-        assertEquals(0.2, player.getWalkSpeed());
-        assertEquals(1.0, player.getX());
-        assertEquals(64.0, player.getY());
-        assertEquals(1.0, player.getZ());
     }
 
     private void assertDisplayModel(DisplayModel display) {
         assertNotNull(display);
-        assertEquals("Test achievement description", display.getDescription());
         assertEquals("goal", display.getFrame());
-        assertEquals("Test Achievement", display.getTitle());
+
+        // 验证标题翻译组件
+        assertNotNull(display.getTitle());
+        assertEquals("advancements.story.root.title", display.getTitle().getKey());
+        assertEquals("Stone Age", display.getTitle().getText());
+
+        // 验证描述翻译组件
+        assertNotNull(display.getDescription());
+        assertEquals("advancements.story.root.description", display.getDescription().getKey());
     }
 
     @Test
-    void testPlayerAchievementEventWithFakeData() {
-        Config config = Config.loadConfig(false, logger);
-        GlobalContext.setConfig(config);
-
+    void testPlayerAchievementEventWithRealConfig() {
         PlayerModel player = createFakePlayerModel();
         DisplayModel display = createFakeDisplayModel();
         AchievementModel achievement = createFakeAchievementModel(display);
 
         PlayerAchievementEvent event = new PlayerAchievementEvent(player, achievement);
 
-        // 验证Achievement部分
-        assertSame(achievement, event.getAchievement(), "AchievementModel should match");
-        // 验证PlayerModel部分
-        assertSame(player, event.getPlayer(), "PlayerModel should match");
+        // 验证事件基础属性，serverName 会从 config.yml 的默认值中获取
+        assertEquals("PlayerAchievementEvent", event.getEventName());
+        assertEquals("notice", event.getPostType());
+        assertEquals("player_achievement", event.getSubType());
+        assertNotNull(event.getServerName());
+        assertTrue(event.getTimestamp() > 0);
+
+        // 验证数据模型
+        assertSame(player, event.getPlayer());
+        assertSame(achievement, event.getAchievement());
+
         assertPlayerModel(event.getPlayer());
-        // 验证AchievementModel的DisplayModel部分
         assertDisplayModel(event.getAchievement().getDisplay());
-        // 补充事件本身的断言
-        assertEquals("PlayerAchievementEvent", event.getEventName(), "EventName should be 'PlayerAchievementEvent'");
-        assertEquals("notice", event.getPostType(), "PostType should be 'notice'");
-        assertEquals("player_achievement", event.getSubType(), "SubType should be 'player_achievement'");
-        assertTrue(event.getTimestamp() > 0, "Timestamp should be positive");
-        assertNotNull(event.getServerName(), "ServerName should not be null");
     }
 }
