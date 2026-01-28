@@ -6,7 +6,10 @@ import java.util.List;
 
 /**
  * 死亡信息模型
+ *
+ * @deprecated 自 0.6.0 起弃用，请使用全新的翻译组件 {@link com.github.theword.queqiao.tool.event.model.TranslateModel}
  */
+@Deprecated
 public class DeathModel {
 
     /**
