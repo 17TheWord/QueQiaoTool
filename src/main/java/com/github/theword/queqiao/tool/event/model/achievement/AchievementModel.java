@@ -43,8 +43,8 @@ public class AchievementModel {
      * @param title    成就标题
      * @return 格式化后的成就消息
      * @deprecated 自 0.6.0 起弃用。硬编码拼接不利于国际化，
-     * 请改用 {@link #getTranslationKey(String)} 获取翻译键，
-     * 并配合 LanguageService 进行翻译。
+     *             请改用 {@link #getTranslationKey(String)} 获取翻译键，
+     *             并配合 LanguageService 进行翻译。
      */
     @Deprecated
     public String pattern(String frame, String nickname, String title) {

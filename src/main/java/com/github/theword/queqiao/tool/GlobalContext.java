@@ -178,8 +178,7 @@ public class GlobalContext {
             return emptyObj;
         }
 
-        if ((criteria.startsWith("{") && criteria.endsWith("}")) ||
-                (criteria.startsWith("[") && criteria.endsWith("]"))) {
+        if ((criteria.startsWith("{") && criteria.endsWith("}")) || (criteria.startsWith("[") && criteria.endsWith("]"))) {
             try {
                 JsonElement element = gson.fromJson(messagePrefixText, JsonElement.class);
 

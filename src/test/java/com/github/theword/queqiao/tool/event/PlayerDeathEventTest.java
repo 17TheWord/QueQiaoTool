@@ -46,10 +46,7 @@ class PlayerDeathEventTest {
         TranslateModel killer = new TranslateModel(null, null, "Zombie");
 
         // 组装 Args
-        TranslateModel[] args = new TranslateModel[]{
-                new TranslateModel(null, null, "TestPlayer"),
-                killer,
-                weapon
+        TranslateModel[] args = new TranslateModel[]{new TranslateModel(null, null, "TestPlayer"), killer, weapon
         };
 
         return new TranslateModel("death.attack.player.item", args, "TestPlayer was slain by Zombie using Diamond Sword");
