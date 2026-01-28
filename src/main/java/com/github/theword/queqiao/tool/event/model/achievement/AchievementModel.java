@@ -1,5 +1,7 @@
 package com.github.theword.queqiao.tool.event.model.achievement;
 
+import com.github.theword.queqiao.tool.event.model.TranslateModel;
+
 /**
  * 成就模型
  */
@@ -20,11 +22,17 @@ public class AchievementModel {
     private DisplayModel display;
 
     /**
-     * 成就消息文本
+     * 成就消息的翻译模型。
+     * <p>
+     * 该属性包含了用于国际化显示的所有原始数据，包括翻译键（Translation Key）和参数列表。
+     * 建议配合 {@link com.github.theword.queqiao.tool.localize.LanguageService LanguageService} 进行解析。
+     * </p>
+     * <p>服务端支持：Fabric, Forge, Folia, NeoForge, Paper</p>
      *
-     * <p>服务端支持：Fabric、Forge、Folia、NeoForge、Paper
+     * @see TranslateModel
+     * @since 0.6.0
      */
-    private String text;
+    private TranslateModel translation;
 
     /**
      * 格式化成就消息
@@ -34,7 +42,11 @@ public class AchievementModel {
      * @param nickname 玩家昵称
      * @param title    成就标题
      * @return 格式化后的成就消息
+     * @deprecated 自 0.6.0 起弃用。硬编码拼接不利于国际化，
+     * 请改用 {@link #getTranslationKey(String)} 获取翻译键，
+     * 并配合 LanguageService 进行翻译。
      */
+    @Deprecated
     public String pattern(String frame, String nickname, String title) {
         String result;
         switch (frame.toLowerCase()) {
@@ -54,13 +66,27 @@ public class AchievementModel {
         return nickname + result + title;
     }
 
+    /**
+     * 获取成就类型的国际化翻译键。
+     * <p>
+     * 该方法将成就框架映射为 Minecraft 标准的翻译键（例如：chat.type.advancement.goal）。
+     *
+     * @param frame 成就框架类型，如果为 null 或空字符串，则默认按照 "task" 处理。
+     * @return 对应的翻译键字符串。
+     * @since 0.6.0
+     */
+    public String getTranslationKey(String frame) {
+        String type = (frame == null || frame.isEmpty()) ? "task" : frame.toLowerCase();
+        return "chat.type.advancement." + type;
+    }
+
     public AchievementModel() {
     }
 
-    public AchievementModel(String key, DisplayModel display, String text) {
+    public AchievementModel(String key, DisplayModel display, TranslateModel translation) {
         this.key = key;
         this.display = display;
-        this.text = text;
+        this.translation = translation;
     }
 
     public String getKey() {
@@ -79,11 +105,11 @@ public class AchievementModel {
         this.display = display;
     }
 
-    public String getText() {
-        return text;
+    public TranslateModel getTranslation() {
+        return translation;
     }
 
-    public void setText(String text) {
-        this.text = text;
+    public void setTranslation(TranslateModel translation) {
+        this.translation = translation;
     }
 }
