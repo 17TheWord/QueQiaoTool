@@ -54,6 +54,33 @@ public class WsServer extends WebSocketServer {
         return webSocket.getRemoteSocketAddress().toString().replaceFirst("/", "");
     }
 
+    private String getHeaderOrQueryParam(ClientHandshake clientHandshake, String name) {
+        String headerValue = clientHandshake.getFieldValue(name);
+        if (!headerValue.isEmpty()) {
+            return headerValue;
+        }
+
+        String resource = clientHandshake.getResourceDescriptor();
+        int queryStart = resource == null ? -1 : resource.indexOf('?');
+        if (queryStart < 0 || queryStart + 1 >= resource.length()) {
+            return "";
+        }
+
+        String query = resource.substring(queryStart + 1);
+        for (String pair : query.split("&")) {
+            int splitIndex = pair.indexOf('=');
+            String key = splitIndex >= 0 ? pair.substring(0, splitIndex) : pair;
+            String value = splitIndex >= 0 ? pair.substring(splitIndex + 1) : "";
+            try {
+                if (URLDecoder.decode(key, StandardCharsets.UTF_8.name()).equals(name)) {
+                    return URLDecoder.decode(value, StandardCharsets.UTF_8.name());
+                }
+            } catch (IllegalArgumentException | UnsupportedEncodingException ignored) {
+            }
+        }
+        return "";
+    }
+
     /**
      * 当客户端连接时执行 连接将依次检验 x-self-name；x-client-origin；Authorization字段
      *
@@ -62,7 +89,7 @@ public class WsServer extends WebSocketServer {
      */
     @Override
     public void onOpen(WebSocket webSocket, ClientHandshake clientHandshake) {
-        String originServerName = clientHandshake.getFieldValue("x-self-name");
+        String originServerName = getHeaderOrQueryParam(clientHandshake, "x-self-name");
         if (originServerName.isEmpty()) {
             this.logger.warn(
                     WebsocketConstantMessage.Server.MISSING_SERVER_NAME_HEADER, getClientAddress(webSocket));
@@ -70,7 +97,7 @@ public class WsServer extends WebSocketServer {
             return;
         }
 
-        String clientOrigin = clientHandshake.getFieldValue("x-client-origin");
+        String clientOrigin = getHeaderOrQueryParam(clientHandshake, "x-client-origin");
         if (clientOrigin.equalsIgnoreCase("minecraft")) {
             this.logger.warn(
                     WebsocketConstantMessage.Server.INVALID_CLIENT_ORIGIN_HEADER, getClientAddress(webSocket));
@@ -80,8 +107,8 @@ public class WsServer extends WebSocketServer {
 
         String serverName;
         try {
-            serverName = URLDecoder.decode(originServerName, StandardCharsets.UTF_8.toString());
-        } catch (UnsupportedEncodingException e) {
+            serverName = URLDecoder.decode(originServerName, StandardCharsets.UTF_8.name());
+        } catch (IllegalArgumentException | UnsupportedEncodingException e) {
             this.logger.error(
                     WebsocketConstantMessage.Server.SERVER_NAME_DECODE_FAILED_HEADER, getClientAddress(webSocket), originServerName, e.getMessage());
             webSocket.close(1008, "X-Self-name Header decode failed");
@@ -102,7 +129,7 @@ public class WsServer extends WebSocketServer {
             return;
         }
 
-        String accessToken = clientHandshake.getFieldValue("Authorization");
+        String accessToken = getHeaderOrQueryParam(clientHandshake, "Authorization");
         if (!this.accessToken.isEmpty() && !accessToken.equals("Bearer " + this.accessToken)) {
             this.logger.warn(
                     WebsocketConstantMessage.Server.INVALID_ACCESS_TOKEN_HEADER, getClientAddress(webSocket), accessToken);
