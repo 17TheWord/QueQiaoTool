@@ -139,6 +139,7 @@ public class HandleProtocolMessage {
                 pingData.put("timestamp", System.currentTimeMillis() / 1000);
                 pingData.put("server_type", GlobalContext.getServerType());
                 pingData.put("server_version", GlobalContext.getServerVersion());
+                pingData.put("message", "pong");
                 logger.info("收到 ping 请求，返回 pong 响应");
                 return Response.success(pingData);
             }
