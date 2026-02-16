@@ -6,8 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 final class SystemMetricsCollector {
-    private final java.lang.management.OperatingSystemMXBean osBean =
-            ManagementFactory.getOperatingSystemMXBean();
+    private final java.lang.management.OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
 
     Map<String, Object> collectCpuInformation() {
         Map<String, Object> cpu = new LinkedHashMap<>();

@@ -30,9 +30,7 @@ import java.util.Properties;
 public final class ServerStatusCollector {
     private static final int DEFAULT_SERVER_PORT = 25565;
     private static final String DEFAULT_SERVER_HOST = "127.0.0.1";
-    private static final Path[] REGEX_CONFIG_CANDIDATES = new Path[]{
-            Paths.get("config", BaseConstant.MODULE_NAME, "regex.yml"),
-            Paths.get(BaseConstant.MODULE_NAME, "regex.yml")
+    private static final Path[] REGEX_CONFIG_CANDIDATES = new Path[]{Paths.get("config", BaseConstant.MODULE_NAME, "regex.yml"), Paths.get(BaseConstant.MODULE_NAME, "regex.yml")
     };
 
     private static final MinecraftPingClient PING_CLIENT = new MinecraftPingClient();
@@ -184,8 +182,7 @@ public final class ServerStatusCollector {
             return null;
         }
 
-        if (equalsIgnoreCase(moduleDirectory.getFileName(), BaseConstant.MODULE_NAME)
-                && equalsIgnoreCase(moduleParent.getFileName(), "config")) {
+        if (equalsIgnoreCase(moduleDirectory.getFileName(), BaseConstant.MODULE_NAME) && equalsIgnoreCase(moduleParent.getFileName(), "config")) {
             Path serverRoot = moduleParent.getParent();
             if (serverRoot != null) {
                 return serverRoot;
@@ -291,15 +288,13 @@ public final class ServerStatusCollector {
             String error = resolvePingErrorMessage(e);
             Logger logger = GlobalContext.getLogger();
             if (logger != null) {
-                logger.warn("Minecraft Server List Ping failed, reason={}, host={}, port={}, error={}",
-                        reason, currentTarget.host, currentTarget.port, error);
+                logger.warn("Minecraft Server List Ping failed, reason={}, host={}, port={}, error={}", reason, currentTarget.host, currentTarget.port, error);
             }
             return buildPingResult(currentTarget, true, reason, error, null);
         }
     }
 
-    private static Map<String, Object> buildPingResult(PingTarget target, boolean available, String reason, String error,
-                                                       Map<String, Object> pingData) {
+    private static Map<String, Object> buildPingResult(PingTarget target, boolean available, String reason, String error, Map<String, Object> pingData) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("available", available);
         result.put("host", target.host);
@@ -316,10 +311,7 @@ public final class ServerStatusCollector {
         if (exception instanceof SocketTimeoutException) {
             return "timeout";
         }
-        if (exception instanceof ConnectException
-                || exception instanceof UnknownHostException
-                || exception instanceof NoRouteToHostException
-                || exception instanceof UnresolvedAddressException) {
+        if (exception instanceof ConnectException || exception instanceof UnknownHostException || exception instanceof NoRouteToHostException || exception instanceof UnresolvedAddressException) {
             return "offline";
         }
         return "error";
