@@ -10,6 +10,7 @@ import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
 import com.github.theword.queqiao.tool.localize.LanguageService;
 import com.github.theword.queqiao.tool.rcon.RconClient;
 import com.github.theword.queqiao.tool.utils.GsonUtils;
+import com.github.theword.queqiao.tool.utils.ServerStatusCollector;
 import com.github.theword.queqiao.tool.utils.WebsocketManager;
 import com.google.gson.*;
 import org.slf4j.Logger;
@@ -45,6 +46,7 @@ public class GlobalContext {
 
         messagePrefixJsonElement = initMessagePrefixJsonObject(config.getMessagePrefix());
         languageService = new LanguageService(isModServer, logger);
+        ServerStatusCollector.initPingTarget(logger);
         initWebsocketManager();
         initRconClient();
     }
@@ -62,6 +64,7 @@ public class GlobalContext {
         setConfig(Config.loadConfig(isModServer, logger));
         messagePrefixJsonElement = initMessagePrefixJsonObject(config.getMessagePrefix());
         languageService.reload();
+        ServerStatusCollector.initPingTarget(logger);
         websocketManager.restart(commandReturner);
         restartRconClient();
         handleCommandReturnMessageService.sendReturnMessage(commandReturner, CommandConstant.RELOAD_CONFIG);

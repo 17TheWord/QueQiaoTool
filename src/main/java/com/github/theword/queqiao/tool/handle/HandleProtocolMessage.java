@@ -7,6 +7,7 @@ import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.github.theword.queqiao.tool.payload.*;
 import com.github.theword.queqiao.tool.response.PrivateMessageResponse;
 import com.github.theword.queqiao.tool.response.Response;
+import com.github.theword.queqiao.tool.utils.ServerStatusCollector;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.java_websocket.WebSocket;
@@ -72,7 +73,7 @@ public class HandleProtocolMessage {
             response.setEcho(basePayload.getEcho());
             return response;
         } catch (Exception e) {
-            this.logger.error("解析来自 {} 的 webSocket 消息时出现问题，消息内容： {}", address, rawJsonMessage);
+            this.logger.error("解析来自 {} 的 webSocket 消息时出现问题，消息内容：{}", address, rawJsonMessage);
             this.logger.error("错误信息：", e);
             HashMap<String, String> data = new HashMap<>();
             data.put("rawJsonMessage", rawJsonMessage);
@@ -134,14 +135,9 @@ public class HandleProtocolMessage {
                     resultData.put("error", errorMessage);
                     return Response.failed(400, errorMessage, resultData);
                 }
-            case "ping": {
-                HashMap<String, Object> pingData = new HashMap<>();
-                pingData.put("timestamp", System.currentTimeMillis() / 1000);
-                pingData.put("server_type", GlobalContext.getServerType());
-                pingData.put("server_version", GlobalContext.getServerVersion());
-                pingData.put("message", "pong");
-                logger.info("收到 ping 请求，返回 pong 响应");
-                return Response.success(pingData);
+            case "get_status": {
+                logger.info("收到 get_status 请求，已返回服务器状态");
+                return Response.success(ServerStatusCollector.collectStatusSnapshot());
             }
             default:
                 this.logger.warn(BaseConstant.UNKNOWN_API + "{}", api);
