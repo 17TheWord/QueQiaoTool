@@ -137,8 +137,8 @@ public class HandleProtocolMessage {
             case "ping": {
                 HashMap<String, Object> pingData = new HashMap<>();
                 pingData.put("timestamp", System.currentTimeMillis() / 1000);
-                pingData.put("server_type", handleApiService.getServerType());
-                pingData.put("server_version", handleApiService.getServerVersion());
+                pingData.put("server_type", GlobalContext.getServerType());
+                pingData.put("server_version", GlobalContext.getServerVersion());
                 logger.info("收到 ping 请求，返回 pong 响应");
                 return Response.success(pingData);
             }
