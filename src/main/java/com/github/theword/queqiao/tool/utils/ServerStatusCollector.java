@@ -90,17 +90,14 @@ public final class ServerStatusCollector {
             }
 
             Path serverPropertiesPath = serverRoot.resolve("server.properties").normalize();
-            logger.info("已通过 regex.yml 获取 server.properties 路径：{}", serverPropertiesPath);
             return serverPropertiesPath;
         }
 
         Path fallbackPath = absoluteWorkingDirectory.resolve("server.properties").normalize();
-        logger.info("未找到可用 regex.yml，回退到默认 server.properties 路径：{}", fallbackPath);
         return fallbackPath;
     }
 
     private static String readLogPath(Path regexConfigPath, Logger logger) {
-        logger.info("检测到 regex 配置：{}", regexConfigPath);
         try (InputStream inputStream = Files.newInputStream(regexConfigPath)) {
             Yaml yaml = new Yaml();
             Object yamlObject = yaml.load(inputStream);
@@ -163,10 +160,6 @@ public final class ServerStatusCollector {
                 return inferredRoot;
             }
         }
-
-        if (firstInferredRoot != null) {
-            logger.warn("根据 log_path 推断出服务器根目录 {}，但未找到 server.properties，将继续按该路径尝试", firstInferredRoot);
-        }
         return firstInferredRoot;
     }
 
@@ -215,7 +208,6 @@ public final class ServerStatusCollector {
         Path normalizedPath = serverPropertiesPath.toAbsolutePath().normalize();
 
         if (!Files.isRegularFile(normalizedPath)) {
-            logger.warn("未找到 server.properties，状态接口将使用默认地址 {}:{}，当前路径：{}", host, port, normalizedPath);
             setPingTarget(host, port, true);
             return;
         }
@@ -237,7 +229,6 @@ public final class ServerStatusCollector {
         }
 
         setPingTarget(host, port, true);
-        logger.info("状态接口已缓存 Minecraft 服务器地址 {}:{}（来源：{}）", host, port, normalizedPath);
     }
 
     private static void setPingTarget(String host, int port, boolean available) {
