@@ -131,11 +131,7 @@ public abstract class CommonConfig {
             backupConfig(path);
             writeYamlMap(path, currentMap);
             logger.warn(
-                    "配置文件 {} 已同步：新增 {} 项，重置 {} 项，删除 {} 项。",
-                    fileName,
-                    syncStats.added,
-                    syncStats.reset,
-                    syncStats.removed
+                    "配置文件 {} 已同步：新增 {} 项，重置 {} 项，删除 {} 项。", fileName, syncStats.added, syncStats.reset, syncStats.removed
             );
         } catch (IOException e) {
             logger.warn("同步配置文件 {} 失败：{}", fileName, e.getMessage());
@@ -231,7 +227,7 @@ public abstract class CommonConfig {
             }
         }
 
-        for (Iterator<String> iterator = currentMap.keySet().iterator(); iterator.hasNext(); ) {
+        for (Iterator<String> iterator = currentMap.keySet().iterator(); iterator.hasNext();) {
             String key = iterator.next();
             if (defaultMap.containsKey(key)) {
                 continue;
