@@ -135,6 +135,12 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">读取配置文件内容</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#synchronizeConfigFile(java.nio.file.Path,java.lang.String)" class="member-name-link">synchronizeConfigFile</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;path,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fileName)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">严格同步字段：</div>
+</div>
 </div>
 </div>
 </div>
@@ -180,7 +186,7 @@ loadScripts(document, 'script');</script>
 <div class="block">读取配置文件</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>configFolder</code> - 配置文件所在文件夹</dd>
+<dd><code>configFolder</code> - 配置文件所在目录</dd>
 <dd><code>fileName</code> - 配置文件名</dd>
 </dl>
 </section>
@@ -222,6 +228,17 @@ loadScripts(document, 'script');</script>
 <dd><code>path</code> - 路径</dd>
 <dd><code>fileName</code> - 文件名</dd>
 </dl>
+</section>
+</li>
+<li>
+<section class="detail" id="synchronizeConfigFile(java.nio.file.Path,java.lang.String)">
+<h3>synchronizeConfigFile</h3>
+<div class="member-signature"><span class="modifiers">protected</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">synchronizeConfigFile</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;path,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fileName)</span></div>
+<div class="block">严格同步字段：
+ <p>1. 当前缺少默认字段 -> 补默认值</p>
+ <p>2. 当前多出未知字段 -> 删除</p>
+ <p>3. 类型不匹配 -> 回退默认值</p></div>
 </section>
 </li>
 </ul>
