@@ -1,6 +1,7 @@
 package com.github.theword.queqiao.tool.utils;
 
 import com.github.theword.queqiao.tool.GlobalContext;
+import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.event.base.BaseEvent;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
@@ -54,11 +55,13 @@ public class WebsocketManager {
      */
     private void startClients(Object commandReturner) {
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
-        GlobalContext.getConfig().getWebsocketClient().getUrlList().forEach(
+        Config config = GlobalContext.getConfig();
+        config.getWebsocketClient().getUrlList().forEach(
                 websocketUrl -> {
                     try {
                         WsClient wsClient = new WsClient(
-                                new URI(websocketUrl), logger, gson, GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().getWebsocketClient().getReconnectMaxTimes(), GlobalContext.getConfig().getWebsocketClient().getReconnectInterval(), GlobalContext.getConfig().isEnable());
+                                new URI(websocketUrl), logger, gson, config.getServerName(), config.getAccessToken(), config.getWebsocketClient().getReconnectMaxTimes(), config.getWebsocketClient().getReconnectInterval(), config.isEnable()
+                        );
                         wsClient.connect();
                         wsClientList.add(wsClient);
                     } catch (URISyntaxException e) {
@@ -154,10 +157,36 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     private void restartServer(Object commandReturner) {
-        stopServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
-        if (GlobalContext.getConfig().getWebsocketServer().isEnable()) {
-            startServer(commandReturner);
+        Config config = GlobalContext.getConfig();
+        boolean enableServer = config.getWebsocketServer().isEnable();
+
+        if (!enableServer) {
+            stopServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
+            this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
+            return;
         }
+
+        String host = config.getWebsocketServer().getHost();
+        int port = config.getWebsocketServer().getPort();
+
+        if (wsServer == null) {
+            startServer(commandReturner);
+            this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
+            return;
+        }
+
+        if (wsServer.isActive() && wsServer.hasSameBinding(host, port)) {
+            wsServer.applyRuntimeConfig(
+                    config.getServerName(), config.getAccessToken(), config.isEnable(), config.getWebsocketServer().isForward()
+            );
+            this.handleCommandReturnMessageService.sendReturnMessage(
+                    commandReturner, "Websocket Server 配置已热更新");
+            this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
+            return;
+        }
+
+        stopServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
+        startServer(commandReturner);
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
     }
 

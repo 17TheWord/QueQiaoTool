@@ -10,8 +10,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.DefaultHttpHeaders;
@@ -33,8 +34,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 
@@ -53,21 +54,22 @@ public class WsClient {
         thread.setDaemon(true);
         return thread;
     });
+    private final EventLoopGroup group = new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
 
     private final int reconnectMaxTimes;
     private final int reconnectInterval;
     private final AtomicInteger reconnectTimes = new AtomicInteger(0);
-    private final AtomicBoolean reconnectScheduled = new AtomicBoolean(false);
-    private final AtomicBoolean suppressNextReconnect = new AtomicBoolean(false);
+    private final Object reconnectLock = new Object();
+    private volatile ScheduledFuture<?> reconnectFuture;
 
     private final HttpHeaders connectHeaders = new DefaultHttpHeaders();
 
     private volatile boolean stopped = false;
-    private volatile EventLoopGroup group;
     private volatile Channel channel;
 
     public WsClient(
-                    URI uri, Logger logger, Gson gson, String serverName, String accessToken, int reconnectMaxTimes, int reconnectInterval, boolean enabled) {
+                    URI uri, Logger logger, Gson gson, String serverName, String accessToken, int reconnectMaxTimes, int reconnectInterval, boolean enabled
+    ) {
         this.uri = uri;
         this.logger = logger;
         this.reconnectMaxTimes = Math.max(0, reconnectMaxTimes);
@@ -76,8 +78,7 @@ public class WsClient {
         this.handleProtocolMessage = new HandleProtocolMessage(logger, gson);
 
         try {
-            this.connectHeaders.add(
-                    "x-self-name", URLEncoder.encode(serverName, StandardCharsets.UTF_8.toString()));
+            this.connectHeaders.add("x-self-name", URLEncoder.encode(serverName, StandardCharsets.UTF_8.toString()));
         } catch (UnsupportedEncodingException e) {
             this.logger.error("WebSocket 客户端初始化失败，服务器名称编码异常", e);
         }
@@ -99,6 +100,7 @@ public class WsClient {
     /** 建立连接（首次启动调用） */
     public void connect() {
         this.stopped = false;
+        cancelPendingReconnect();
         connectInternal();
     }
 
@@ -112,37 +114,40 @@ public class WsClient {
     /** 立刻触发重连（命令触发） */
     public void reconnectNow() {
         this.logger.info(WebsocketConstantMessage.Client.MANUAL_RECONNECTING, getURI());
-        this.reconnectScheduled.set(false);
-        this.suppressNextReconnect.set(true);
-        this.scheduler.execute(
-                () -> {
-                    if (this.stopped) {
-                        return;
-                    }
-                    closeCurrentChannel();
-                    shutdownGroup();
-                    this.reconnectTimes.set(0);
-                    connectInternal();
-                });
+
+        this.scheduler.execute(() -> {
+            if (this.stopped) {
+                return;
+            }
+
+            cancelPendingReconnect();
+            closeCurrentChannel();
+            this.reconnectTimes.set(0);
+            scheduleReconnect(0, true);
+        });
     }
 
     /** 停止并关闭连接，不再自动重连 */
     public void stopWithoutReconnect(int code, String reason) {
         this.stopped = true;
-        this.reconnectScheduled.set(false);
+        cancelPendingReconnect();
         this.scheduler.shutdownNow();
+
         Channel current = this.channel;
         this.channel = null;
         if (current != null) {
             String closeReason = reason == null ? "" : reason;
             current.writeAndFlush(new CloseWebSocketFrame(code, closeReason)).addListener(ChannelFutureListener.CLOSE);
         }
-        shutdownGroup();
+
+        if (!this.group.isShuttingDown()) {
+            this.group.shutdownGracefully();
+        }
     }
 
     /** 建立 Netty 客户端连接并初始化 pipeline */
     private synchronized void connectInternal() {
-        if (this.stopped || isOpen()) {
+        if (this.stopped || isOpen() || this.group.isShuttingDown()) {
             return;
         }
 
@@ -156,8 +161,6 @@ public class WsClient {
             return;
         }
 
-        shutdownGroup();
-
         final boolean ssl = "wss".equalsIgnoreCase(scheme);
         final SslContext sslContext;
         if (ssl) {
@@ -165,16 +168,16 @@ public class WsClient {
                 sslContext = SslContextBuilder.forClient().build();
             } catch (Exception e) {
                 this.logger.warn("初始化 WSS 失败: {}", e.getMessage());
-                scheduleReconnect(nextDelay());
+                scheduleReconnect(nextDelay(), false);
                 return;
             }
         } else {
             sslContext = null;
         }
 
-        this.group = new NioEventLoopGroup(1);
         WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory.newHandshaker(
-                wsUri, WebSocketVersion.V13, null, true, this.connectHeaders);
+                wsUri, WebSocketVersion.V13, null, true, this.connectHeaders
+        );
 
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group(this.group).channel(NioSocketChannel.class).handler(new ChannelInitializer<SocketChannel>() {
@@ -194,9 +197,9 @@ public class WsClient {
         bootstrap.connect(host, port).addListener((ChannelFutureListener) future -> {
             if (!future.isSuccess()) {
                 this.logger.warn(
-                        WebsocketConstantMessage.Client.CONNECTION_ERROR, getURI(), future.cause() == null ? "unknown" : future.cause().getMessage(), future.cause());
-                shutdownGroup();
-                scheduleReconnect(nextDelay());
+                        WebsocketConstantMessage.Client.CONNECTION_ERROR, getURI(), future.cause() == null ? "unknown" : future.cause().getMessage(), future.cause()
+                );
+                scheduleReconnect(nextDelay(), false);
                 return;
             }
             this.channel = future.channel();
@@ -209,45 +212,53 @@ public class WsClient {
         return Math.min(this.reconnectInterval * (1L << exponent), MAX_RECONNECT_DELAY_SECONDS);
     }
 
-    private void scheduleReconnect(long delaySeconds) {
+    private void scheduleReconnect(long delaySeconds, boolean manual) {
         if (this.stopped || this.scheduler.isShutdown()) {
             return;
         }
-        if (this.reconnectTimes.get() >= this.reconnectMaxTimes) {
+
+        if (!manual && this.reconnectTimes.get() >= this.reconnectMaxTimes) {
             this.logger.info(WebsocketConstantMessage.Client.MAX_RECONNECT_ATTEMPTS_REACHED, getURI());
             return;
         }
-        if (!this.reconnectScheduled.compareAndSet(false, true)) {
-            return;
+
+        synchronized (this.reconnectLock) {
+            ScheduledFuture<?> currentFuture = this.reconnectFuture;
+            if (currentFuture != null && !currentFuture.isDone()) {
+                return;
+            }
+
+            if (!manual) {
+                int attempt = this.reconnectTimes.incrementAndGet();
+                this.logger.warn(WebsocketConstantMessage.Client.RECONNECTING, getURI(), attempt);
+            }
+
+            this.reconnectFuture = this.scheduler.schedule(() -> {
+                synchronized (this.reconnectLock) {
+                    this.reconnectFuture = null;
+                }
+                if (!this.stopped) {
+                    connectInternal();
+                }
+            }, delaySeconds, TimeUnit.SECONDS);
         }
-
-        int attempt = this.reconnectTimes.incrementAndGet();
-        this.logger.warn(WebsocketConstantMessage.Client.RECONNECTING, getURI(), attempt);
-
-        this.scheduler.schedule(
-                () -> {
-                    this.reconnectScheduled.set(false);
-                    if (!this.stopped) {
-                        connectInternal();
-                    }
-                }, delaySeconds, TimeUnit.SECONDS);
     }
 
     private void onHandshakeComplete() {
         this.logger.info(WebsocketConstantMessage.Client.CONNECT_SUCCESSFUL, getURI());
         this.reconnectTimes.set(0);
-        this.reconnectScheduled.set(false);
+        cancelPendingReconnect();
     }
 
     private void onDisconnected(Throwable throwable) {
         this.channel = null;
-        shutdownGroup();
-        if (this.stopped || this.suppressNextReconnect.getAndSet(false) || this.reconnectScheduled.get()) {
+        if (this.stopped) {
             return;
         }
+
         String msg = throwable == null ? "channel inactive" : throwable.getMessage();
         this.logger.warn(WebsocketConstantMessage.Client.CONNECTION_ERROR, getURI(), msg, throwable);
-        scheduleReconnect(nextDelay());
+        scheduleReconnect(nextDelay(), false);
     }
 
     private void closeCurrentChannel() {
@@ -258,11 +269,14 @@ public class WsClient {
         }
     }
 
-    private synchronized void shutdownGroup() {
-        EventLoopGroup currentGroup = this.group;
-        this.group = null;
-        if (currentGroup != null && !currentGroup.isShuttingDown()) {
-            currentGroup.shutdownGracefully();
+    private void cancelPendingReconnect() {
+        ScheduledFuture<?> future;
+        synchronized (this.reconnectLock) {
+            future = this.reconnectFuture;
+            this.reconnectFuture = null;
+        }
+        if (future != null && !future.isDone()) {
+            future.cancel(false);
         }
     }
 
@@ -280,7 +294,8 @@ public class WsClient {
 
         try {
             return new URI(
-                    scheme, original.getUserInfo(), original.getHost(), original.getPort(), path, original.getRawQuery(), original.getRawFragment());
+                    scheme, original.getUserInfo(), original.getHost(), original.getPort(), path, original.getRawQuery(), original.getRawFragment()
+            );
         } catch (URISyntaxException e) {
             return original;
         }
@@ -304,7 +319,8 @@ public class WsClient {
                 return;
             }
             String response = this.wsClient.handleProtocolMessage.handleWebsocketJson(
-                    String.valueOf(ctx.channel().remoteAddress()), frame.text());
+                    String.valueOf(ctx.channel().remoteAddress()), frame.text()
+            );
             if (response != null && !response.isEmpty()) {
                 ctx.channel().writeAndFlush(new TextWebSocketFrame(response));
             }
@@ -331,4 +347,3 @@ public class WsClient {
         }
     }
 }
-

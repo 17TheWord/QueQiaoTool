@@ -11,6 +11,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * server.properties 读取工具。
@@ -19,6 +21,7 @@ import java.util.Properties;
  * <p>后续调用直接命中缓存，避免反复 IO。</p>
  */
 public final class ServerPropertiesTool {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerPropertiesTool.class);
     private static final String LOG_PATH_KEY = "log_path";
     private static final String SERVER_PROPERTIES_FILE_NAME = "server.properties";
 
@@ -73,6 +76,7 @@ public final class ServerPropertiesTool {
         try (InputStream inputStream = Files.newInputStream(serverPropertiesPath)) {
             properties.load(inputStream);
         } catch (Exception e) {
+            LOGGER.warn("读取 server.properties 失败，路径：{}", serverPropertiesPath, e);
             return Collections.emptyMap();
         }
 
