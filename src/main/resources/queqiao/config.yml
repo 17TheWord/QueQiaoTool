@@ -26,6 +26,7 @@ websocket_server:
   enable: true          # 是否启用
   host: "127.0.0.1"     # WebSocket Server 地址
   port: 8080            # WebSocket Server 端口
+  forward: false         # 将非 WebSocket 流量转发到 Minecraft 服务器
 
 # WebSocket Client配置项
 websocket_client:

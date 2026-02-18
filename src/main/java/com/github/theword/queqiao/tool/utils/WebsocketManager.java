@@ -107,13 +107,24 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     private void startServer(Object commandReturner) {
+        String host = GlobalContext.getConfig().getWebsocketServer().getHost();
+        int port = GlobalContext.getConfig().getWebsocketServer().getPort();
+
         wsServer = new WsServer(
-                new InetSocketAddress(GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()), logger, gson, GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().isEnable()
+                new InetSocketAddress(host, port), logger, gson, GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().isEnable(), GlobalContext.getConfig().getWebsocketServer().isForward()
         );
-        wsServer.start();
+        try {
+            wsServer.start();
+        } catch (RuntimeException e) {
+            wsServer = null;
+            String errorMessage = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+            this.logger.error("WebSocket Server 启动失败: {}", errorMessage, e);
+            this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, String.format("WebSocket Server 启动失败：%s", errorMessage));
+            return;
+        }
         this.handleCommandReturnMessageService.sendReturnMessage(
                 commandReturner, String.format(
-                        WebsocketConstantMessage.Server.SERVER_STARTING.replace("{}", "%s"), GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()));
+                        WebsocketConstantMessage.Server.SERVER_STARTING.replace("{}", "%s"), wsServer.getAddress().getHostString(), wsServer.getPort()));
 
     }
 
@@ -129,8 +140,9 @@ public class WebsocketManager {
                 wsServer.stop(0, reason);
                 this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, reason);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                this.logger.warn("停止 WebSocket Server 时线程被中断", e);
                 this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.ERROR_ON_STOPPING);
-                Tool.debugLog(e.getMessage());
             }
             wsServer = null;
         }

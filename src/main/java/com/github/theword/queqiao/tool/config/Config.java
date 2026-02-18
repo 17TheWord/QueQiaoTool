@@ -251,10 +251,42 @@ public class Config extends CommonConfig {
      */
     @SuppressWarnings("unchecked")
     private void loadWebsocketServerConfig(Map<String, Object> configMap) {
-        Map<String, Object> websocketServerConfig = (Map<String, Object>) configMap.get("websocket_server");
-        websocketServer.setEnable((Boolean) websocketServerConfig.get("enable"));
-        websocketServer.setHost((String) websocketServerConfig.get("host"));
-        websocketServer.setPort((int) websocketServerConfig.get("port"));
+        Object websocketServerObj = configMap.get("websocket_server");
+        if (!(websocketServerObj instanceof Map)) {
+            super.getLogger().warn("配置项 websocket_server 缺失或格式错误，将使用默认值");
+            return;
+        }
+
+        Map<String, Object> websocketServerConfig = (Map<String, Object>) websocketServerObj;
+        Object enableObj = websocketServerConfig.get("enable");
+        Object hostObj = websocketServerConfig.get("host");
+        Object portObj = websocketServerConfig.get("port");
+        Object forwardObj = websocketServerConfig.get("forward");
+
+        websocketServer.setEnable(enableObj instanceof Boolean ? (Boolean) enableObj : true);
+        websocketServer.setHost(resolveHost(hostObj, "127.0.0.1"));
+        websocketServer.setPort(resolvePort(portObj, 8080, "websocket_server.port"));
+        websocketServer.setForward(forwardObj instanceof Boolean && (Boolean) forwardObj);
+    }
+
+    private String resolveHost(Object hostObj, String defaultHost) {
+        if (!(hostObj instanceof String)) {
+            return defaultHost;
+        }
+        String host = ((String) hostObj).trim();
+        return host.isEmpty() ? defaultHost : host;
+    }
+
+    private int resolvePort(Object portObj, int defaultPort, String key) {
+        if (!(portObj instanceof Number)) {
+            return defaultPort;
+        }
+        int port = ((Number) portObj).intValue();
+        if (port <= 0 || port > 65535) {
+            super.getLogger().warn("配置项 {} 端口越界（{}），将使用默认值 {}", key, port, defaultPort);
+            return defaultPort;
+        }
+        return port;
     }
 
     /**

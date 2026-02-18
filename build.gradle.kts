@@ -33,7 +33,7 @@ dependencies {
     implementation("com.google.code.gson:gson:${property("gsonVersion")}")
     implementation("commons-io:commons-io:${property("commonsIoVersion")}")
     implementation("org.yaml:snakeyaml:${property("snakeyamlVersion")}")
-    implementation("org.java-websocket:Java-WebSocket:${property("javaWebSocketVersion")}")
+    implementation("io.netty:netty-all:${property("nettyVersion")}")
     implementation("org.slf4j:slf4j-api:${property("slf4jApiVersion")}")
     implementation("org.glavo:rcon-java:${property("glavoRconVersion")}")
 

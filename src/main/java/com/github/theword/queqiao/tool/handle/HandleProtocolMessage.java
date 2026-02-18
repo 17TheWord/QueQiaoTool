@@ -10,7 +10,6 @@ import com.github.theword.queqiao.tool.response.Response;
 import com.github.theword.queqiao.tool.utils.ServerStatusCollector;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
@@ -44,12 +43,12 @@ public class HandleProtocolMessage {
     /**
      * WebSocket入口，处理JSON字符串
      *
-     * @param webSocket      WebSocket连接
+     * @param remoteAddress  远端地址
      * @param rawJsonMessage 收到的JSON字符串
      * @return 响应的JSON字符串
      */
-    public String handleWebsocketJson(WebSocket webSocket, String rawJsonMessage) {
-        Response response = this.handle(rawJsonMessage, webSocket.getRemoteSocketAddress().toString(), MessageSource.WEBSOCKET);
+    public String handleWebsocketJson(String remoteAddress, String rawJsonMessage) {
+        Response response = this.handle(rawJsonMessage, remoteAddress, MessageSource.WEBSOCKET);
         return gson.toJson(response);
     }
 
@@ -65,15 +64,21 @@ public class HandleProtocolMessage {
     }
 
     private Response handle(String rawJsonMessage, String address, MessageSource source) {
+        if (rawJsonMessage == null || rawJsonMessage.trim().isEmpty()) {
+            return Response.failed(400, "消息体不能为空");
+        }
         debugLog("收到来自 {} 的 {} 消息：{}", address, source.toString(), rawJsonMessage);
         try {
             BasePayload basePayload = gson.fromJson(rawJsonMessage, BasePayload.class);
+            if (basePayload == null || basePayload.getApi() == null || basePayload.getApi().trim().isEmpty()) {
+                return Response.failed(400, "缺少 api 字段");
+            }
             Response response = this.parseAndHandle(basePayload);
             response.setApi(basePayload.getApi());
             response.setEcho(basePayload.getEcho());
             return response;
         } catch (Exception e) {
-            this.logger.error("解析来自 {} 的 webSocket 消息时出现问题，消息内容：{}", address, rawJsonMessage);
+            this.logger.error("解析来自 {} 的 {} 消息时出现问题，消息内容：{}", address, source.toString(), rawJsonMessage);
             this.logger.error("错误信息：", e);
             HashMap<String, String> data = new HashMap<>();
             data.put("rawJsonMessage", rawJsonMessage);
@@ -90,7 +95,7 @@ public class HandleProtocolMessage {
         String api = basePayload.getApi();
         JsonElement data = basePayload.getData();
 
-        switch (basePayload.getApi()) {
+        switch (api) {
             case "broadcast":
             case "send_msg": {
                 MessagePayload messagePayload = gson.fromJson(data, MessagePayload.class);
@@ -136,7 +141,6 @@ public class HandleProtocolMessage {
                     return Response.failed(400, errorMessage, resultData);
                 }
             case "get_status": {
-                logger.info("收到 get_status 请求，已返回服务器状态");
                 return Response.success(ServerStatusCollector.collectStatusSnapshot());
             }
             default:
