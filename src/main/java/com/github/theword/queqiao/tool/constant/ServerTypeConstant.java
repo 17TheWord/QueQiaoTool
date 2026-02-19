@@ -10,6 +10,7 @@ public class ServerTypeConstant {
     public static final String ORIGIN = "origin";
 
     public static final String SPIGOT = "spigot";
+    public static final String PAPER = "paper";
 
     public static final String BUNGEE = "bungee";
     public static final String VELOCITY = "velocity";
