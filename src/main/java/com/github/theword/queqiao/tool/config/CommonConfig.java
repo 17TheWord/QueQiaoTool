@@ -226,7 +226,7 @@ public abstract class CommonConfig {
         Map<String, Object> defaultMap = readDefaultYamlMap(fileName);
 
         if (defaultMap == null) {
-            if (currentMap.isEmpty()) {
+            if (currentMap != null && currentMap.isEmpty()) {
                 logger.warn("配置文件 {} 无法加载，将使用代码中的默认配置。", fileName);
                 return null;
             }
@@ -283,7 +283,7 @@ public abstract class CommonConfig {
         } catch (RuntimeException | IOException e) {
             logger.warn("解析配置文件 {} 失败：{}", fileName, e.getMessage());
         }
-        return useEmptyMapIfInvalid ? new LinkedHashMap<String, Object>() : null;
+        return useEmptyMapIfInvalid ? new LinkedHashMap<>() : null;
     }
 
     private void writeYamlMap(Path path, Map<String, Object> map) throws IOException {
