@@ -1,37 +1,27 @@
 package com.github.theword.queqiao.tool.utils;
 
 import com.github.theword.queqiao.tool.GlobalContext;
-import com.github.theword.queqiao.tool.constant.BaseConstant;
 import org.slf4j.Logger;
-import org.yaml.snakeyaml.Yaml;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.ConnectException;
 import java.net.NoRouteToHostException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.channels.UnresolvedAddressException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Properties;
 
 /**
- * 服务器状态采集工具
+ * 服务状态采集工具。
  *
  * <p>用于 {@code get_status} 接口，包含以下能力：</p>
- * <p>1. 启动时读取并缓存 {@code server.properties} 的服务器地址</p>
- * <p>2. 接口调用时执行一次 Minecraft Server List Ping</p>
+ * <p>1. 读取缓存的 server.properties 主机与端口</p>
+ * <p>2. 执行一次 Minecraft Server List Ping</p>
  * <p>3. 采集 CPU 与内存信息并组装返回数据</p>
  */
 public final class ServerStatusCollector {
-    private static final int DEFAULT_SERVER_PORT = 25565;
     private static final String DEFAULT_SERVER_HOST = "127.0.0.1";
-    private static final Path[] REGEX_CONFIG_CANDIDATES = new Path[]{Paths.get("config", BaseConstant.MODULE_NAME, "regex.yml"), Paths.get(BaseConstant.MODULE_NAME, "regex.yml")
-    };
+    private static final int DEFAULT_SERVER_PORT = 25565;
 
     private static final MinecraftPingClient PING_CLIENT = new MinecraftPingClient();
     private static final SystemMetricsCollector METRICS = new SystemMetricsCollector();
@@ -58,195 +48,42 @@ public final class ServerStatusCollector {
     }
 
     /**
-     * 读取并缓存 Minecraft 服务器地址
-     *
-     * <p>优先从 {@code ./config/QueQiao/regex.yml} 的 {@code log_path} 获取服务端根目录，</p>
-     * <p>再读取该目录下的 {@code server.properties}</p>
+     * 从缓存工具读取目标地址并更新状态探测目标。
      *
      * @param logger 日志实现
      */
     public static void initPingTarget(Logger logger) {
-        Path workingDirectory = Paths.get("").toAbsolutePath().normalize();
-        Path serverPropertiesPath = resolveServerPropertiesPath(workingDirectory, logger);
-        initPingTarget(serverPropertiesPath, logger);
-    }
+        ServerPropertiesTool.refresh();
 
-    static Path resolveServerPropertiesPath(Path workingDirectory, Logger logger) {
-        Path absoluteWorkingDirectory = workingDirectory.toAbsolutePath().normalize();
-        for (Path relativeRegexPath : REGEX_CONFIG_CANDIDATES) {
-            Path regexConfigPath = absoluteWorkingDirectory.resolve(relativeRegexPath).normalize();
-            if (!Files.isRegularFile(regexConfigPath)) {
-                continue;
-            }
-
-            String logPath = readLogPath(regexConfigPath, logger);
-            if (logPath == null || logPath.trim().isEmpty()) {
-                continue;
-            }
-
-            Path serverRoot = inferServerRoot(regexConfigPath, logPath, absoluteWorkingDirectory, logger);
-            if (serverRoot == null) {
-                continue;
-            }
-
-            Path serverPropertiesPath = serverRoot.resolve("server.properties").normalize();
-            return serverPropertiesPath;
+        String host = ServerPropertiesTool.getValue("server-ip");
+        if (isBlank(host)) {
+            host = DEFAULT_SERVER_HOST;
         }
 
-        Path fallbackPath = absoluteWorkingDirectory.resolve("server.properties").normalize();
-        return fallbackPath;
-    }
-
-    private static String readLogPath(Path regexConfigPath, Logger logger) {
-        try (InputStream inputStream = Files.newInputStream(regexConfigPath)) {
-            Yaml yaml = new Yaml();
-            Object yamlObject = yaml.load(inputStream);
-            if (!(yamlObject instanceof Map)) {
-                logger.warn("regex.yml 内容不是 Map 结构，无法读取 log_path：{}", regexConfigPath);
-                return null;
-            }
-
-            Object logPathObject = ((Map<?, ?>) yamlObject).get("log_path");
-            if (!(logPathObject instanceof String)) {
-                logger.warn("regex.yml 未配置 log_path，无法获取 server.properties：{}", regexConfigPath);
-                return null;
-            }
-
-            String logPath = ((String) logPathObject).trim();
-            if (logPath.isEmpty()) {
-                logger.warn("regex.yml 的 log_path 为空，无法获取 server.properties：{}", regexConfigPath);
-                return null;
-            }
-            return logPath;
-        } catch (Exception e) {
-            logger.warn("读取 regex.yml 失败，无法获取 server.properties：{}，错误：{}", regexConfigPath, e.getMessage());
-            return null;
-        }
-    }
-
-    private static Path inferServerRoot(Path regexConfigPath, String logPath, Path workingDirectory, Logger logger) {
-        final Path logPathObject;
-        try {
-            logPathObject = Paths.get(logPath);
-        } catch (Exception e) {
-            logger.warn("log_path 非法，无法获取 server.properties：{}，错误：{}", logPath, e.getMessage());
-            return null;
-        }
-
-        if (logPathObject.isAbsolute()) {
-            return extractServerRootFromLogPath(logPathObject.normalize());
-        }
-
-        Path regexBasedRoot = deriveRootFromRegexConfig(regexConfigPath);
-        Path[] rootCandidates = new Path[]{regexBasedRoot, workingDirectory};
-
-        Path firstInferredRoot = null;
-        for (Path rootCandidate : rootCandidates) {
-            if (rootCandidate == null) {
-                continue;
-            }
-
-            Path resolvedLogPath = rootCandidate.resolve(logPathObject).normalize();
-            Path inferredRoot = extractServerRootFromLogPath(resolvedLogPath);
-            if (inferredRoot == null) {
-                continue;
-            }
-            if (firstInferredRoot == null) {
-                firstInferredRoot = inferredRoot;
-            }
-
-            Path serverPropertiesPath = inferredRoot.resolve("server.properties").normalize();
-            if (Files.isRegularFile(serverPropertiesPath)) {
-                return inferredRoot;
-            }
-        }
-        return firstInferredRoot;
-    }
-
-    private static Path deriveRootFromRegexConfig(Path regexConfigPath) {
-        Path normalizedPath = regexConfigPath.toAbsolutePath().normalize();
-        Path moduleDirectory = normalizedPath.getParent();
-        if (moduleDirectory == null) {
-            return null;
-        }
-
-        Path moduleParent = moduleDirectory.getParent();
-        if (moduleParent == null) {
-            return null;
-        }
-
-        if (equalsIgnoreCase(moduleDirectory.getFileName(), BaseConstant.MODULE_NAME) && equalsIgnoreCase(moduleParent.getFileName(), "config")) {
-            Path serverRoot = moduleParent.getParent();
-            if (serverRoot != null) {
-                return serverRoot;
-            }
-        }
-
-        return moduleParent;
-    }
-
-    private static boolean equalsIgnoreCase(Path pathSegment, String text) {
-        return pathSegment != null && pathSegment.toString().equalsIgnoreCase(text);
-    }
-
-    private static Path extractServerRootFromLogPath(Path resolvedLogPath) {
-        Path logDirectory = resolvedLogPath.getParent();
-        if (logDirectory == null) {
-            return null;
-        }
-
-        if (equalsIgnoreCase(logDirectory.getFileName(), "logs") && logDirectory.getParent() != null) {
-            return logDirectory.getParent();
-        }
-
-        return logDirectory;
-    }
-
-    static void initPingTarget(Path serverPropertiesPath, Logger logger) {
-        String host = DEFAULT_SERVER_HOST;
-        int port = DEFAULT_SERVER_PORT;
-        Path normalizedPath = serverPropertiesPath.toAbsolutePath().normalize();
-
-        if (!Files.isRegularFile(normalizedPath)) {
-            setPingTarget(host, port, true);
-            return;
-        }
-
-        Properties properties = new Properties();
-        try (InputStream inputStream = Files.newInputStream(normalizedPath)) {
-            properties.load(inputStream);
-            String configuredHost = properties.getProperty("server-ip", "").trim();
-            String configuredPort = properties.getProperty("server-port", String.valueOf(DEFAULT_SERVER_PORT)).trim();
-
-            if (!configuredHost.isEmpty()) {
-                host = configuredHost;
-            }
-            port = parsePort(configuredPort, logger);
-        } catch (IOException e) {
-            logger.warn("读取 server.properties 失败，状态接口将使用默认地址 {}:{}，错误：{}", host, port, e.getMessage());
-            setPingTarget(host, port, false);
-            return;
-        }
+        String portText = ServerPropertiesTool.getValue("server-port");
+        int port = parsePort(portText, logger);
 
         setPingTarget(host, port, true);
     }
 
-    private static void setPingTarget(String host, int port, boolean available) {
-        pingTarget = new PingTarget(host, port, available);
-    }
-
     private static int parsePort(String portText, Logger logger) {
-        try {
-            int parsedPort = Integer.parseInt(portText);
-            if (parsedPort <= 0 || parsedPort > 65535) {
-                logger.warn("server-port 配置越界（{}），将使用默认端口 {}", portText, DEFAULT_SERVER_PORT);
-                return DEFAULT_SERVER_PORT;
-            }
-            return parsedPort;
-        } catch (NumberFormatException e) {
-            logger.warn("server-port 配置非法（{}），将使用默认端口 {}", portText, DEFAULT_SERVER_PORT);
+        if (isBlank(portText)) {
             return DEFAULT_SERVER_PORT;
         }
+
+        try {
+            int parsedPort = Integer.parseInt(portText);
+            if (parsedPort > 0 && parsedPort <= 65535) {
+                return parsedPort;
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        logger.warn("server-port 配置非法（{}），将使用默认端口 {}", portText, DEFAULT_SERVER_PORT);
+        return DEFAULT_SERVER_PORT;
+    }
+
+    private static void setPingTarget(String host, int port, boolean available) {
+        pingTarget = new PingTarget(host, port, available);
     }
 
     /**
@@ -279,7 +116,8 @@ public final class ServerStatusCollector {
             String error = resolvePingErrorMessage(e);
             Logger logger = GlobalContext.getLogger();
             if (logger != null) {
-                logger.warn("Minecraft Server List Ping failed, reason={}, host={}, port={}, error={}", reason, currentTarget.host, currentTarget.port, error);
+                logger.warn(
+                        "Minecraft Server List Ping failed, reason={}, host={}, port={}, error={}", reason, currentTarget.host, currentTarget.port, error);
             }
             return buildPingResult(currentTarget, true, reason, error, null);
         }
@@ -314,6 +152,10 @@ public final class ServerStatusCollector {
             return exception.getClass().getSimpleName();
         }
         return message;
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     private static Map<String, Object> collectCpuInformation() {
