@@ -11,6 +11,7 @@ class WebSocketServerConfigTest {
         WebSocketServerConfig config = new WebSocketServerConfig();
         assertTrue(config.isEnable());
         assertEquals("127.0.0.1", config.getHost());
+        assertFalse(config.isForward());
         assertEquals(8080, config.getPort());
 
         config.setEnable(false);
