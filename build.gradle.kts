@@ -33,7 +33,10 @@ dependencies {
     implementation("com.google.code.gson:gson:${property("gsonVersion")}")
     implementation("commons-io:commons-io:${property("commonsIoVersion")}")
     implementation("org.yaml:snakeyaml:${property("snakeyamlVersion")}")
-    implementation("io.netty:netty-all:${property("nettyVersion")}")
+    implementation("io.netty:netty-common:${property("nettyVersion")}")
+    implementation("io.netty:netty-buffer:${property("nettyVersion")}")
+    implementation("io.netty:netty-transport:${property("nettyVersion")}")
+    implementation("io.netty:netty-codec:${property("nettyVersion")}")
     implementation("org.slf4j:slf4j-api:${property("slf4jApiVersion")}")
     implementation("org.glavo:rcon-java:${property("glavoRconVersion")}")
 
