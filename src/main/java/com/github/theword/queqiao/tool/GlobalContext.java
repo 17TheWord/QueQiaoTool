@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Map;
 
 public class GlobalContext {
     private static Config config;
@@ -226,6 +227,60 @@ public class GlobalContext {
      */
     public static String translate(String key, String[] args) {
         return languageService.translate(key, args);
+    }
+
+    //
+    // Config External Read/Write
+    //
+
+    /**
+     * 对外读取整个配置内容。
+     *
+     * @return 配置 Map
+     */
+    public static Map<String, Object> readAllConfig() {
+        ensureConfigInitialized();
+        return config.readAllConfig();
+    }
+
+    /**
+     * 对外按键路径读取配置项。
+     *
+     * @param keyPath 键路径（示例：websocket_server.port）
+     * @return 配置值，不存在时返回 null
+     */
+    public static Object readConfig(String keyPath) {
+        ensureConfigInitialized();
+        return config.readConfig(keyPath);
+    }
+
+    /**
+     * 对外写入整个配置内容。
+     *
+     * @param configMap 配置 Map
+     * @return 是否写入成功
+     */
+    public static boolean writeAllConfig(Map<String, Object> configMap) {
+        ensureConfigInitialized();
+        return config.writeAllConfig(configMap);
+    }
+
+    /**
+     * 对外按键路径写入配置项。
+     *
+     * @param keyPath 键路径（示例：websocket_server.port）
+     * @param value   键值
+     * @return 是否写入成功
+     */
+    public static boolean writeConfig(String keyPath, Object value) {
+        ensureConfigInitialized();
+        return config.writeConfig(keyPath, value);
+    }
+
+    private static void ensureConfigInitialized() {
+        if (config == null) {
+            throw new IllegalStateException("GlobalContext 尚未初始化，请先调用 GlobalContext.init(...)");
+        }
     }
 
     //

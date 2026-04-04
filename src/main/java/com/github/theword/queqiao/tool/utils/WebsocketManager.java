@@ -1,6 +1,7 @@
 package com.github.theword.queqiao.tool.utils;
 
 import com.github.theword.queqiao.tool.GlobalContext;
+import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.event.base.BaseEvent;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
@@ -54,11 +55,13 @@ public class WebsocketManager {
      */
     private void startClients(Object commandReturner) {
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
-        GlobalContext.getConfig().getWebsocketClient().getUrlList().forEach(
+        Config config = GlobalContext.getConfig();
+        config.getWebsocketClient().getUrlList().forEach(
                 websocketUrl -> {
                     try {
                         WsClient wsClient = new WsClient(
-                                new URI(websocketUrl), logger, gson, GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().getWebsocketClient().getReconnectMaxTimes(), GlobalContext.getConfig().getWebsocketClient().getReconnectInterval(), GlobalContext.getConfig().isEnable());
+                                new URI(websocketUrl), logger, gson, config.getServerName(), config.getAccessToken(), config.getWebsocketClient().getReconnectMaxTimes(), config.getWebsocketClient().getReconnectInterval(), config.isEnable()
+                        );
                         wsClient.connect();
                         wsClientList.add(wsClient);
                     } catch (URISyntaxException e) {
@@ -107,13 +110,24 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     private void startServer(Object commandReturner) {
+        String host = GlobalContext.getConfig().getWebsocketServer().getHost();
+        int port = GlobalContext.getConfig().getWebsocketServer().getPort();
+
         wsServer = new WsServer(
-                new InetSocketAddress(GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()), logger, gson, GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().isEnable()
+                new InetSocketAddress(host, port), logger, gson, GlobalContext.getConfig().getServerName(), GlobalContext.getConfig().getAccessToken(), GlobalContext.getConfig().isEnable(), GlobalContext.getConfig().getWebsocketServer().isForward()
         );
-        wsServer.start();
+        try {
+            wsServer.start();
+        } catch (RuntimeException e) {
+            wsServer = null;
+            String errorMessage = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+            this.logger.error("WebSocket Server 启动失败: {}", errorMessage, e);
+            this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, String.format("WebSocket Server 启动失败：%s", errorMessage));
+            return;
+        }
         this.handleCommandReturnMessageService.sendReturnMessage(
                 commandReturner, String.format(
-                        WebsocketConstantMessage.Server.SERVER_STARTING.replace("{}", "%s"), GlobalContext.getConfig().getWebsocketServer().getHost(), GlobalContext.getConfig().getWebsocketServer().getPort()));
+                        WebsocketConstantMessage.Server.SERVER_STARTING.replace("{}", "%s"), wsServer.getAddress().getHostString(), wsServer.getPort()));
 
     }
 
@@ -129,8 +143,9 @@ public class WebsocketManager {
                 wsServer.stop(0, reason);
                 this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, reason);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                this.logger.warn("停止 WebSocket Server 时线程被中断", e);
                 this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.ERROR_ON_STOPPING);
-                Tool.debugLog(e.getMessage());
             }
             wsServer = null;
         }
@@ -142,10 +157,36 @@ public class WebsocketManager {
      * @param commandReturner 命令执行者
      */
     private void restartServer(Object commandReturner) {
-        stopServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
-        if (GlobalContext.getConfig().getWebsocketServer().isEnable()) {
-            startServer(commandReturner);
+        Config config = GlobalContext.getConfig();
+        boolean enableServer = config.getWebsocketServer().isEnable();
+
+        if (!enableServer) {
+            stopServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
+            this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
+            return;
         }
+
+        String host = config.getWebsocketServer().getHost();
+        int port = config.getWebsocketServer().getPort();
+
+        if (wsServer == null) {
+            startServer(commandReturner);
+            this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
+            return;
+        }
+
+        if (wsServer.isActive() && wsServer.hasSameBinding(host, port)) {
+            wsServer.applyRuntimeConfig(
+                    config.getServerName(), config.getAccessToken(), config.isEnable(), config.getWebsocketServer().isForward()
+            );
+            this.handleCommandReturnMessageService.sendReturnMessage(
+                    commandReturner, "Websocket Server 配置已热更新");
+            this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
+            return;
+        }
+
+        stopServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
+        startServer(commandReturner);
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
     }
 

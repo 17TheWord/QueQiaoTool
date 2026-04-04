@@ -1,9 +1,12 @@
 package com.github.theword.queqiao.tool.config;
 
+import com.github.theword.queqiao.tool.constant.BaseConstant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.slf4j.Logger;
 
@@ -11,6 +14,13 @@ import org.slf4j.Logger;
  * 配置项 服务器初始化阶段请调用 {@link #loadConfig(boolean, Logger)} 方法加载配置文件
  */
 public class Config extends CommonConfig {
+    private static final String CONFIG_FILE_NAME = "config.yml";
+
+    /**
+     * 配置目录（config 或 plugins）
+     */
+    private final String configFolder;
+
     /**
      * 是否启用插件/模组
      */
@@ -164,10 +174,10 @@ public class Config extends CommonConfig {
      */
     public Config(boolean isModServer, Logger logger) {
         super(logger);
-        String configFolder = isModServer ? "config" : "plugins";
+        this.configFolder = isModServer ? "config" : "plugins";
         String serverType = isModServer ? "模组" : "插件";
         logger.info("当前服务端类型为：{}服", serverType);
-        readConfigFile(configFolder, "config.yml");
+        readConfigFile(this.configFolder, CONFIG_FILE_NAME);
     }
 
     /**
@@ -181,6 +191,62 @@ public class Config extends CommonConfig {
      */
     public static Config loadConfig(boolean isModServer, Logger logger) {
         return new Config(isModServer, logger);
+    }
+
+    /**
+     * 对外：读取整个配置内容。
+     *
+     * @return 配置 Map
+     */
+    public synchronized Map<String, Object> readAllConfig() {
+        return readConfigMap(resolveConfigPath(), CONFIG_FILE_NAME);
+    }
+
+    /**
+     * 对外：按键路径读取配置项。
+     *
+     * <p>键路径示例：websocket_server.port</p>
+     *
+     * @param keyPath 键路径
+     * @return 配置值，不存在时返回 null
+     */
+    public synchronized Object readConfig(String keyPath) {
+        return readConfigValue(resolveConfigPath(), CONFIG_FILE_NAME, keyPath);
+    }
+
+    /**
+     * 对外：写入整个配置内容。
+     *
+     * @param configMap 配置 Map
+     * @return 是否写入成功
+     */
+    public synchronized boolean writeAllConfig(Map<String, Object> configMap) {
+        boolean success = writeConfigMap(resolveConfigPath(), CONFIG_FILE_NAME, configMap);
+        if (success) {
+            readConfigFile(this.configFolder, CONFIG_FILE_NAME);
+        }
+        return success;
+    }
+
+    /**
+     * 对外：按键路径写入配置项。
+     *
+     * <p>键路径示例：websocket_server.port</p>
+     *
+     * @param keyPath 键路径
+     * @param value   键值
+     * @return 是否写入成功
+     */
+    public synchronized boolean writeConfig(String keyPath, Object value) {
+        boolean success = writeConfigValue(resolveConfigPath(), CONFIG_FILE_NAME, keyPath, value);
+        if (success) {
+            readConfigFile(this.configFolder, CONFIG_FILE_NAME);
+        }
+        return success;
+    }
+
+    private Path resolveConfigPath() {
+        return Paths.get(this.configFolder, BaseConstant.MODULE_NAME, CONFIG_FILE_NAME);
     }
 
     /**
@@ -251,10 +317,47 @@ public class Config extends CommonConfig {
      */
     @SuppressWarnings("unchecked")
     private void loadWebsocketServerConfig(Map<String, Object> configMap) {
-        Map<String, Object> websocketServerConfig = (Map<String, Object>) configMap.get("websocket_server");
-        websocketServer.setEnable((Boolean) websocketServerConfig.get("enable"));
-        websocketServer.setHost((String) websocketServerConfig.get("host"));
-        websocketServer.setPort((int) websocketServerConfig.get("port"));
+        Object websocketServerObj = configMap.get("websocket_server");
+        if (!(websocketServerObj instanceof Map)) {
+            super.getLogger().warn("配置项 websocket_server 缺失或格式错误，将使用默认值");
+            return;
+        }
+
+        Map<String, Object> websocketServerConfig = (Map<String, Object>) websocketServerObj;
+        Object enableObj = websocketServerConfig.get("enable");
+        Object hostObj = websocketServerConfig.get("host");
+        Object portObj = websocketServerConfig.get("port");
+        Object forwardObj = websocketServerConfig.get("forward");
+
+        websocketServer.setEnable(enableObj instanceof Boolean ? (Boolean) enableObj : true);
+        websocketServer.setHost(resolveHost(hostObj, "127.0.0.1"));
+        websocketServer.setPort(resolvePort(portObj, 8080, "websocket_server.port"));
+        websocketServer.setForward(forwardObj instanceof Boolean && (Boolean) forwardObj);
+    }
+
+    private String resolveHost(Object hostObj, String defaultHost) {
+        if (!(hostObj instanceof String)) {
+            return defaultHost;
+        }
+        String host = ((String) hostObj).trim();
+        return host.isEmpty() ? defaultHost : host;
+    }
+
+    private int resolvePort(Object portObj, int defaultPort, String key) {
+        if (!(portObj instanceof Number)) {
+            if (portObj != null) {
+                super.getLogger().warn(
+                        "配置项 {} 类型错误（{}），将使用默认值 {}", key, portObj.getClass().getSimpleName(), defaultPort
+                );
+            }
+            return defaultPort;
+        }
+        int port = ((Number) portObj).intValue();
+        if (port <= 0 || port > 65535) {
+            super.getLogger().warn("配置项 {} 端口越界（{}），将使用默认值 {}", key, port, defaultPort);
+            return defaultPort;
+        }
+        return port;
     }
 
     /**

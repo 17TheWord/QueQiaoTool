@@ -109,6 +109,118 @@ public abstract class CommonConfig {
         synchronizeAndLoadConfig(path, fileName);
     }
 
+    /**
+     * 读取整个配置文件为 Map。
+     *
+     * @param path     配置文件路径
+     * @param fileName 配置文件名
+     * @return 配置内容（若读取失败则返回空 Map）
+     */
+    protected synchronized Map<String, Object> readConfigMap(Path path, String fileName) {
+        checkFileExists(path, fileName);
+        Map<String, Object> configMap = readYamlMap(path, fileName, true);
+        return configMap == null ? new LinkedHashMap<String, Object>() : configMap;
+    }
+
+    /**
+     * 按键路径读取配置项。
+     *
+     * <p>键路径使用 "." 分隔，例如：websocket_server.port。</p>
+     *
+     * @param path     配置文件路径
+     * @param fileName 配置文件名
+     * @param keyPath  键路径
+     * @return 配置值，不存在时返回 null
+     */
+    protected synchronized Object readConfigValue(Path path, String fileName, String keyPath) {
+        String normalizedKeyPath = normalizeKeyPath(keyPath);
+        if (normalizedKeyPath.isEmpty()) {
+            return null;
+        }
+
+        Map<String, Object> configMap = readConfigMap(path, fileName);
+        return readValueByPath(configMap, normalizedKeyPath);
+    }
+
+    /**
+     * 写入整个配置文件。
+     *
+     * @param path      配置文件路径
+     * @param fileName  配置文件名
+     * @param configMap 配置内容
+     * @return 是否写入成功
+     */
+    protected synchronized boolean writeConfigMap(Path path, String fileName, Map<String, Object> configMap) {
+        if (configMap == null) {
+            logger.warn("写入配置文件 {} 失败：配置内容为空。", fileName);
+            return false;
+        }
+
+        checkFileExists(path, fileName);
+        try {
+            backupConfig(path);
+            writeYamlMap(path, new LinkedHashMap<String, Object>(configMap));
+            return true;
+        } catch (IOException e) {
+            logger.warn("写入配置文件 {} 失败：{}", fileName, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 按键路径写入配置项。
+     *
+     * <p>键路径使用 "." 分隔，例如：websocket_server.port。</p>
+     *
+     * @param path     配置文件路径
+     * @param fileName 配置文件名
+     * @param keyPath  键路径
+     * @param value    键值
+     * @return 是否写入成功
+     */
+    protected synchronized boolean writeConfigValue(Path path, String fileName, String keyPath, Object value) {
+        String normalizedKeyPath = normalizeKeyPath(keyPath);
+        if (normalizedKeyPath.isEmpty()) {
+            logger.warn("写入配置文件 {} 失败：键路径为空。", fileName);
+            return false;
+        }
+
+        Map<String, Object> configMap = readConfigMap(path, fileName);
+        if (!writeValueByPath(configMap, normalizedKeyPath, value)) {
+            logger.warn("写入配置文件 {} 失败：键路径 {} 无效。", fileName, keyPath);
+            return false;
+        }
+        return writeConfigMap(path, fileName, configMap);
+    }
+
+    /**
+     * 规范化键路径。
+     *
+     * <p>会去除首尾空白、空段，示例：".a..b. " -> "a.b"</p>
+     */
+    protected String normalizeKeyPath(String keyPath) {
+        if (keyPath == null) {
+            return "";
+        }
+
+        String[] rawParts = keyPath.trim().split("\\.");
+        StringBuilder normalized = new StringBuilder();
+        for (String rawPart : rawParts) {
+            if (rawPart == null) {
+                continue;
+            }
+            String part = rawPart.trim();
+            if (part.isEmpty()) {
+                continue;
+            }
+            if (normalized.length() > 0) {
+                normalized.append('.');
+            }
+            normalized.append(part);
+        }
+        return normalized.toString();
+    }
+
     private Map<String, Object> synchronizeAndLoadConfig(Path path, String fileName) {
         Map<String, Object> currentMap = readYamlMap(path, fileName, true);
         Map<String, Object> defaultMap = readDefaultYamlMap(fileName);
@@ -183,6 +295,47 @@ public abstract class CommonConfig {
     private void backupConfig(Path path) throws IOException {
         Path backupPath = path.resolveSibling(path.getFileName().toString() + ".bak");
         Files.copy(path, backupPath, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object readValueByPath(Map<String, Object> root, String keyPath) {
+        Object current = root;
+        for (String key : keyPath.split("\\.")) {
+            if (!(current instanceof Map)) {
+                return null;
+            }
+            Map<String, Object> currentMap = (Map<String, Object>) current;
+            if (!currentMap.containsKey(key)) {
+                return null;
+            }
+            current = currentMap.get(key);
+        }
+        return current;
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean writeValueByPath(Map<String, Object> root, String keyPath, Object value) {
+        String[] keys = keyPath.split("\\.");
+        if (keys.length == 0) {
+            return false;
+        }
+
+        Map<String, Object> current = root;
+        for (int i = 0; i < keys.length - 1; i++) {
+            String key = keys[i];
+            Object next = current.get(key);
+            if (next instanceof Map) {
+                current = (Map<String, Object>) next;
+                continue;
+            }
+
+            Map<String, Object> nextMap = new LinkedHashMap<String, Object>();
+            current.put(key, nextMap);
+            current = nextMap;
+        }
+
+        current.put(keys[keys.length - 1], value);
+        return true;
     }
 
     @SuppressWarnings("unchecked")
