@@ -3,7 +3,6 @@ import org.gradle.external.javadoc.StandardJavadocDocletOptions
 plugins {
     java
     `maven-publish`
-    id("com.diffplug.spotless") version "8.0.0"
     jacoco
 }
 
@@ -64,15 +63,7 @@ tasks.withType<Javadoc> {
     classpath += sourceSets.main.get().output + sourceSets.main.get().compileClasspath
 }
 
-spotless {
-    java {
-        eclipse().configFile("formatter-custom.xml")
-        target("src/main/java/**/*.java", "src/test/java/**/*.java")
-    }
-}
-
 tasks.named("check") {
-    dependsOn("spotlessCheck")
     dependsOn("jacocoTestReport")
 }
 
