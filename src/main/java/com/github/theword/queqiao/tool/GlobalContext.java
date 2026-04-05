@@ -190,7 +190,7 @@ public class GlobalContext {
                     return element;
                 } else if (element.isJsonArray()) {
                     JsonArray array = element.getAsJsonArray();
-                    if (!array.isEmpty() && array.get(0).isJsonObject()) {
+                    if (!(array.size() == 0) && array.get(0).isJsonObject()) {
                         logger.info("消息前缀已成功解析为 MC 组件格式 (JSON Array)。");
                         return element;
                     }
