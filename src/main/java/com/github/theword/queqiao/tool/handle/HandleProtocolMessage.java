@@ -4,12 +4,18 @@ import static com.github.theword.queqiao.tool.utils.Tool.debugLog;
 
 import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
-import com.github.theword.queqiao.tool.payload.*;
-import com.github.theword.queqiao.tool.response.PrivateMessageResponse;
+import com.github.theword.queqiao.tool.handle.protocol.BroadcastHandler;
+import com.github.theword.queqiao.tool.handle.protocol.GetStatusHandler;
+import com.github.theword.queqiao.tool.handle.protocol.ProtocolHandler;
+import com.github.theword.queqiao.tool.handle.protocol.ProtocolHandlerRegistry;
+import com.github.theword.queqiao.tool.handle.protocol.SendActionBarHandler;
+import com.github.theword.queqiao.tool.handle.protocol.SendCommandHandler;
+import com.github.theword.queqiao.tool.handle.protocol.SendPrivateMessageHandler;
+import com.github.theword.queqiao.tool.handle.protocol.SendRconCommandHandler;
+import com.github.theword.queqiao.tool.handle.protocol.SendTitleHandler;
+import com.github.theword.queqiao.tool.payload.BasePayload;
 import com.github.theword.queqiao.tool.response.Response;
-import com.github.theword.queqiao.tool.utils.ServerStatusCollector;
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 
@@ -21,12 +27,31 @@ import java.util.HashMap;
 public class HandleProtocolMessage {
 
     private final Gson gson;
-    private static final HandleApiService handleApiService = GlobalContext.getHandleApiService();
+    private final ProtocolHandlerRegistry handlerRegistry;
     private final Logger logger;
 
     public HandleProtocolMessage(Logger logger, Gson gson) {
         this.logger = logger;
         this.gson = gson;
+        this.handlerRegistry = createDefaultHandlerRegistry(gson, logger, GlobalContext.getHandleApiService());
+    }
+
+    public HandleProtocolMessage(Logger logger, Gson gson, ProtocolHandlerRegistry handlerRegistry) {
+        this.logger = logger;
+        this.gson = gson;
+        this.handlerRegistry = handlerRegistry;
+    }
+
+    private static ProtocolHandlerRegistry createDefaultHandlerRegistry(Gson gson, Logger logger, HandleApiService handleApiService) {
+        return new ProtocolHandlerRegistry()
+                .register("broadcast", new BroadcastHandler(gson, handleApiService))
+                .register("send_msg", new BroadcastHandler(gson, handleApiService))
+                .register("send_title", new SendTitleHandler(gson, handleApiService))
+                .register("send_actionbar", new SendActionBarHandler(gson, handleApiService))
+                .register("send_private_msg", new SendPrivateMessageHandler(gson, handleApiService))
+                .register("send_command", new SendCommandHandler())
+                .register("send_rcon_command", new SendRconCommandHandler(gson, logger))
+                .register("get_status", new GetStatusHandler(logger));
     }
 
     /**
@@ -88,60 +113,11 @@ public class HandleProtocolMessage {
      */
     public Response parseAndHandle(BasePayload basePayload) {
         String api = basePayload.getApi();
-        JsonElement data = basePayload.getData();
-
-        switch (basePayload.getApi()) {
-            case "broadcast":
-            case "send_msg": {
-                MessagePayload messagePayload = gson.fromJson(data, MessagePayload.class);
-                handleApiService.handleBroadcastMessage(messagePayload.getMessage());
-                return Response.success();
-            }
-            case "send_title": {
-                TitlePayload titlePayload = gson.fromJson(data, TitlePayload.class);
-                if ((titlePayload.getTitle() == null || titlePayload.getTitle().isJsonNull()) && (titlePayload.getSubtitle() == null || titlePayload.getSubtitle().isJsonNull())) {
-                    return Response.failed(400, "Title and Subtitle cannot both be null");
-                }
-                handleApiService.handleSendTitleMessage(titlePayload.getTitle(), titlePayload.getSubtitle(), titlePayload.getFadeIn(), titlePayload.getStay(), titlePayload.getFadeOut());
-                return Response.success();
-            }
-            case "send_actionbar": {
-                MessagePayload actionMessagePayload = gson.fromJson(data, MessagePayload.class);
-                handleApiService.handleSendActionBarMessage(actionMessagePayload.getMessage());
-                return Response.success();
-            }
-            case "send_private_msg": {
-                PrivateMessagePayload privateMessagePayload = gson.fromJson(data, PrivateMessagePayload.class);
-                if ((privateMessagePayload.getNickname() == null || privateMessagePayload.getNickname().isEmpty()) && privateMessagePayload.getUuid() == null) {
-                    return Response.failed(400, PrivateMessageResponse.playerIsNull().getMessage(), PrivateMessageResponse.playerIsNull());
-                }
-                PrivateMessageResponse privateMessageResponse = handleApiService.handleSendPrivateMessage(privateMessagePayload.getNickname(), privateMessagePayload.getUuid(), privateMessagePayload.getMessage());
-                return Response.success(privateMessageResponse);
-            }
-            case "send_command":
-                return Response.failed(500, api + " is not supported now");
-            case "send_rcon_command":
-                CommandPayload commandPayload = gson.fromJson(data, CommandPayload.class);
-                String result;
-                try {
-                    result = GlobalContext.sendRconCommand(commandPayload.getCommand());
-                    logger.info("发送 Rcon 命令: {}", commandPayload.getCommand());
-                    return Response.success(result);
-                } catch (Exception e) {
-                    String errorMessage = e.getMessage() != null ? e.getMessage() : "failed";
-                    logger.warn("Rcon 执行命令时出现问题，命令发送失败！{}", errorMessage);
-                    HashMap<Object, Object> resultData = new HashMap<>();
-                    resultData.put("command", commandPayload.getCommand());
-                    resultData.put("error", errorMessage);
-                    return Response.failed(400, errorMessage, resultData);
-                }
-            case "get_status": {
-                logger.info("收到 get_status 请求，已返回服务器状态");
-                return Response.success(ServerStatusCollector.collectStatusSnapshot());
-            }
-            default:
-                this.logger.warn(BaseConstant.UNKNOWN_API + "{}", api);
-                return Response.failed(404, BaseConstant.UNKNOWN_API + api);
+        ProtocolHandler handler = handlerRegistry.get(api);
+        if (handler == null) {
+            this.logger.warn(BaseConstant.UNKNOWN_API + "{}", api);
+            return Response.failed(404, BaseConstant.UNKNOWN_API + api);
         }
+        return handler.handle(basePayload);
     }
 }
