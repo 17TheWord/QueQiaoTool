@@ -129,6 +129,7 @@ public class WebsocketManager {
                 wsServer.stop(0, reason);
                 this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, reason);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.ERROR_ON_STOPPING);
                 Tool.debugLog(e.getMessage());
             }

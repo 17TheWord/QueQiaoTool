@@ -3,7 +3,7 @@ package com.github.theword.queqiao.tool.handle;
 import static com.github.theword.queqiao.tool.utils.Tool.debugLog;
 
 import com.github.theword.queqiao.tool.GlobalContext;
-import com.github.theword.queqiao.tool.constant.BaseConstant;
+import com.github.theword.queqiao.tool.constant.ApiConstants;
 import com.github.theword.queqiao.tool.handle.protocol.BroadcastHandler;
 import com.github.theword.queqiao.tool.handle.protocol.GetStatusHandler;
 import com.github.theword.queqiao.tool.handle.protocol.ProtocolHandler;
@@ -44,14 +44,14 @@ public class HandleProtocolMessage {
 
     private static ProtocolHandlerRegistry createDefaultHandlerRegistry(Gson gson, Logger logger, HandleApiService handleApiService) {
         return new ProtocolHandlerRegistry()
-                .register("broadcast", new BroadcastHandler(gson, handleApiService))
-                .register("send_msg", new BroadcastHandler(gson, handleApiService))
-                .register("send_title", new SendTitleHandler(gson, handleApiService))
-                .register("send_actionbar", new SendActionBarHandler(gson, handleApiService))
-                .register("send_private_msg", new SendPrivateMessageHandler(gson, handleApiService))
-                .register("send_command", new SendCommandHandler())
-                .register("send_rcon_command", new SendRconCommandHandler(gson, logger))
-                .register("get_status", new GetStatusHandler(logger));
+                .register(ApiConstants.Api.BROADCAST, new BroadcastHandler(gson, handleApiService))
+                .register(ApiConstants.Api.SEND_MSG, new BroadcastHandler(gson, handleApiService))
+                .register(ApiConstants.Api.SEND_TITLE, new SendTitleHandler(gson, handleApiService))
+                .register(ApiConstants.Api.SEND_ACTIONBAR, new SendActionBarHandler(gson, handleApiService))
+                .register(ApiConstants.Api.SEND_PRIVATE_MSG, new SendPrivateMessageHandler(gson, handleApiService))
+                .register(ApiConstants.Api.SEND_COMMAND, new SendCommandHandler())
+                .register(ApiConstants.Api.SEND_RCON_COMMAND, new SendRconCommandHandler(gson, logger))
+                .register(ApiConstants.Api.GET_STATUS, new GetStatusHandler(logger));
     }
 
     /**
@@ -102,7 +102,7 @@ public class HandleProtocolMessage {
             this.logger.error("错误信息：", e);
             HashMap<String, String> data = new HashMap<>();
             data.put("rawJsonMessage", rawJsonMessage);
-            return Response.failed(500, "解析消息失败", data, null);
+            return Response.failed(ApiConstants.Code.INTERNAL_ERROR, ApiConstants.Message.PARSE_MESSAGE_FAILED, data, null);
         }
     }
 
@@ -115,8 +115,8 @@ public class HandleProtocolMessage {
         String api = basePayload.getApi();
         ProtocolHandler handler = handlerRegistry.get(api);
         if (handler == null) {
-            this.logger.warn(BaseConstant.UNKNOWN_API + "{}", api);
-            return Response.failed(404, BaseConstant.UNKNOWN_API + api);
+            this.logger.warn(ApiConstants.Message.UNKNOWN_API + "{}", api);
+            return Response.failed(ApiConstants.Code.NOT_FOUND, ApiConstants.Message.UNKNOWN_API + api);
         }
         return handler.handle(basePayload);
     }

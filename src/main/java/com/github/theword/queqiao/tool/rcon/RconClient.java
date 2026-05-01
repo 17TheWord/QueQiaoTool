@@ -1,5 +1,6 @@
 package com.github.theword.queqiao.tool.rcon;
 
+import com.github.theword.queqiao.tool.exception.rcon.RconCommandException;
 import org.glavo.rcon.AuthenticationException;
 import org.glavo.rcon.Rcon;
 import org.slf4j.Logger;
@@ -37,11 +38,15 @@ public class RconClient {
         }
     }
 
-    public String sendCommand(String command) throws IOException {
+    public String sendCommand(String command) throws RconCommandException {
         if (!isConnected()) {
-            throw new IllegalArgumentException("Rcon 未连接");
+            throw RconCommandException.notConnected();
         }
-        return client.command(command);
+        try {
+            return client.command(command);
+        } catch (IOException e) {
+            throw RconCommandException.failed(e);
+        }
     }
 
     /**

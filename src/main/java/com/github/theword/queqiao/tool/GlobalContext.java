@@ -5,6 +5,7 @@ import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.github.theword.queqiao.tool.constant.CommandConstant;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.event.base.BaseEvent;
+import com.github.theword.queqiao.tool.exception.rcon.RconCommandException;
 import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
 import com.github.theword.queqiao.tool.localize.LanguageService;
@@ -15,8 +16,6 @@ import com.github.theword.queqiao.tool.utils.WebsocketManager;
 import com.google.gson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
 
 public class GlobalContext {
     private static Config config;
@@ -147,12 +146,12 @@ public class GlobalContext {
      * @param command 命令
      * @return 命令返回结果
      */
-    public static String sendRconCommand(String command) throws IOException {
+    public static String sendRconCommand(String command) throws RconCommandException {
         if (!config.getRcon().isEnable()) {
-            throw new IOException("Rcon 功能未在配置文件中启用");
+            throw RconCommandException.disabled();
         }
         if (rconClient == null || !rconClient.isConnected()) {
-            throw new IOException("Rcon 客户端未连接或已关闭");
+            throw RconCommandException.notConnected();
         }
         return rconClient.sendCommand(command);
     }

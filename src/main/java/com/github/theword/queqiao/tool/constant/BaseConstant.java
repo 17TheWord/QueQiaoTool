@@ -11,7 +11,6 @@ public class BaseConstant {
     public static final String COMMAND_HEADER = MOD_ID;
     public static final String LAUNCHING = "正在启动";
     public static final String INITIALIZED = "初始化完成";
-    public static final String UNKNOWN_API = "未知的API：";
 
     public static final String UNKNOWN = "unknown";
 }

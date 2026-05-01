@@ -1,7 +1,6 @@
 package com.github.theword.queqiao.tool.payload;
 
 import com.google.gson.JsonElement;
-import com.google.gson.annotations.SerializedName;
 
 import java.util.UUID;
 

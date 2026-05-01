@@ -1,5 +1,6 @@
 package com.github.theword.queqiao.tool.handle.protocol;
 
+import com.github.theword.queqiao.tool.constant.ApiConstants;
 import com.github.theword.queqiao.tool.payload.BasePayload;
 import com.github.theword.queqiao.tool.response.Response;
 
@@ -9,6 +10,6 @@ import com.github.theword.queqiao.tool.response.Response;
 public class SendCommandHandler implements ProtocolHandler {
     @Override
     public Response handle(BasePayload payload) {
-        return Response.failed(500, payload.getApi() + " is not supported now");
+        return Response.failed(ApiConstants.Code.INTERNAL_ERROR, String.format(ApiConstants.Message.SEND_COMMAND_UNSUPPORTED, payload.getApi()));
     }
 }

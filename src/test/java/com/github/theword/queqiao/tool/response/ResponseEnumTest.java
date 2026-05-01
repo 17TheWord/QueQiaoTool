@@ -1,5 +1,6 @@
 package com.github.theword.queqiao.tool.response;
 
+import com.github.theword.queqiao.tool.exception.protocol.ResponseStatusException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -12,10 +13,10 @@ class ResponseEnumTest {
         assertEquals(ResponseEnum.FAILED, ResponseEnum.fromString("FAILED"));
         assertEquals(ResponseEnum.SUCCESS, ResponseEnum.fromString("success"));
         assertEquals(ResponseEnum.FAILED, ResponseEnum.fromString("failed"));
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
             ResponseEnum.fromString("UNKNOWN");
         });
-        assertEquals("Unknown value: UNKNOWN", exception.getMessage());
+        assertEquals("Unknown response status: UNKNOWN", exception.getMessage());
     }
 
     @Test

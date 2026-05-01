@@ -1,10 +1,10 @@
 package com.github.theword.queqiao.tool.utils;
 
 import com.github.theword.queqiao.tool.GlobalContext;
+import com.github.theword.queqiao.tool.exception.status.MinecraftPingException;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -20,7 +20,7 @@ final class MinecraftPingClient {
     private static final Type MAP_TYPE = new TypeToken<Map<String, Object>>() {
     }.getType();
 
-    Map<String, Object> fetchStatus(String host, int port) throws IOException {
+    Map<String, Object> fetchStatus(String host, int port) throws MinecraftPingException {
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(host, port), SOCKET_TIMEOUT_MILLIS);
             socket.setSoTimeout(SOCKET_TIMEOUT_MILLIS);
@@ -33,26 +33,30 @@ final class MinecraftPingClient {
 
             int responsePacketLength = readVarInt(inputStream);
             if (responsePacketLength <= 0) {
-                throw new IOException("状态响应包长度非法: " + responsePacketLength);
+                throw MinecraftPingException.invalidPacketLength(responsePacketLength);
             }
 
             int packetId = readVarInt(inputStream);
             if (packetId != 0x00) {
-                throw new IOException("状态响应包 ID 非法: " + packetId);
+                throw MinecraftPingException.invalidPacketId(packetId);
             }
 
             int jsonLength = readVarInt(inputStream);
             if (jsonLength <= 0) {
-                throw new IOException("状态响应 JSON 长度非法: " + jsonLength);
+                throw MinecraftPingException.invalidJsonLength(jsonLength);
             }
 
             byte[] jsonBytes = readFully(inputStream, jsonLength);
             String json = new String(jsonBytes, StandardCharsets.UTF_8);
             Map<String, Object> pingData = GlobalContext.getGson().fromJson(json, MAP_TYPE);
             if (pingData == null) {
-                throw new IOException("状态响应 JSON 解析失败");
+                throw MinecraftPingException.jsonParseFailed();
             }
             return pingData;
+        } catch (MinecraftPingException e) {
+            throw e;
+        } catch (IOException e) {
+            throw MinecraftPingException.ioFailed(e);
         }
     }
 
@@ -103,32 +107,32 @@ final class MinecraftPingClient {
         }
     }
 
-    private int readVarInt(InputStream inputStream) throws IOException {
+    private int readVarInt(InputStream inputStream) throws IOException, MinecraftPingException {
         int numRead = 0;
         int result = 0;
         int read;
         do {
             read = inputStream.read();
             if (read == -1) {
-                throw new EOFException("读取 VarInt 时连接提前关闭");
+                throw MinecraftPingException.connectionClosed("读取 VarInt 时连接提前关闭");
             }
             int value = read & 0x7F;
             result |= value << (7 * numRead);
             numRead++;
             if (numRead > 5) {
-                throw new IOException("VarInt 过长");
+                throw MinecraftPingException.varIntTooLong();
             }
         } while ((read & 0x80) != 0);
         return result;
     }
 
-    private byte[] readFully(InputStream inputStream, int length) throws IOException {
+    private byte[] readFully(InputStream inputStream, int length) throws IOException, MinecraftPingException {
         byte[] data = new byte[length];
         int offset = 0;
         while (offset < length) {
             int readCount = inputStream.read(data, offset, length - offset);
             if (readCount == -1) {
-                throw new EOFException("读取状态响应时连接提前关闭");
+                throw MinecraftPingException.connectionClosed("读取状态响应时连接提前关闭");
             }
             offset += readCount;
         }

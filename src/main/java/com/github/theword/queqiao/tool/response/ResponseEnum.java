@@ -1,5 +1,7 @@
 package com.github.theword.queqiao.tool.response;
 
+import com.github.theword.queqiao.tool.exception.protocol.ResponseStatusException;
+
 public enum ResponseEnum {
     SUCCESS("SUCCESS"), FAILED("FAILED");
 
@@ -24,6 +26,6 @@ public enum ResponseEnum {
                 return response;
             }
         }
-        throw new IllegalArgumentException("Unknown value: " + value);
+        throw ResponseStatusException.unknown(value);
     }
 }

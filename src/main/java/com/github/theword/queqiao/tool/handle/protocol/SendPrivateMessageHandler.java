@@ -1,5 +1,6 @@
 package com.github.theword.queqiao.tool.handle.protocol;
 
+import com.github.theword.queqiao.tool.constant.ApiConstants;
 import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.payload.BasePayload;
 import com.github.theword.queqiao.tool.payload.PrivateMessagePayload;
@@ -23,7 +24,7 @@ public class SendPrivateMessageHandler implements ProtocolHandler {
     public Response handle(BasePayload payload) {
         PrivateMessagePayload privateMessagePayload = gson.fromJson(payload.getData(), PrivateMessagePayload.class);
         if ((privateMessagePayload.getNickname() == null || privateMessagePayload.getNickname().isEmpty()) && privateMessagePayload.getUuid() == null) {
-            return Response.failed(400, PrivateMessageResponse.playerIsNull().getMessage(), PrivateMessageResponse.playerIsNull());
+            return Response.failed(ApiConstants.Code.BAD_REQUEST, PrivateMessageResponse.playerIsNull().getMessage(), PrivateMessageResponse.playerIsNull());
         }
         PrivateMessageResponse privateMessageResponse = handleApiService.handleSendPrivateMessage(privateMessagePayload.getNickname(), privateMessagePayload.getUuid(), privateMessagePayload.getMessage());
         return Response.success(privateMessageResponse);

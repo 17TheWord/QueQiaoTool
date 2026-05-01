@@ -1,5 +1,6 @@
 package com.github.theword.queqiao.tool.handle.protocol;
 
+import com.github.theword.queqiao.tool.constant.ApiConstants;
 import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.payload.BasePayload;
 import com.github.theword.queqiao.tool.payload.TitlePayload;
@@ -22,7 +23,7 @@ public class SendTitleHandler implements ProtocolHandler {
     public Response handle(BasePayload payload) {
         TitlePayload titlePayload = gson.fromJson(payload.getData(), TitlePayload.class);
         if ((titlePayload.getTitle() == null || titlePayload.getTitle().isJsonNull()) && (titlePayload.getSubtitle() == null || titlePayload.getSubtitle().isJsonNull())) {
-            return Response.failed(400, "Title and Subtitle cannot both be null");
+            return Response.failed(ApiConstants.Code.BAD_REQUEST, ApiConstants.Message.TITLE_AND_SUBTITLE_EMPTY);
         }
         handleApiService.handleSendTitleMessage(titlePayload.getTitle(), titlePayload.getSubtitle(), titlePayload.getFadeIn(), titlePayload.getStay(), titlePayload.getFadeOut());
         return Response.success();

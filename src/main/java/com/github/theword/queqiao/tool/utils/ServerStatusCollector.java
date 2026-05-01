@@ -2,6 +2,7 @@ package com.github.theword.queqiao.tool.utils;
 
 import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
+import com.github.theword.queqiao.tool.exception.status.MinecraftPingException;
 import org.slf4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 
@@ -299,6 +300,13 @@ public final class ServerStatusCollector {
     }
 
     private static String resolvePingFailureReason(Exception exception) {
+        if (exception instanceof MinecraftPingException) {
+            MinecraftPingException pingException = (MinecraftPingException) exception;
+            if (pingException.getReason() == MinecraftPingException.Reason.IO_FAILED && pingException.getCause() instanceof Exception) {
+                return resolvePingFailureReason((Exception) pingException.getCause());
+            }
+            return "invalid_response";
+        }
         if (exception instanceof SocketTimeoutException) {
             return "timeout";
         }
