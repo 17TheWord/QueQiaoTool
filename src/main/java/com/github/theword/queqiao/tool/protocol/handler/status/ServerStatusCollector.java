@@ -1,7 +1,8 @@
-package com.github.theword.queqiao.tool.utils;
+package com.github.theword.queqiao.tool.protocol.handler.status;
 
 import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
+import com.github.theword.queqiao.tool.exception.status.MinecraftPingException;
 import org.slf4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 
@@ -15,22 +16,31 @@ import java.nio.channels.UnresolvedAddressException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 
 /**
- * 服务器状态采集工具
- *
- * <p>用于 {@code get_status} 接口，包含以下能力：</p>
- * <p>1. 启动时读取并缓存 {@code server.properties} 的服务器地址</p>
- * <p>2. 接口调用时执行一次 Minecraft Server List Ping</p>
- * <p>3. 采集 CPU 与内存信息并组装返回数据</p>
+ * 服务器状态采集工具。
  */
 public final class ServerStatusCollector {
     private static final int DEFAULT_SERVER_PORT = 25565;
     private static final String DEFAULT_SERVER_HOST = "127.0.0.1";
-    private static final Path[] REGEX_CONFIG_CANDIDATES = new Path[]{Paths.get("config", BaseConstant.MODULE_NAME, "regex.yml"), Paths.get(BaseConstant.MODULE_NAME, "regex.yml")
+    private static final String SERVER_PROPERTIES_FILE = "server.properties";
+    private static final String REGEX_CONFIG_FILE = "regex.yml";
+    private static final String CONFIG_DIRECTORY = "config";
+    private static final String LOGS_DIRECTORY = "logs";
+    private static final String LOG_PATH_KEY = "log_path";
+    private static final String SERVER_IP_KEY = "server-ip";
+    private static final String SERVER_PORT_KEY = "server-port";
+    private static final String PING_REASON_NOT_CONFIGURED = "not_configured";
+    private static final String PING_REASON_OK = "ok";
+    private static final String PING_REASON_TIMEOUT = "timeout";
+    private static final String PING_REASON_OFFLINE = "offline";
+    private static final String PING_REASON_ERROR = "error";
+
+    private static final Path[] REGEX_CONFIG_CANDIDATES = new Path[]{
+            Paths.get(CONFIG_DIRECTORY, BaseConstant.MODULE_NAME, REGEX_CONFIG_FILE),
+            Paths.get(BaseConstant.MODULE_NAME, REGEX_CONFIG_FILE)
     };
 
     private static final MinecraftPingClient PING_CLIENT = new MinecraftPingClient();
@@ -57,14 +67,6 @@ public final class ServerStatusCollector {
         }
     }
 
-    /**
-     * 读取并缓存 Minecraft 服务器地址
-     *
-     * <p>优先从 {@code ./config/QueQiao/regex.yml} 的 {@code log_path} 获取服务端根目录，</p>
-     * <p>再读取该目录下的 {@code server.properties}</p>
-     *
-     * @param logger 日志实现
-     */
     public static void initPingTarget(Logger logger) {
         Path workingDirectory = Paths.get("").toAbsolutePath().normalize();
         Path serverPropertiesPath = resolveServerPropertiesPath(workingDirectory, logger);
@@ -89,12 +91,10 @@ public final class ServerStatusCollector {
                 continue;
             }
 
-            Path serverPropertiesPath = serverRoot.resolve("server.properties").normalize();
-            return serverPropertiesPath;
+            return serverRoot.resolve(SERVER_PROPERTIES_FILE).normalize();
         }
 
-        Path fallbackPath = absoluteWorkingDirectory.resolve("server.properties").normalize();
-        return fallbackPath;
+        return absoluteWorkingDirectory.resolve(SERVER_PROPERTIES_FILE).normalize();
     }
 
     private static String readLogPath(Path regexConfigPath, Logger logger) {
@@ -106,7 +106,7 @@ public final class ServerStatusCollector {
                 return null;
             }
 
-            Object logPathObject = ((Map<?, ?>) yamlObject).get("log_path");
+            Object logPathObject = ((Map<?, ?>) yamlObject).get(LOG_PATH_KEY);
             if (!(logPathObject instanceof String)) {
                 logger.warn("regex.yml 未配置 log_path，无法获取 server.properties：{}", regexConfigPath);
                 return null;
@@ -155,7 +155,7 @@ public final class ServerStatusCollector {
                 firstInferredRoot = inferredRoot;
             }
 
-            Path serverPropertiesPath = inferredRoot.resolve("server.properties").normalize();
+            Path serverPropertiesPath = inferredRoot.resolve(SERVER_PROPERTIES_FILE).normalize();
             if (Files.isRegularFile(serverPropertiesPath)) {
                 return inferredRoot;
             }
@@ -175,11 +175,8 @@ public final class ServerStatusCollector {
             return null;
         }
 
-        if (equalsIgnoreCase(moduleDirectory.getFileName(), BaseConstant.MODULE_NAME) && equalsIgnoreCase(moduleParent.getFileName(), "config")) {
-            Path serverRoot = moduleParent.getParent();
-            if (serverRoot != null) {
-                return serverRoot;
-            }
+        if (equalsIgnoreCase(moduleDirectory.getFileName(), BaseConstant.MODULE_NAME) && equalsIgnoreCase(moduleParent.getFileName(), CONFIG_DIRECTORY)) {
+            return moduleParent.getParent();
         }
 
         return moduleParent;
@@ -195,7 +192,7 @@ public final class ServerStatusCollector {
             return null;
         }
 
-        if (equalsIgnoreCase(logDirectory.getFileName(), "logs") && logDirectory.getParent() != null) {
+        if (equalsIgnoreCase(logDirectory.getFileName(), LOGS_DIRECTORY) && logDirectory.getParent() != null) {
             return logDirectory.getParent();
         }
 
@@ -215,8 +212,8 @@ public final class ServerStatusCollector {
         Properties properties = new Properties();
         try (InputStream inputStream = Files.newInputStream(normalizedPath)) {
             properties.load(inputStream);
-            String configuredHost = properties.getProperty("server-ip", "").trim();
-            String configuredPort = properties.getProperty("server-port", String.valueOf(DEFAULT_SERVER_PORT)).trim();
+            String configuredHost = properties.getProperty(SERVER_IP_KEY, "").trim();
+            String configuredPort = properties.getProperty(SERVER_PORT_KEY, String.valueOf(DEFAULT_SERVER_PORT)).trim();
 
             if (!configuredHost.isEmpty()) {
                 host = configuredHost;
@@ -249,66 +246,49 @@ public final class ServerStatusCollector {
         }
     }
 
-    /**
-     * 采集一次 {@code get_status} 响应数据
-     *
-     * @return 接口 data 字段
-     */
     public static Map<String, Object> collectStatusSnapshot() {
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("timestamp", System.currentTimeMillis());
-        data.put("server_type", GlobalContext.getServerType());
-        data.put("server_version", GlobalContext.getServerVersion());
-        data.put("server_list_ping", collectServerListPing());
-        data.put("cpu_information", collectCpuInformation());
-        data.put("memory_information", collectMemoryInformation());
-        return data;
+        ServerStatusSnapshot snapshot = new ServerStatusSnapshot(
+                GlobalContext.getServerType(),
+                GlobalContext.getServerVersion(),
+                collectServerListPing(),
+                METRICS.collectCpuInformation(),
+                METRICS.collectMemoryInformation()
+        );
+        return snapshot.toMap();
     }
 
-    private static Map<String, Object> collectServerListPing() {
+    private static ServerListPingResult collectServerListPing() {
         PingTarget currentTarget = pingTarget;
         if (!currentTarget.available) {
-            return buildPingResult(currentTarget, false, "not_configured", null, null);
+            return ServerListPingResult.of(false, currentTarget.host, currentTarget.port, PING_REASON_NOT_CONFIGURED, null, null);
         }
 
         try {
-            Map<String, Object> pingData = PING_CLIENT.fetchStatus(currentTarget.host, currentTarget.port);
-            return buildPingResult(currentTarget, true, "ok", null, pingData);
-        } catch (Exception e) {
+            MinecraftPingResponse pingResponse = PING_CLIENT.fetchStatus(currentTarget.host, currentTarget.port);
+            return ServerListPingResult.of(true, currentTarget.host, currentTarget.port, PING_REASON_OK, null, pingResponse);
+        } catch (MinecraftPingException e) {
             String reason = resolvePingFailureReason(e);
             String error = resolvePingErrorMessage(e);
             Logger logger = GlobalContext.getLogger();
             if (logger != null) {
                 logger.warn("Minecraft Server List Ping failed, reason={}, host={}, port={}, error={}", reason, currentTarget.host, currentTarget.port, error);
             }
-            return buildPingResult(currentTarget, true, reason, error, null);
+            return ServerListPingResult.of(true, currentTarget.host, currentTarget.port, reason, error, null);
         }
     }
 
-    private static Map<String, Object> buildPingResult(PingTarget target, boolean available, String reason, String error, Map<String, Object> pingData) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("available", available);
-        result.put("host", target.host);
-        result.put("port", target.port);
-        result.put("reason", reason);
-        result.put("error", error);
-        if (pingData != null) {
-            result.putAll(pingData);
+    private static String resolvePingFailureReason(MinecraftPingException exception) {
+        Throwable cause = rootCause(exception);
+        if (cause instanceof SocketTimeoutException) {
+            return PING_REASON_TIMEOUT;
         }
-        return result;
+        if (cause instanceof ConnectException || cause instanceof UnknownHostException || cause instanceof NoRouteToHostException || cause instanceof UnresolvedAddressException) {
+            return PING_REASON_OFFLINE;
+        }
+        return PING_REASON_ERROR;
     }
 
-    private static String resolvePingFailureReason(Exception exception) {
-        if (exception instanceof SocketTimeoutException) {
-            return "timeout";
-        }
-        if (exception instanceof ConnectException || exception instanceof UnknownHostException || exception instanceof NoRouteToHostException || exception instanceof UnresolvedAddressException) {
-            return "offline";
-        }
-        return "error";
-    }
-
-    private static String resolvePingErrorMessage(Exception exception) {
+    private static String resolvePingErrorMessage(MinecraftPingException exception) {
         String message = exception.getMessage();
         if (message == null || message.trim().isEmpty()) {
             return exception.getClass().getSimpleName();
@@ -316,11 +296,11 @@ public final class ServerStatusCollector {
         return message;
     }
 
-    private static Map<String, Object> collectCpuInformation() {
-        return METRICS.collectCpuInformation();
-    }
-
-    private static Map<String, Object> collectMemoryInformation() {
-        return METRICS.collectMemoryInformation();
+    private static Throwable rootCause(Throwable throwable) {
+        Throwable result = throwable;
+        while (result.getCause() != null) {
+            result = result.getCause();
+        }
+        return result;
     }
 }
