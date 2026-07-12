@@ -1,5 +1,7 @@
 package com.github.theword.queqiao.tool.response;
 
+import com.github.theword.queqiao.tool.exception.response.ResponseException;
+
 public enum ResponseEnum {
     SUCCESS("SUCCESS"), FAILED("FAILED");
 
@@ -18,12 +20,12 @@ public enum ResponseEnum {
         return value;
     }
 
-    public static ResponseEnum fromString(String value) {
+    public static ResponseEnum fromString(String value) throws ResponseException {
         for (ResponseEnum response : ResponseEnum.values()) {
             if (response.value.equalsIgnoreCase(value)) {
                 return response;
             }
         }
-        throw new IllegalArgumentException("Unknown value: " + value);
+        throw ResponseException.unknownValue(value);
     }
 }

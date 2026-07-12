@@ -2,14 +2,12 @@ package com.github.theword.queqiao.tool.handle;
 
 import static com.github.theword.queqiao.tool.utils.Tool.debugLog;
 
-import com.github.theword.queqiao.tool.GlobalContext;
-import com.github.theword.queqiao.tool.constant.BaseConstant;
-import com.github.theword.queqiao.tool.payload.*;
-import com.github.theword.queqiao.tool.response.PrivateMessageResponse;
+import com.github.theword.queqiao.tool.constant.CommonConstants;
+import com.github.theword.queqiao.tool.constant.ProtocolConstants;
+import com.github.theword.queqiao.tool.payload.BasePayload;
+import com.github.theword.queqiao.tool.protocol.ProtocolRouter;
 import com.github.theword.queqiao.tool.response.Response;
-import com.github.theword.queqiao.tool.utils.ServerStatusCollector;
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 
@@ -21,12 +19,13 @@ import java.util.HashMap;
 public class HandleProtocolMessage {
 
     private final Gson gson;
-    private static final HandleApiService handleApiService = GlobalContext.getHandleApiService();
     private final Logger logger;
+    private final ProtocolRouter protocolRouter;
 
     public HandleProtocolMessage(Logger logger, Gson gson) {
         this.logger = logger;
         this.gson = gson;
+        this.protocolRouter = new ProtocolRouter();
     }
 
     /**
@@ -60,7 +59,7 @@ public class HandleProtocolMessage {
      * @return 响应的JSON字符串
      */
     public String handleHttpJson(String rawJsonMessage) {
-        Response response = this.handle(rawJsonMessage, "", MessageSource.HTTP);
+        Response response = this.handle(rawJsonMessage, CommonConstants.Text.EMPTY, MessageSource.HTTP);
         return gson.toJson(response);
     }
 
@@ -77,7 +76,7 @@ public class HandleProtocolMessage {
             this.logger.error("错误信息：", e);
             HashMap<String, String> data = new HashMap<>();
             data.put("rawJsonMessage", rawJsonMessage);
-            return Response.failed(500, "解析消息失败", data, null);
+            return Response.failed(ProtocolConstants.Status.INTERNAL_ERROR, ProtocolConstants.Message.PARSE_MESSAGE_FAILED, data, null);
         }
     }
 
@@ -87,61 +86,6 @@ public class HandleProtocolMessage {
      * @return Response 处理结果
      */
     public Response parseAndHandle(BasePayload basePayload) {
-        String api = basePayload.getApi();
-        JsonElement data = basePayload.getData();
-
-        switch (basePayload.getApi()) {
-            case "broadcast":
-            case "send_msg": {
-                MessagePayload messagePayload = gson.fromJson(data, MessagePayload.class);
-                handleApiService.handleBroadcastMessage(messagePayload.getMessage());
-                return Response.success();
-            }
-            case "send_title": {
-                TitlePayload titlePayload = gson.fromJson(data, TitlePayload.class);
-                if ((titlePayload.getTitle() == null || titlePayload.getTitle().isJsonNull()) && (titlePayload.getSubtitle() == null || titlePayload.getSubtitle().isJsonNull())) {
-                    return Response.failed(400, "Title and Subtitle cannot both be null");
-                }
-                handleApiService.handleSendTitleMessage(titlePayload.getTitle(), titlePayload.getSubtitle(), titlePayload.getFadeIn(), titlePayload.getStay(), titlePayload.getFadeOut());
-                return Response.success();
-            }
-            case "send_actionbar": {
-                MessagePayload actionMessagePayload = gson.fromJson(data, MessagePayload.class);
-                handleApiService.handleSendActionBarMessage(actionMessagePayload.getMessage());
-                return Response.success();
-            }
-            case "send_private_msg": {
-                PrivateMessagePayload privateMessagePayload = gson.fromJson(data, PrivateMessagePayload.class);
-                if ((privateMessagePayload.getNickname() == null || privateMessagePayload.getNickname().isEmpty()) && privateMessagePayload.getUuid() == null) {
-                    return Response.failed(400, PrivateMessageResponse.playerIsNull().getMessage(), PrivateMessageResponse.playerIsNull());
-                }
-                PrivateMessageResponse privateMessageResponse = handleApiService.handleSendPrivateMessage(privateMessagePayload.getNickname(), privateMessagePayload.getUuid(), privateMessagePayload.getMessage());
-                return Response.success(privateMessageResponse);
-            }
-            case "send_command":
-                return Response.failed(500, api + " is not supported now");
-            case "send_rcon_command":
-                CommandPayload commandPayload = gson.fromJson(data, CommandPayload.class);
-                String result;
-                try {
-                    result = GlobalContext.sendRconCommand(commandPayload.getCommand());
-                    logger.info("发送 Rcon 命令: {}", commandPayload.getCommand());
-                    return Response.success(result);
-                } catch (Exception e) {
-                    String errorMessage = e.getMessage() != null ? e.getMessage() : "failed";
-                    logger.warn("Rcon 执行命令时出现问题，命令发送失败！{}", errorMessage);
-                    HashMap<Object, Object> resultData = new HashMap<>();
-                    resultData.put("command", commandPayload.getCommand());
-                    resultData.put("error", errorMessage);
-                    return Response.failed(400, errorMessage, resultData);
-                }
-            case "get_status": {
-                logger.info("收到 get_status 请求，已返回服务器状态");
-                return Response.success(ServerStatusCollector.collectStatusSnapshot());
-            }
-            default:
-                this.logger.warn(BaseConstant.UNKNOWN_API + "{}", api);
-                return Response.failed(404, BaseConstant.UNKNOWN_API + api);
-        }
+        return protocolRouter.route(basePayload);
     }
 }
