@@ -2,11 +2,13 @@ package com.github.theword.queqiao.tool.websocket;
 
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.handle.HandleProtocolMessage;
+import com.github.theword.queqiao.tool.utils.Tool;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,7 +77,7 @@ public class WsClient extends WebSocketClient {
     @Override
     public void onClose(int code, String reason, boolean remote) {
         this.logger.warn(WebsocketConstantMessage.Client.CLOSING_CONNECTION, getURI(), code, reason);
-        if (remote) {
+        if (remote && !this.stopped) {
             this.scheduleReconnect(nextDelay());
         }
     }
@@ -84,7 +86,9 @@ public class WsClient extends WebSocketClient {
     public void onError(Exception exception) {
         this.logger.warn(
                 WebsocketConstantMessage.Client.CONNECTION_ERROR, getURI(), exception.getMessage(), exception);
-        this.scheduleReconnect(nextDelay());
+        if (!this.stopped) {
+            this.scheduleReconnect(nextDelay());
+        }
     }
 
     /**
@@ -98,26 +102,48 @@ public class WsClient extends WebSocketClient {
 
     /** 安排重连任务 */
     private void scheduleReconnect(long delaySeconds) {
-        if (this.stopped || this.reconnectTimes.get() >= this.reconnectMaxTimes) {
+        if (this.stopped || this.scheduler.isShutdown()) {
+            return;
+        }
+        if (this.reconnectTimes.get() >= this.reconnectMaxTimes) {
             this.logger.info(WebsocketConstantMessage.Client.MAX_RECONNECT_ATTEMPTS_REACHED, getURI());
             return;
         }
-        this.reconnectTimes.incrementAndGet();
-        this.logger.warn(WebsocketConstantMessage.Client.RECONNECTING, getURI(), reconnectTimes);
-        scheduler.schedule(
-                () -> {
-                    if (!this.stopped) super.reconnect();
-                }, delaySeconds, TimeUnit.SECONDS);
+        int currentReconnectTimes = this.reconnectTimes.incrementAndGet();
+        this.logger.warn(WebsocketConstantMessage.Client.RECONNECTING, getURI(), currentReconnectTimes);
+        try {
+            scheduler.schedule(
+                    () -> {
+                        if (!this.stopped) super.reconnect();
+                    }, delaySeconds, TimeUnit.SECONDS);
+        } catch (RejectedExecutionException e) {
+            handleRejectedReconnectTask("automatic reconnect", e);
+        }
     }
 
     /** 主动立即重连（适用于 reload 等场景） */
     public void reconnectNow() {
 //        this.scheduleReconnect(0);
+        if (this.stopped || this.scheduler.isShutdown()) {
+            return;
+        }
         this.logger.info(WebsocketConstantMessage.Client.MANUAL_RECONNECTING, getURI());
-        scheduler.schedule(
-                () -> {
-                    if (!this.stopped) super.reconnect();
-                }, 0, TimeUnit.SECONDS);
+        try {
+            scheduler.schedule(
+                    () -> {
+                        if (!this.stopped) super.reconnect();
+                    }, 0, TimeUnit.SECONDS);
+        } catch (RejectedExecutionException e) {
+            handleRejectedReconnectTask("manual reconnect", e);
+        }
+    }
+
+    private void handleRejectedReconnectTask(String action, RejectedExecutionException e) {
+        if (!this.stopped && !this.scheduler.isShutdown()) {
+            this.logger.info("WebSocket {} task rejected for {}, error={}", action, getURI(), e.getMessage());
+            return;
+        }
+        Tool.debugLog("Skip WebSocket {} for {}, scheduler already stopped: {}", action, getURI(), e.getMessage());
     }
 
     /**
