@@ -20,13 +20,4 @@ public final class CommonConstants {
         private Text() {
         }
     }
-
-    public static final class Numeric {
-        public static final int NEGATIVE_ONE = -1;
-        public static final int ZERO = 0;
-        public static final int ONE = 1;
-
-        private Numeric() {
-        }
-    }
 }

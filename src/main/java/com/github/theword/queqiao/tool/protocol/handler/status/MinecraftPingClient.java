@@ -1,6 +1,5 @@
 package com.github.theword.queqiao.tool.protocol.handler.status;
 
-import com.github.theword.queqiao.tool.constant.CommonConstants;
 import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.exception.status.MinecraftPingException;
 import com.google.gson.JsonParseException;
@@ -18,7 +17,7 @@ import java.util.Map;
 
 final class MinecraftPingClient {
     private static final int SOCKET_TIMEOUT_MILLIS = 3000;
-    private static final int HANDSHAKE_PROTOCOL_VERSION = CommonConstants.Numeric.NEGATIVE_ONE;
+    private static final int HANDSHAKE_PROTOCOL_VERSION = -1;
     private static final int PACKET_ID_HANDSHAKE = 0x00;
     private static final int PACKET_ID_STATUS_REQUEST = 0x00;
     private static final int PACKET_ID_STATUS_RESPONSE = 0x00;
@@ -30,7 +29,7 @@ final class MinecraftPingClient {
     private static final int MAX_VAR_INT_BYTES = 5;
     private static final int UNSIGNED_BYTE_MASK = 0xFF;
     private static final int UNSIGNED_SHORT_HIGH_BYTE_SHIFT = 8;
-    private static final int INPUT_STREAM_EOF = CommonConstants.Numeric.NEGATIVE_ONE;
+    private static final int INPUT_STREAM_EOF = -1;
     private static final Type MAP_TYPE = new TypeToken<Map<String, Object>>() {
     }.getType();
 
@@ -46,7 +45,7 @@ final class MinecraftPingClient {
             sendStatusRequestPacket(outputStream);
 
             int responsePacketLength = readVarInt(inputStream);
-            if (responsePacketLength <= CommonConstants.Numeric.ZERO) {
+            if (responsePacketLength <= 0) {
                 throw MinecraftPingException.invalidPacketLength(responsePacketLength);
             }
 
@@ -56,7 +55,7 @@ final class MinecraftPingClient {
             }
 
             int jsonLength = readVarInt(inputStream);
-            if (jsonLength <= CommonConstants.Numeric.ZERO) {
+            if (jsonLength <= 0) {
                 throw MinecraftPingException.invalidJsonLength(jsonLength);
             }
 
@@ -115,7 +114,7 @@ final class MinecraftPingClient {
     private void writeVarInt(OutputStream outputStream, int value) throws IOException {
         int current = value;
         while (true) {
-            if ((current & VAR_INT_REMAINING_BITS) == CommonConstants.Numeric.ZERO) {
+            if ((current & VAR_INT_REMAINING_BITS) == 0) {
                 outputStream.write(current);
                 return;
             }
@@ -125,8 +124,8 @@ final class MinecraftPingClient {
     }
 
     private int readVarInt(InputStream inputStream) throws IOException, MinecraftPingException {
-        int numRead = CommonConstants.Numeric.ZERO;
-        int result = CommonConstants.Numeric.ZERO;
+        int numRead = 0;
+        int result = 0;
         int read;
         do {
             read = inputStream.read();
@@ -135,17 +134,17 @@ final class MinecraftPingClient {
             }
             int value = read & VAR_INT_SEGMENT_BITS;
             result |= value << (VAR_INT_BITS_PER_BYTE * numRead);
-            numRead += CommonConstants.Numeric.ONE;
+            numRead++;
             if (numRead > MAX_VAR_INT_BYTES) {
                 throw MinecraftPingException.varIntTooLong();
             }
-        } while ((read & VAR_INT_CONTINUE_BIT) != CommonConstants.Numeric.ZERO);
+        } while ((read & VAR_INT_CONTINUE_BIT) != 0);
         return result;
     }
 
     private byte[] readFully(InputStream inputStream, int length) throws IOException, MinecraftPingException {
         byte[] data = new byte[length];
-        int offset = CommonConstants.Numeric.ZERO;
+        int offset = 0;
         while (offset < length) {
             int readCount = inputStream.read(data, offset, length - offset);
             if (readCount == INPUT_STREAM_EOF) {

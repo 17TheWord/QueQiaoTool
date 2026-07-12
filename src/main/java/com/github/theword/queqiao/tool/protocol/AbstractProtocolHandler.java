@@ -24,6 +24,9 @@ public abstract class AbstractProtocolHandler<P, R> {
         } catch (JsonParseException | IllegalStateException e) {
             throw ProtocolException.badRequest(ProtocolConstants.Message.PARSE_DATA_FAILED, data);
         }
+        if (payload == null) {
+            throw ProtocolException.badRequest(ProtocolConstants.Message.PARSE_DATA_FAILED, data);
+        }
         return handlePayload(payload);
     }
 
