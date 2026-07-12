@@ -52,7 +52,7 @@ public class Tool {
      */
     public static void debugLog(String message) {
         if (GlobalContext.getConfig().isDebug()) {
-            GlobalContext.getLogger().info(message);
+            GlobalContext.getLogger().info("[DEBUG] " + message);
         }
     }
 
@@ -64,7 +64,7 @@ public class Tool {
      */
     public static void debugLog(String format, Object... args) {
         if (GlobalContext.getConfig().isDebug()) {
-            GlobalContext.getLogger().info(format, args);
+            GlobalContext.getLogger().info("[DEBUG] " + format, args);
         }
     }
 

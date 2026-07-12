@@ -2,6 +2,7 @@ package com.github.theword.queqiao.tool.websocket;
 
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.handle.HandleProtocolMessage;
+import com.github.theword.queqiao.tool.utils.Tool;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -115,7 +116,8 @@ public class WsClient extends WebSocketClient {
                     () -> {
                         if (!this.stopped) super.reconnect();
                     }, delaySeconds, TimeUnit.SECONDS);
-        } catch (RejectedExecutionException ignored) {
+        } catch (RejectedExecutionException e) {
+            handleRejectedReconnectTask("automatic reconnect", e);
         }
     }
 
@@ -131,8 +133,17 @@ public class WsClient extends WebSocketClient {
                     () -> {
                         if (!this.stopped) super.reconnect();
                     }, 0, TimeUnit.SECONDS);
-        } catch (RejectedExecutionException ignored) {
+        } catch (RejectedExecutionException e) {
+            handleRejectedReconnectTask("manual reconnect", e);
         }
+    }
+
+    private void handleRejectedReconnectTask(String action, RejectedExecutionException e) {
+        if (!this.stopped && !this.scheduler.isShutdown()) {
+            this.logger.info("WebSocket {} task rejected for {}, error={}", action, getURI(), e.getMessage());
+            return;
+        }
+        Tool.debugLog("Skip WebSocket {} for {}, scheduler already stopped: {}", action, getURI(), e.getMessage());
     }
 
     /**
