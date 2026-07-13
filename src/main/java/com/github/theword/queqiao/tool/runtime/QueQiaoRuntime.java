@@ -33,9 +33,15 @@ public final class QueQiaoRuntime {
     private boolean modServer;
     private RconClient rconClient;
     private JsonElement messagePrefixJsonElement;
-    private LanguageService languageService;
+    private RuntimeLanguageService languageService;
+    private final RuntimeDependencies dependencies;
 
     private QueQiaoRuntime() {
+        this(RuntimeDependencies.defaultDependencies());
+    }
+
+    QueQiaoRuntime(RuntimeDependencies dependencies) {
+        this.dependencies = dependencies;
     }
 
     public static QueQiaoRuntime empty() {
@@ -43,7 +49,11 @@ public final class QueQiaoRuntime {
     }
 
     public static QueQiaoRuntime create(boolean modServer, String serverVersion, String serverType, HandleApiService handleApiService, HandleCommandReturnMessageService handleCommandReturnMessageService) {
-        QueQiaoRuntime runtime = new QueQiaoRuntime();
+        return create(modServer, serverVersion, serverType, handleApiService, handleCommandReturnMessageService, RuntimeDependencies.defaultDependencies());
+    }
+
+    static QueQiaoRuntime create(boolean modServer, String serverVersion, String serverType, HandleApiService handleApiService, HandleCommandReturnMessageService handleCommandReturnMessageService, RuntimeDependencies dependencies) {
+        QueQiaoRuntime runtime = new QueQiaoRuntime(dependencies);
         runtime.modServer = modServer;
         runtime.serverVersion = serverVersion;
         runtime.serverType = serverType;
@@ -51,7 +61,7 @@ public final class QueQiaoRuntime {
         runtime.handleCommandReturnMessageService = handleCommandReturnMessageService;
         runtime.logger = LoggerFactory.getLogger(BaseConstant.MODULE_NAME);
         runtime.gson = GsonUtils.getGson();
-        runtime.config = Config.loadConfig(modServer, runtime.logger);
+        runtime.config = runtime.dependencies.loadConfig(modServer, runtime.logger);
         return runtime;
     }
 
@@ -60,17 +70,17 @@ public final class QueQiaoRuntime {
         logger.info(BaseConstant.INITIALIZED);
 
         messagePrefixJsonElement = initMessagePrefixJsonObject(config.getMessagePrefix());
-        languageService = new LanguageService(modServer, logger);
-        ServerStatusCollector.initPingTarget(logger);
+        languageService = dependencies.createLanguageService(modServer, logger);
+        dependencies.initPingTarget(logger);
         initWebsocketManager();
         initRconClient();
     }
 
     public void reload(Object commandReturner) {
-        setConfig(Config.loadConfig(modServer, logger));
+        setConfig(dependencies.loadConfig(modServer, logger));
         messagePrefixJsonElement = initMessagePrefixJsonObject(config.getMessagePrefix());
         languageService.reload();
-        ServerStatusCollector.initPingTarget(logger);
+        dependencies.initPingTarget(logger);
         websocketManager.restart(commandReturner);
         restartRconClient();
         handleCommandReturnMessageService.sendReturnMessage(commandReturner, CommandConstant.RELOAD_CONFIG);
@@ -90,13 +100,13 @@ public final class QueQiaoRuntime {
     }
 
     private void initWebsocketManager() {
-        websocketManager = new WebsocketManager(logger, gson, handleCommandReturnMessageService);
+        websocketManager = dependencies.createWebsocketManager(logger, gson, handleCommandReturnMessageService);
         websocketManager.start(null);
     }
 
     private void initRconClient() {
         if (config.getRcon().isEnable()) {
-            rconClient = new RconClient(logger, config.getRcon().getPort(), config.getRcon().getPassword());
+            rconClient = dependencies.createRconClient(logger, config.getRcon().getPort(), config.getRcon().getPassword());
             rconClient.connect();
         } else {
             logger.info("Rcon 未启用，跳过 Rcon 客户端初始化");
@@ -225,5 +235,69 @@ public final class QueQiaoRuntime {
 
     public JsonElement getMessagePrefixJsonElement() {
         return messagePrefixJsonElement;
+    }
+
+    interface RuntimeLanguageService {
+        void reload();
+
+        void disable();
+
+        boolean isInternalEnable();
+
+        String translate(String key, Object[] args);
+    }
+
+    static class RuntimeDependencies {
+        Config loadConfig(boolean modServer, Logger logger) {
+            return Config.loadConfig(modServer, logger);
+        }
+
+        WebsocketManager createWebsocketManager(Logger logger, Gson gson, HandleCommandReturnMessageService handleCommandReturnMessageService) {
+            return new WebsocketManager(logger, gson, handleCommandReturnMessageService);
+        }
+
+        RuntimeLanguageService createLanguageService(boolean modServer, Logger logger) {
+            return new RuntimeLanguageServiceAdapter(new LanguageService(modServer, logger));
+        }
+
+        RconClient createRconClient(Logger logger, int port, String password) {
+            return new RconClient(logger, port, password);
+        }
+
+        void initPingTarget(Logger logger) {
+            ServerStatusCollector.initPingTarget(logger);
+        }
+
+        static RuntimeDependencies defaultDependencies() {
+            return new RuntimeDependencies();
+        }
+    }
+
+    private static final class RuntimeLanguageServiceAdapter implements RuntimeLanguageService {
+        private final LanguageService languageService;
+
+        private RuntimeLanguageServiceAdapter(LanguageService languageService) {
+            this.languageService = languageService;
+        }
+
+        @Override
+        public void reload() {
+            languageService.reload();
+        }
+
+        @Override
+        public void disable() {
+            languageService.disable();
+        }
+
+        @Override
+        public boolean isInternalEnable() {
+            return languageService.isInternalEnable();
+        }
+
+        @Override
+        public String translate(String key, Object[] args) {
+            return languageService.translate(key, args);
+        }
     }
 }

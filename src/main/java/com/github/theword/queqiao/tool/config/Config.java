@@ -68,6 +68,10 @@ public class Config extends CommonConfig {
      */
     private RconConfig rcon = new RconConfig();
 
+    protected Config(Logger logger) {
+        super(logger);
+    }
+
     public boolean isEnable() {
         return enable;
     }

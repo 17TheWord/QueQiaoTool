@@ -1,57 +1,56 @@
 package com.github.theword.queqiao.tool;
 
-import com.github.theword.queqiao.tool.utils.GsonUtils;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
+import com.github.theword.queqiao.tool.config.Config;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class GlobalContextTest {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final Gson gson = GsonUtils.getGson();
+    @Test
+    void setConfigShouldUpdateRuntimeConfig() {
+        Config config = testConfig();
 
-    public JsonObject initMessagePrefixJsonObjectDemo(String messagePrefixText) {
-        if (messagePrefixText == null || messagePrefixText.isEmpty()) {
-            messagePrefixText = "[鹊桥]";
-        }
-        try {
-            JsonElement element = gson.fromJson(messagePrefixText, JsonElement.class);
-            if (element.isJsonObject()) {
-                logger.info("消息前缀 {} 符合mc消息组件格式，将采用自定义风格的消息前缀", messagePrefixText);
-                return element.getAsJsonObject();
-            }
-            logger.info("消息前缀 {} 不是合法的 JSON 对象，将使用默认风格的自定义文本前缀", messagePrefixText);
+        GlobalContext.setConfig(config);
 
-        } catch (JsonSyntaxException e) {
-            logger.info("消息前缀 {} 未采用自定义风格，将使用默认风格的自定义文本前缀", messagePrefixText);
-        }
-        JsonObject obj = new JsonObject();
-        obj.addProperty("text", messagePrefixText);
-        obj.addProperty("color", "yellow");
-        return obj;
+        assertSame(config, GlobalContext.getConfig());
     }
 
     @Test
-    public void testInitMessagePrefixJsonObject() {
-        JsonObject jsonObject = initMessagePrefixJsonObjectDemo("[鹊桥]");
-        logger.info(jsonObject.toString());
+    void setLoggerShouldUpdateRuntimeLogger() {
+        GlobalContext.setLogger(logger);
+
+        assertSame(logger, GlobalContext.getLogger());
+    }
+
+    @Test
+    void initMessagePrefixJsonObjectShouldUseRuntimeImplementation() {
+        prepareRuntime();
+
+        JsonObject jsonObject = GlobalContext.initMessagePrefixJsonObject("QueQiao").getAsJsonObject();
+
+        assertEquals("QueQiao", jsonObject.get("text").getAsString());
         assertEquals("yellow", jsonObject.get("color").getAsString());
-        assertEquals("[鹊桥]", jsonObject.get("text").getAsString());
     }
 
-    @Test
-    public void testInitMessagePrefixJsonObject2() {
-        JsonObject jsonObject = initMessagePrefixJsonObjectDemo("{\"text\":\"[鹊桥]\",\"color\":\"green\"}");
-        logger.info(jsonObject.toString());
-        assertEquals("green", jsonObject.get("color").getAsString());
-        assertEquals("[鹊桥]", jsonObject.get("text").getAsString());
+    private void prepareRuntime() {
+        GlobalContext.setLogger(logger);
+        GlobalContext.setConfig(testConfig());
     }
 
+    private Config testConfig() {
+        return new TestConfig(logger);
+    }
+
+    private static final class TestConfig extends Config {
+        private TestConfig(Logger logger) {
+            super(logger);
+        }
+    }
 }
