@@ -7,6 +7,20 @@ import com.github.theword.queqiao.tool.utils.GsonUtils;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonElement;
 
+/**
+ * 协议处理器抽象基类
+ *
+ * <p><b>线程安全约束（重要）</b>：处理器实例由 {@code ProtocolRouter} 在构造阶段创建一次，
+ * 随后在多个连接、多个线程之间共享。因此实现<b>必须无状态</b>——
+ * 不得持有任何随请求变化的字段。
+ *
+ * <p>全部输入应来自方法参数，输出通过返回值表达。
+ * 违反该约束会引入静默的数据竞争：不同连接的请求会互相污染中间状态。
+ *
+ * @param <P> 负载类型
+ * @param <R> 返回类型
+ * @since 0.6.11
+ */
 public abstract class AbstractProtocolHandler<P, R> {
     private final Class<P> payloadType;
 

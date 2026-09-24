@@ -8,6 +8,7 @@ import com.github.theword.queqiao.tool.event.base.BaseEvent;
 import com.github.theword.queqiao.tool.exception.rcon.RconException;
 import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
+import com.github.theword.queqiao.tool.handle.HandleProtocolMessage;
 import com.github.theword.queqiao.tool.localize.LanguageService;
 import com.github.theword.queqiao.tool.protocol.handler.status.ServerStatusCollector;
 import com.github.theword.queqiao.tool.rcon.RconClient;
@@ -35,6 +36,16 @@ public final class QueQiaoRuntime {
     private JsonElement messagePrefixJsonElement;
     private LanguageService languageService;
 
+    /**
+     * 协议分发入口
+     *
+     * <p>属于平台级能力而非 WebSocket 传输层细节：分发逻辑与传输方式无关，
+     * 因此在此处创建唯一实例，再注入给各传输层（当前为 WebSocket，未来可含 HTTP）。
+     *
+     * <p>该对象构造后即不可变，可安全地在多个连接/线程间共享。
+     */
+    private HandleProtocolMessage handleProtocolMessage;
+
     private QueQiaoRuntime() {
     }
 
@@ -51,6 +62,7 @@ public final class QueQiaoRuntime {
         runtime.handleCommandReturnMessageService = handleCommandReturnMessageService;
         runtime.logger = LoggerFactory.getLogger(BaseConstant.MODULE_NAME);
         runtime.gson = GsonUtils.getGson();
+        runtime.handleProtocolMessage = new HandleProtocolMessage(runtime.logger, runtime.gson);
         runtime.config = Config.loadConfig(modServer, runtime.logger);
         return runtime;
     }
@@ -90,7 +102,7 @@ public final class QueQiaoRuntime {
     }
 
     private void initWebsocketManager() {
-        websocketManager = new WebsocketManager(logger, gson, handleCommandReturnMessageService);
+        websocketManager = new WebsocketManager(logger, gson, handleCommandReturnMessageService, handleProtocolMessage);
         websocketManager.start(null);
     }
 

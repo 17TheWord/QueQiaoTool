@@ -18,6 +18,7 @@ public class WebsocketConstantMessage {
         public static final String CONNECTION_ERROR = CONNECT_TO + "WebSocket 连接出现异常：{}";
         public static final String CONNECTION_NOT_OPEN = CONNECT_TO + "WebSocket 连接未打开";
         public static final String SEND_MESSAGE_FAILED = CONNECTION_NOT_OPEN + "，发送消息 {} 失败";
+        public static final String MESSAGE_HANDLE_FAILED = CONNECT_TO + "处理收到的消息时发生异常，已忽略该消息";
         public static final String URI_SYNTAX_ERROR = CONNECT_TO + "WebSocket URL 格式错误，无法连接！";
         public static final String MAX_RECONNECT_ATTEMPTS_REACHED = CONNECT_TO + "重连次数达到最大值，将不再自动重连，请使用命令手动重连！";
     }
@@ -35,7 +36,13 @@ public class WebsocketConstantMessage {
         public static final String INVALID_CLIENT_ORIGIN_HEADER = CLIENT_PREFIX + "连接请求头中客户端来源错误，将断开连接";
         public static final String SERVER_NAME_PARSE_FAILED_HEADER = CLIENT_PREFIX + "连接请求头中服务器名解析失败，将断开连接";
         public static final String INVALID_SERVER_NAME_HEADER = CLIENT_PREFIX + "连接请求头中服务器名：{} 错误，将断开连接";
-        public static final String INVALID_ACCESS_TOKEN_HEADER = CLIENT_PREFIX + "连接身份验证码：{} 失败，将断开连接";
+        /**
+         * 认证失败日志。
+         *
+         * <p>安全要求：绝不记录客户端提交的 Authorization / accessToken / Bearer token 内容，
+         * 只记录客户端地址。
+         */
+        public static final String INVALID_ACCESS_TOKEN_HEADER = CLIENT_PREFIX + "连接认证失败（Authorization 校验未通过），将断开连接";
         public static final String CLIENT_CONNECTED = CLIENT_PREFIX + "客户端已连接";
         public static final String CLIENT_DISCONNECTED = CLIENT_PREFIX + "客户端已断开";
         public static final String CLIENT_HAD_BEEN_DISCONNECTED = CLIENT_PREFIX + "客户端已被断开";

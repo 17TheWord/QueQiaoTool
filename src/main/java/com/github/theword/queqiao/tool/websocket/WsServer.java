@@ -7,7 +7,6 @@ import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
-import com.google.gson.Gson;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -26,13 +25,15 @@ public class WsServer extends WebSocketServer {
     /**
      * 构造函数
      *
-     * @param address     地址
-     * @param logger      日志实现
-     * @param serverName  服务器名称
-     * @param accessToken 访问令牌 (可选) 如果不需要访问令牌则传入空字符串
+     * @param address              地址
+     * @param logger               日志实现
+     * @param handleProtocolMessage 协议分发入口（由 QueQiaoRuntime 创建，与 Client 共享同一实例）
+     * @param serverName           服务器名称
+     * @param accessToken          访问令牌 (可选) 如果不需要访问令牌则传入空字符串
+     * @param enabled              是否启用协议消息处理
      */
     public WsServer(
-                    InetSocketAddress address, Logger logger, Gson gson, String serverName, String accessToken, boolean enabled) {
+                    InetSocketAddress address, Logger logger, HandleProtocolMessage handleProtocolMessage, String serverName, String accessToken, boolean enabled) {
         super(address);
         super.setReuseAddr(true);
         this.logger = logger;
@@ -41,7 +42,7 @@ public class WsServer extends WebSocketServer {
         this.serverName = serverName;
         this.accessToken = accessToken;
         this.enabled = enabled;
-        this.handleProtocolMessage = new HandleProtocolMessage(logger, gson);
+        this.handleProtocolMessage = handleProtocolMessage;
     }
 
     /**
@@ -131,8 +132,12 @@ public class WsServer extends WebSocketServer {
 
         String accessToken = getHeaderOrQueryParam(clientHandshake, "Authorization");
         if (!this.accessToken.isEmpty() && !accessToken.equals("Bearer " + this.accessToken)) {
+            // 安全：绝不记录客户端提交的 Authorization / accessToken / Bearer token 内容，仅记录来源地址。
             this.logger.warn(
-                    WebsocketConstantMessage.Server.INVALID_ACCESS_TOKEN_HEADER, getClientAddress(webSocket), accessToken);
+                    WebsocketConstantMessage.Server.INVALID_ACCESS_TOKEN_HEADER, getClientAddress(webSocket));
+            if (this.logger.isDebugEnabled()) {
+                this.logger.debug("认证失败详情：客户端是否携带 Authorization 头部 = {}", !accessToken.isEmpty());
+            }
             webSocket.close(1008, "Authorization Header is wrong");
             return;
         }

@@ -15,6 +15,22 @@ import java.util.HashMap;
 
 /**
  * 处理协议消息
+ *
+ * <p>这是<b>传输无关</b>的协议分发入口：WebSocket（以及未来的 HTTP）都复用同一套解析与路由。
+ *
+ * <p><b>生命周期与线程安全</b>：本类由 {@code QueQiaoRuntime} 创建唯一实例并注入给各传输层
+ * （{@code WebsocketManager} → 各 {@code WsClient} / {@code WsServer}），
+ * 因此会被多个连接、多个线程并发调用。
+ *
+ * <p>本类构造后即不可变：字段全部 {@code final}，
+ * {@code ProtocolRouter} 的处理器表也只在构造阶段写入、之后只读；
+ * 各处理器实现必须无状态（见 {@code AbstractProtocolHandler}）。
+ * 因此并发调用是安全的，且<b>不存在锁</b>——不同连接之间不会相互串行化。
+ *
+ * <p>顺序说明：单个连接内的请求处理顺序由该连接的读线程串行保证，
+ * 与本类实例数量无关。
+ *
+ * @since 0.6.11
  */
 public class HandleProtocolMessage {
 
@@ -54,6 +70,11 @@ public class HandleProtocolMessage {
 
     /**
      * Http，处理JSON字符串
+     *
+     * <p><b>保留入口</b>：当前版本尚未接入 HTTP 传输层，本方法暂无调用方。
+     * 它是有意保留的扩展点——协议分发与传输方式无关，
+     * 后续接入 HTTP 时应直接复用本入口，而不是另起一套解析与路由。
+     * 因此请勿将其当作"死代码"清理。
      *
      * @param rawJsonMessage 收到的JSON字符串
      * @return 响应的JSON字符串

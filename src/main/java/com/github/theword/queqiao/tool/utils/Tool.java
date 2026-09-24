@@ -1,6 +1,7 @@
 package com.github.theword.queqiao.tool.utils;
 
 import com.github.theword.queqiao.tool.GlobalContext;
+import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.google.gson.JsonObject;
 
@@ -51,9 +52,10 @@ public class Tool {
      * @param message 消息
      */
     public static void debugLog(String message) {
-        if (GlobalContext.getConfig().isDebug()) {
-            GlobalContext.getLogger().info("[DEBUG] " + message);
+        if (!isDebugEnabled()) {
+            return;
         }
+        GlobalContext.getLogger().info("[DEBUG] " + message);
     }
 
     /**
@@ -63,9 +65,27 @@ public class Tool {
      * @param args   参数
      */
     public static void debugLog(String format, Object... args) {
-        if (GlobalContext.getConfig().isDebug()) {
-            GlobalContext.getLogger().info("[DEBUG] " + format, args);
+        if (!isDebugEnabled()) {
+            return;
         }
+        GlobalContext.getLogger().info("[DEBUG] " + format, args);
+    }
+
+    /**
+     * 判断是否可以输出调试日志
+     *
+     * <p>对 {@code GlobalContext} 尚未初始化的情况做空值防护：
+     * 此前直接调用 {@code GlobalContext.getConfig().isDebug()}，
+     * 在运行时空对象状态下会抛出 {@link NullPointerException}。
+     *
+     * @return true 表示配置已加载、日志实现可用且开启了 debug
+     */
+    private static boolean isDebugEnabled() {
+        Config config = GlobalContext.getConfig();
+        if (config == null || !config.isDebug()) {
+            return false;
+        }
+        return GlobalContext.getLogger() != null;
     }
 
     /**
