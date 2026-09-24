@@ -4,10 +4,12 @@ import com.github.theword.queqiao.tool.constant.ProtocolConstants;
 import com.github.theword.queqiao.tool.exception.protocol.ProtocolException;
 import com.github.theword.queqiao.tool.payload.EmptyPayload;
 import com.github.theword.queqiao.tool.protocol.AbstractProtocolHandler;
+import org.slf4j.Logger;
 
 public class SendCommandHandler extends AbstractProtocolHandler<EmptyPayload, Void> {
-    public SendCommandHandler() {
-        super(EmptyPayload.class);
+
+    public SendCommandHandler(Logger logger) {
+        super(logger, EmptyPayload.class);
     }
 
     @Override

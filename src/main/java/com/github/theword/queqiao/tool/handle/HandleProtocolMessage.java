@@ -1,17 +1,18 @@
 package com.github.theword.queqiao.tool.handle;
 
-import static com.github.theword.queqiao.tool.utils.Tool.debugLog;
-
 import com.github.theword.queqiao.tool.constant.CommonConstants;
 import com.github.theword.queqiao.tool.constant.ProtocolConstants;
 import com.github.theword.queqiao.tool.payload.BasePayload;
 import com.github.theword.queqiao.tool.protocol.ProtocolRouter;
 import com.github.theword.queqiao.tool.response.Response;
+import com.github.theword.queqiao.tool.utils.LogSanitizer;
+import com.github.theword.queqiao.tool.utils.Tool;
 import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 
-import java.util.HashMap;
+import java.util.Locale;
 
 /**
  * 处理协议消息
@@ -23,12 +24,18 @@ import java.util.HashMap;
  * 因此会被多个连接、多个线程并发调用。
  *
  * <p>本类构造后即不可变：字段全部 {@code final}，
- * {@code ProtocolRouter} 的处理器表也只在构造阶段写入、之后只读；
+ * {@link ProtocolRouter} 的处理器表也只在构造阶段写入、之后只读；
  * 各处理器实现必须无状态（见 {@code AbstractProtocolHandler}）。
  * 因此并发调用是安全的，且<b>不存在锁</b>——不同连接之间不会相互串行化。
  *
  * <p>顺序说明：单个连接内的请求处理顺序由该连接的读线程串行保证，
  * 与本类实例数量无关。
+ *
+ * <p><b>状态码语义</b>：请求体不是合法 JSON 或为 null 时返回 400（调用方错误），
+ * 而不是把调用方错误伪装成服务端内部错误。
+ *
+ * <p><b>日志安全</b>：debug 日志会先对 token / password 等敏感字段脱敏、再按长度截断；
+ * warn / error 日志不输出请求体内容，只输出长度。
  *
  * @since 0.6.11
  */
@@ -41,7 +48,7 @@ public class HandleProtocolMessage {
     public HandleProtocolMessage(Logger logger, Gson gson) {
         this.logger = logger;
         this.gson = gson;
-        this.protocolRouter = new ProtocolRouter();
+        this.protocolRouter = new ProtocolRouter(logger);
     }
 
     /**
@@ -52,7 +59,7 @@ public class HandleProtocolMessage {
 
         @Override
         public String toString() {
-            return name().toLowerCase();
+            return name().toLowerCase(Locale.ROOT);
         }
     }
 
@@ -85,20 +92,35 @@ public class HandleProtocolMessage {
     }
 
     private Response handle(String rawJsonMessage, String address, MessageSource source) {
-        debugLog("收到来自 {} 的 {} 消息：{}", address, source.toString(), rawJsonMessage);
-        try {
-            BasePayload basePayload = gson.fromJson(rawJsonMessage, BasePayload.class);
-            Response response = this.parseAndHandle(basePayload);
-            response.setApi(basePayload.getApi());
-            response.setEcho(basePayload.getEcho());
-            return response;
-        } catch (Exception e) {
-            this.logger.error("解析来自 {} 的 webSocket 消息时出现问题，消息内容：{}", address, rawJsonMessage);
-            this.logger.error("错误信息：", e);
-            HashMap<String, String> data = new HashMap<>();
-            data.put("rawJsonMessage", rawJsonMessage);
-            return Response.failed(ProtocolConstants.Status.INTERNAL_ERROR, ProtocolConstants.Message.PARSE_MESSAGE_FAILED, data, null);
+        // 脱敏与截断只在开启 debug 时执行，避免每条消息都多解析一次 JSON
+        if (Tool.isDebugEnabled()) {
+            Tool.debugLog(
+                    "收到来自 {} 的 {} 消息（原始长度 {}）：{}",
+                    address, source, lengthOf(rawJsonMessage), LogSanitizer.sanitize(rawJsonMessage));
         }
+
+        BasePayload basePayload;
+        try {
+            basePayload = gson.fromJson(rawJsonMessage, BasePayload.class);
+        } catch (JsonParseException e) {
+            // 请求体不是合法 JSON → 调用方错误（400），不是服务端内部错误
+            this.logger.warn(
+                    "解析来自 {} 的 {} 消息失败：请求体不是合法 JSON（原始长度 {}）", address, source, lengthOf(rawJsonMessage));
+            return Response.failed(ProtocolConstants.Status.BAD_REQUEST, ProtocolConstants.Message.PARSE_MESSAGE_FAILED);
+        } catch (RuntimeException e) {
+            this.logger.error("解析来自 {} 的 {} 消息时发生未预期异常", address, source, e);
+            return Response.failed(ProtocolConstants.Status.INTERNAL_ERROR, ProtocolConstants.Message.PARSE_MESSAGE_FAILED);
+        }
+
+        if (basePayload == null) {
+            this.logger.warn("解析来自 {} 的 {} 消息失败：请求体为 null", address, source);
+            return Response.failed(ProtocolConstants.Status.BAD_REQUEST, ProtocolConstants.Message.PARSE_MESSAGE_FAILED);
+        }
+
+        Response response = this.parseAndHandle(basePayload);
+        response.setApi(basePayload.getApi());
+        response.setEcho(basePayload.getEcho());
+        return response;
     }
 
     /**
@@ -108,5 +130,19 @@ public class HandleProtocolMessage {
      */
     public Response parseAndHandle(BasePayload basePayload) {
         return protocolRouter.route(basePayload);
+    }
+
+    private static int lengthOf(String rawJsonMessage) {
+        return rawJsonMessage == null ? 0 : rawJsonMessage.length();
+    }
+
+    /**
+     * 生成可安全写入 debug 日志的消息描述：先按字段脱敏，再按长度截断
+     *
+     * @param rawJsonMessage 原始消息
+     * @return 脱敏并截断后的文本
+     */
+    private String describeForLog(String rawJsonMessage) {
+        return LogSanitizer.sanitize(rawJsonMessage);
     }
 }

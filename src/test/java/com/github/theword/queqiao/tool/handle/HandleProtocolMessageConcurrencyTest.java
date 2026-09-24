@@ -35,19 +35,18 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  *     <li>共享实例上不存在隐式锁导致的异常或串扰</li>
  * </ul>
  *
- * <p><b>用例选取说明</b>：这里只使用不触碰 {@code GlobalContext} 的协议路径，
+ * <p><b>用例选取说明</b>：这里使用的协议路径均不触碰 {@code GlobalContext}，
  * 使测试不依赖全局状态、可在任意顺序下运行：
  * <ul>
+ *     <li>未注册的 api → 处理器表未命中 → 404</li>
  *     <li>{@code send_command} → 处理器必然抛 {@code ProtocolException} → 500</li>
  *     <li>{@code send_title} → 空 title/subtitle → 400</li>
  *     <li>{@code send_private_msg} → 空 nickname/uuid → 400</li>
  * </ul>
  *
- * <p><b>未覆盖</b>："未知 api → 404" 这一分支。原因是
- * {@code ProtocolRouter.route} 在该分支会调用 {@code GlobalContext.getLogger()}，
- * 未初始化全局上下文时直接 NPE——这正是评审记录的
- * "ProtocolRouter 依赖全局状态"缺陷。在 {@code ProtocolRouter} 解耦（引入 Logger 注入）
- * 之后，本用例应补充该分支。
+ * <p>注："未知 api → 404" 这一分支在 WS-B4 之前<b>无法测试</b>——
+ * {@code ProtocolRouter.route} 当时直接调用 {@code GlobalContext.getLogger()}，
+ * 未初始化全局上下文时会 NPE。WS-B4 把 Logger 改为构造器注入后该分支才可覆盖。
  */
 class HandleProtocolMessageConcurrencyTest {
 
@@ -76,6 +75,7 @@ class HandleProtocolMessageConcurrencyTest {
     }
 
     private static final ApiCase[] CASES = {
+            new ApiCase("__unknown_api__", ProtocolConstants.Status.NOT_FOUND),
             new ApiCase("send_command", ProtocolConstants.Status.INTERNAL_ERROR),
             new ApiCase("send_title", ProtocolConstants.Status.BAD_REQUEST),
             new ApiCase("send_private_msg", ProtocolConstants.Status.BAD_REQUEST),

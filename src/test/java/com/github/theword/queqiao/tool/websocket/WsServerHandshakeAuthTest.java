@@ -126,13 +126,90 @@ class WsServerHandshakeAuthTest {
     }
 
     /**
+     * C2 回归：`onOpen` 绝不允许异常逃出
+     *
+     * <p>Java-WebSocket 的 {@code WebSocketImpl.open()} 会吞掉 {@code onOpen} 抛出的
+     * {@code RuntimeException} 并让连接保持 {@code OPEN}，导致未鉴权连接仍可用。
+     * 因此本方法必须自己兜底——传入会触发内部 NPE 的输入，断言异常不外泄。
+     *
+     * <p>这里刻意传 {@code (null, null)}：{@code getHeaderOrQueryParam(null, ...)} 会在
+     * {@code clientHandshake.getFieldValue(name)} 处抛 NPE。修复前该异常会直接逃出 {@code onOpen}。
+     */
+    @Test
+    @DisplayName("onOpen 绝不让异常逃出（C2 回归）")
+    void onOpenNeverLetsExceptionEscape() {
+        WsServer server = new WsServer(
+                new InetSocketAddress("127.0.0.1", 1), LOGGER, HANDLE_PROTOCOL_MESSAGE, SERVER_NAME, ACCESS_TOKEN, true);
+
+        server.onOpen(null, null);
+    }
+
+    /**
+     * C1 回归：服务端级致命错误会以 {@code onError(null, e)} 回调，此时不得 NPE
+     */
+    @Test
+    @DisplayName("onError 收到 null 连接时不抛异常（C1 回归）")
+    void onErrorWithNullConnectionIsSafe() {
+        WsServer server = new WsServer(
+                new InetSocketAddress("127.0.0.1", 1), LOGGER, HANDLE_PROTOCOL_MESSAGE, SERVER_NAME, ACCESS_TOKEN, true);
+
+        server.onError(null, new IllegalStateException("selector fatal error"));
+        // 异常消息为 null 时也应安全
+        server.onError(null, new IllegalStateException());
+    }
+
+    /**
+     * C3 回归：显式设置连接丢失检测周期，不依赖库默认值
+     */
+    @Test
+    @DisplayName("connectionLostTimeout 显式设置为 60 秒（C3 回归）")
+    void connectionLostTimeoutIsExplicit() {
+        WsServer server = new WsServer(
+                new InetSocketAddress("127.0.0.1", 1), LOGGER, HANDLE_PROTOCOL_MESSAGE, SERVER_NAME, ACCESS_TOKEN, true);
+
+        assertEquals(60, server.getConnectionLostTimeout(), "应显式设置 connectionLostTimeout");
+    }
+
+    /**
+     * C2 配套：构造器把 null 归一化为空串，避免握手阶段 NPE
+     *
+     * <p>{@code accessToken} 为空表示不鉴权，因此该连接应被**接受**而不是因 NPE 被保留为异常状态。
+     */
+    @Test
+    @DisplayName("accessToken 为 null 时归一化为不鉴权，连接被正常接受")
+    void nullAccessTokenMeansNoAuthRequired() throws Exception {
+        int port = findFreePort();
+        WsServer server = new WsServer(
+                new InetSocketAddress("127.0.0.1", port), LOGGER, HANDLE_PROTOCOL_MESSAGE, SERVER_NAME, null, true);
+        server.start();
+
+        ProbeClient client = new ProbeClient(port, SERVER_NAME, null);
+        try {
+            client.connect();
+            assertTrue(client.awaitOpen(10_000L), "不鉴权配置下连接应被接受");
+
+            // 鉴权通过后消息应被正常处理：未知 api 会返回 404 响应
+            client.send("{\"api\":\"no_such_api\",\"echo\":\"positive-path\"}");
+            assertTrue(client.awaitMessage(10_000L), "已鉴权连接的消息应被处理并返回响应");
+            assertTrue(
+                    client.getLastMessage().contains("positive-path"),
+                    "响应应回传 echo，实际=" + client.getLastMessage());
+        } finally {
+            client.close();
+            server.stop(1000);
+        }
+    }
+
+    /**
      * 探测用客户端：可自定义 x-self-name 与 Authorization
      */
     private static final class ProbeClient extends WebSocketClient {
 
         private final CountDownLatch openLatch = new CountDownLatch(1);
         private final CountDownLatch closeLatch = new CountDownLatch(1);
+        private final CountDownLatch messageLatch = new CountDownLatch(1);
         private volatile int closeCode = Integer.MIN_VALUE;
+        private volatile String lastMessage;
 
         private ProbeClient(int port, String selfName, String authorization) throws Exception {
             super(new URI("ws://127.0.0.1:" + port + "/minecraft/ws"));
@@ -152,6 +229,8 @@ class WsServerHandshakeAuthTest {
 
         @Override
         public void onMessage(String message) {
+            this.lastMessage = message;
+            messageLatch.countDown();
         }
 
         @Override
@@ -172,8 +251,16 @@ class WsServerHandshakeAuthTest {
             return closeLatch.await(timeoutMillis, TimeUnit.MILLISECONDS);
         }
 
+        private boolean awaitMessage(long timeoutMillis) throws InterruptedException {
+            return messageLatch.await(timeoutMillis, TimeUnit.MILLISECONDS);
+        }
+
         private int getCloseCode() {
             return closeCode;
+        }
+
+        private String getLastMessage() {
+            return lastMessage;
         }
     }
 }

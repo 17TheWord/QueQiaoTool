@@ -78,9 +78,12 @@ public class Tool {
      * 此前直接调用 {@code GlobalContext.getConfig().isDebug()}，
      * 在运行时空对象状态下会抛出 {@link NullPointerException}。
      *
+     * <p>对外暴露是为了让调用方在构造昂贵的日志参数（如脱敏后的请求体）之前先判断，
+     * 避免"日志关闭却仍付出构造代价"。
+     *
      * @return true 表示配置已加载、日志实现可用且开启了 debug
      */
-    private static boolean isDebugEnabled() {
+    public static boolean isDebugEnabled() {
         Config config = GlobalContext.getConfig();
         if (config == null || !config.isDebug()) {
             return false;

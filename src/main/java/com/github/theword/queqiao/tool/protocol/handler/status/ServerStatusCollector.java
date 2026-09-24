@@ -46,6 +46,22 @@ public final class ServerStatusCollector {
     private static final MinecraftPingClient PING_CLIENT = new MinecraftPingClient();
     private static final SystemMetricsCollector METRICS = new SystemMetricsCollector();
 
+    /**
+     * 状态快照缓存有效期（毫秒）
+     *
+     * <p>{@code get_status} 会同步执行一次 Minecraft Server List Ping（socket 超时 3 秒），
+     * 属于潜在阻塞调用。若不加缓存，短时间内多次请求会反复占用连接读线程；
+     * 缓存把突发请求收敛为一次采集，且不引入锁——未命中时直接采集，行为与引入缓存前一致。
+     */
+    private static final long SNAPSHOT_CACHE_TTL_MILLIS = 2000L;
+
+    /**
+     * 状态快照缓存
+     *
+     * <p>用单一不可变对象同时承载"快照 + 生成时间"，保证读取时两者一致（避免分开读写导致的时间戳错配）。
+     */
+    private static volatile SnapshotCache snapshotCache;
+
     private static volatile PingTarget pingTarget = PingTarget.unavailable(DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT);
 
     private ServerStatusCollector() {
@@ -230,6 +246,8 @@ public final class ServerStatusCollector {
 
     private static void setPingTarget(String host, int port, boolean available) {
         pingTarget = new PingTarget(host, port, available);
+        // 探测目标变化后旧快照不再有意义，直接失效
+        snapshotCache = null;
     }
 
     private static int parsePort(String portText, Logger logger) {
@@ -246,15 +264,54 @@ public final class ServerStatusCollector {
         }
     }
 
+    /**
+     * 采集服务器状态快照
+     *
+     * <p>带短 TTL 缓存：TTL 内直接返回缓存，避免高频 {@code get_status} 反复执行阻塞式 Ping。
+     * 缓存未命中时不加锁直接采集，因此并发未命中的最坏情况与引入缓存前一致，不会互相等待。
+     *
+     * @return 状态快照 Map
+     */
     public static Map<String, Object> collectStatusSnapshot() {
-        ServerStatusSnapshot snapshot = new ServerStatusSnapshot(
+        return getOrCollectSnapshot().toMap();
+    }
+
+    private static ServerStatusSnapshot getOrCollectSnapshot() {
+        SnapshotCache cached = snapshotCache;
+        if (cached != null && !cached.isExpired(System.currentTimeMillis())) {
+            return cached.snapshot;
+        }
+
+        ServerStatusSnapshot fresh = new ServerStatusSnapshot(
                 GlobalContext.getServerType(),
                 GlobalContext.getServerVersion(),
                 collectServerListPing(),
                 METRICS.collectCpuInformation(),
                 METRICS.collectMemoryInformation()
         );
-        return snapshot.toMap();
+        snapshotCache = new SnapshotCache(fresh, System.currentTimeMillis());
+        return fresh;
+    }
+
+    /**
+     * 快照缓存载体
+     *
+     * <p>把"快照"与"生成时间"放在同一个不可变对象里，通过单个 volatile 引用原子发布，
+     * 避免两个字段分别读写造成时间戳错配。
+     */
+    private static final class SnapshotCache {
+
+        private final ServerStatusSnapshot snapshot;
+        private final long createdAtMillis;
+
+        private SnapshotCache(ServerStatusSnapshot snapshot, long createdAtMillis) {
+            this.snapshot = snapshot;
+            this.createdAtMillis = createdAtMillis;
+        }
+
+        private boolean isExpired(long nowMillis) {
+            return nowMillis - this.createdAtMillis >= SNAPSHOT_CACHE_TTL_MILLIS;
+        }
     }
 
     private static ServerListPingResult collectServerListPing() {

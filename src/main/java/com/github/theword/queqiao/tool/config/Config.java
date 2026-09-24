@@ -1,6 +1,9 @@
 package com.github.theword.queqiao.tool.config;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -11,6 +14,15 @@ import org.slf4j.Logger;
  * 配置项 服务器初始化阶段请调用 {@link #loadConfig(boolean, Logger)} 方法加载配置文件
  */
 public class Config extends CommonConfig {
+
+    /**
+     * 默认忽略的命令
+     *
+     * <p>注册与登录命令会被无条件忽略，避免玩家凭据进入事件流。
+     */
+    private static final Set<String> DEFAULT_IGNORED_COMMANDS = Collections.unmodifiableSet(
+            new LinkedHashSet<>(Arrays.asList("l", "login", "register", "reg")));
+
     /**
      * 是否启用插件/模组
      */
@@ -45,8 +57,11 @@ public class Config extends CommonConfig {
 
     /**
      * 忽略的命令列表
+     *
+     * <p>必须初始化：此前该字段无初始值，一旦配置加载在中途失败（{@code loadIgnoredCommands} 未被调用），
+     * 它会保持 null，导致 {@code Tool.isIgnoredCommand} 抛 {@link NullPointerException}。
      */
-    private Set<String> ignoredCommands;
+    private Set<String> ignoredCommands = new HashSet<>();
 
     /**
      * WebSocket Server 配置项
@@ -163,11 +178,37 @@ public class Config extends CommonConfig {
      * @param logger      日志实现
      */
     public Config(boolean isModServer, Logger logger) {
-        super(logger);
+        this(logger);
         String configFolder = isModServer ? "config" : "plugins";
         String serverType = isModServer ? "模组" : "插件";
         logger.info("当前服务端类型为：{}服", serverType);
         readConfigFile(configFolder, "config.yml");
+    }
+
+    /**
+     * 内部构造器：只初始化默认字段，不触碰文件系统
+     *
+     * @param logger 日志实现
+     */
+    private Config(Logger logger) {
+        super(logger);
+    }
+
+    /**
+     * 构造一份"全默认值"配置，<b>不读取也不写入任何文件</b>
+     *
+     * <p>用途：运行时空对象（尚未 {@code init} 或已 {@code shutdown}）需要一个可用的默认配置，
+     * 使 {@code GlobalContext.getConfig()} 不返回 null，从根上消除调用方的空指针风险。
+     *
+     * <p>与 {@link #loadConfig(boolean, Logger)} 的关键区别：本方法不产生任何文件系统副作用。
+     *
+     * @param logger 日志实现
+     * @return 默认配置，忽略命令列表已预置默认值
+     */
+    public static Config defaults(Logger logger) {
+        Config config = new Config(logger);
+        config.ignoredCommands.addAll(DEFAULT_IGNORED_COMMANDS);
+        return config;
     }
 
     /**
@@ -224,10 +265,7 @@ public class Config extends CommonConfig {
             super.getLogger().info("已加载 {} 个忽略的命令", ignoredCommandList.size());
         }
 
-        ignoredCommands.add("l");
-        ignoredCommands.add("login");
-        ignoredCommands.add("register");
-        ignoredCommands.add("reg");
+        ignoredCommands.addAll(DEFAULT_IGNORED_COMMANDS);
     }
 
     /**
