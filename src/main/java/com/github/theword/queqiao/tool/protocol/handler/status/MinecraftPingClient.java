@@ -1,6 +1,6 @@
 package com.github.theword.queqiao.tool.protocol.handler.status;
 
-import com.github.theword.queqiao.tool.GlobalContext;
+import com.github.theword.queqiao.tool.utils.GsonUtils;
 import com.github.theword.queqiao.tool.exception.status.MinecraftPingException;
 import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
@@ -63,7 +63,8 @@ final class MinecraftPingClient {
             String json = new String(jsonBytes, StandardCharsets.UTF_8);
             Map<String, Object> pingData;
             try {
-                pingData = GlobalContext.getGson().fromJson(json, MAP_TYPE);
+                // 直接用全局 Gson 单例，不经 GlobalContext——本类无需依赖全局上下文
+                pingData = GsonUtils.getGson().fromJson(json, MAP_TYPE);
             } catch (JsonParseException | IllegalStateException e) {
                 throw MinecraftPingException.jsonParseFailed(e);
             }

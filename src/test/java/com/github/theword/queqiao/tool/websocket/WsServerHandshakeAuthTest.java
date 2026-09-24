@@ -2,6 +2,7 @@ package com.github.theword.queqiao.tool.websocket;
 
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.handle.HandleProtocolMessage;
+import com.github.theword.queqiao.tool.support.PlatformStubs;
 import com.google.gson.Gson;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -40,7 +41,7 @@ class WsServerHandshakeAuthTest {
     /**
      * 与生产一致：Server 与 Client 共用同一个协议分发入口
      */
-    private static final HandleProtocolMessage HANDLE_PROTOCOL_MESSAGE = new HandleProtocolMessage(LOGGER, GSON);
+    private static final HandleProtocolMessage HANDLE_PROTOCOL_MESSAGE = PlatformStubs.newDispatcher(LOGGER, GSON);
 
     private static final String SERVER_NAME = "TestServer";
     private static final String ACCESS_TOKEN = "s3cr3t-token";

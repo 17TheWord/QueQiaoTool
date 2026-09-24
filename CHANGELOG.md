@@ -72,6 +72,10 @@
   把 `{}` 常量交给它会导致**占位符原样输出且参数被静默忽略**（见「修复」第一条）。
   约定：**本项目自己的消息一律用 `Tool.format`**；
   **来自 Minecraft 语言文件的翻译模板必须继续用 `String.format`**（它使用 `%1$s` 位置参数，`Tool.format` 不支持）。
+- `protocol.RconCommandExecutor`：RCON 命令执行器函数式接口。协议层通过它请求执行 RCON，
+  不再直接依赖 `GlobalContext` 或 Rcon 实现细节。
+- `ProtocolConstants.Status.SUCCESS`（`200`）。
+- `BaseEvent.fillServerContext(serverName, serverVersion, serverType)`：发布前填充服务器上下文。
 - `WebsocketConstantMessage.SHUTDOWN`：整体关闭时使用的关闭原因（纯文本）。
 - `ReconnectPolicy`：重连退避策略纯组件，无网络与线程依赖，可独立测试。
 - `ReconnectReason`：重连原因枚举（`REMOTE_CLOSE` / `MANUAL`）。
@@ -85,6 +89,23 @@
 
 ### 变更
 
+- **传输层不再依赖全局状态**：`WebsocketManager` 改为通过构造器接收 `Config` 快照，
+  reload 时调用 `restart(Config, Object)` 传入新快照。
+  此前它会在 14 处直接读取 `GlobalContext.getConfig()`。
+- **协议层不再依赖全局状态**：`ProtocolRouter` 与各处理器改为通过构造器接收
+  `HandleApiService`（平台 API）与 `RconCommandExecutor`（RCON 执行器），
+  不再访问 `GlobalContext.getHandleApiService()` / `GlobalContext.sendRconCommand(...)`。
+- **事件的服务器上下文改为"发布时填充"**：`BaseEvent` 的 `server_name` / `server_version` / `server_type`
+  不再在字段初始化器中读取全局状态，而由 `GlobalContext.sendEvent(...)` 在序列化前调用
+  `fillServerContext(...)` 填充。
+  **升级提示**：若代码自行构造事件后**不经发布路径**直接序列化，
+  这三个字段将由"构造时的全局值"变为 `null`。
+- **构造器签名变更**：`WebsocketManager`（新增 `Config`）、
+  `ProtocolRouter`（新增 `HandleApiService` 与 `RconCommandExecutor`）、
+  `HandleProtocolMessage`（新增 `HandleApiService` 与 `RconCommandExecutor`）、
+  `AbstractProtocolHandler` 及全部 7 个处理器（新增 `HandleApiService`）。
+  仅影响**直接构造**这些类的代码；通过 `GlobalContext.init(...)` 使用的平台实现不受影响。
+- `MinecraftPingClient` 改用 `GsonUtils.getGson()`，不再经 `GlobalContext`。
 - **`Authorization` 仍支持通过 URL query 传递，并已在 javadoc 中说明其安全代价**：
   浏览器的 WebSocket API **无法设置自定义请求头**（`new WebSocket(url)` 不接受 headers 选项），
   去掉 query 支持会让浏览器客户端完全无法接入，因此保留。

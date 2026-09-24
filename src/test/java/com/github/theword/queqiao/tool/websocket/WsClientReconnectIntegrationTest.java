@@ -1,6 +1,7 @@
 package com.github.theword.queqiao.tool.websocket;
 
 import com.github.theword.queqiao.tool.handle.HandleProtocolMessage;
+import com.github.theword.queqiao.tool.support.PlatformStubs;
 import com.google.gson.Gson;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -50,7 +51,7 @@ class WsClientReconnectIntegrationTest {
     /**
      * 与生产一致：所有 Client 共用同一个协议分发入口
      */
-    private static final HandleProtocolMessage HANDLE_PROTOCOL_MESSAGE = new HandleProtocolMessage(LOGGER, GSON);
+    private static final HandleProtocolMessage HANDLE_PROTOCOL_MESSAGE = PlatformStubs.newDispatcher(LOGGER, GSON);
 
     private static final String RECONNECT_THREAD_PREFIX = "QueQiao-WebSocket-Reconnect-";
 

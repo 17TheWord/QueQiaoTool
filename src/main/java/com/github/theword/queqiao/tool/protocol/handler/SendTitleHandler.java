@@ -1,6 +1,6 @@
 package com.github.theword.queqiao.tool.protocol.handler;
 
-import com.github.theword.queqiao.tool.GlobalContext;
+import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.constant.ProtocolConstants;
 import com.github.theword.queqiao.tool.exception.protocol.ProtocolException;
 import com.github.theword.queqiao.tool.payload.TitlePayload;
@@ -17,8 +17,8 @@ public class SendTitleHandler extends AbstractProtocolHandler<TitlePayload, Void
      */
     private static final int MAX_TITLE_DURATION_TICKS = 20 * 60 * 60;
 
-    public SendTitleHandler(Logger logger) {
-        super(logger, TitlePayload.class);
+    public SendTitleHandler(Logger logger, HandleApiService handleApiService) {
+        super(logger, handleApiService, TitlePayload.class);
     }
 
     @Override
@@ -30,7 +30,7 @@ public class SendTitleHandler extends AbstractProtocolHandler<TitlePayload, Void
         validateDuration(payload.getStay(), "stay");
         validateDuration(payload.getFadeOut(), "fade_out");
 
-        GlobalContext.getHandleApiService().handleSendTitleMessage(payload.getTitle(), payload.getSubtitle(), payload.getFadeIn(), payload.getStay(), payload.getFadeOut());
+        this.handleApiService.handleSendTitleMessage(payload.getTitle(), payload.getSubtitle(), payload.getFadeIn(), payload.getStay(), payload.getFadeOut());
         return null;
     }
 

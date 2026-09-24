@@ -1,6 +1,6 @@
 package com.github.theword.queqiao.tool.utils;
 
-import com.github.theword.queqiao.tool.GlobalContext;
+import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.config.WebSocketClientConfig;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.event.base.BaseEvent;
@@ -79,6 +79,17 @@ public class WebsocketManager {
     private final HandleProtocolMessage handleProtocolMessage;
 
     /**
+     * 当前配置快照
+     *
+     * <p>由 {@code QueQiaoRuntime} 注入；reload 时通过 {@link #restart(Config, Object)} 整体替换。
+     * 标记 {@code volatile}：reload 线程写入，WebSocket 读写线程与游戏线程读取。
+     *
+     * <p><b>本类不读 {@code GlobalContext}</b>——配置由外部注入，
+     * 因此可以脱离全局上下文独立构造与测试。
+     */
+    private volatile Config config;
+
+    /**
      * 共享重连调度器：本 Manager 独占持有，Client 只使用不销毁
      */
     private final ScheduledThreadPoolExecutor reconnectScheduler;
@@ -100,21 +111,36 @@ public class WebsocketManager {
      * @param gson                            Gson 实例
      * @param handleCommandReturnMessageService 命令返回消息实现
      * @param handleProtocolMessage           协议分发入口（由 QueQiaoRuntime 创建并注入）
+     * @param config                          配置快照（由 QueQiaoRuntime 注入）
      */
     public WebsocketManager(
                     Logger logger,
                     Gson gson,
                     HandleCommandReturnMessageService handleCommandReturnMessageService,
-                    HandleProtocolMessage handleProtocolMessage) {
+                    HandleProtocolMessage handleProtocolMessage,
+                    Config config) {
         this.logger = logger;
         this.gson = gson;
-        // 内部不变量：这两个依赖由 QueQiaoRuntime 注入，为 null 属接线缺陷。
+        // 内部不变量：这些依赖由 QueQiaoRuntime 注入，为 null 属接线缺陷。
         // 快速失败，避免在 stop() 中途（客户端已全部停止、调度器尚未关闭）才抛 NPE。
         this.handleCommandReturnMessageService =
                 Objects.requireNonNull(handleCommandReturnMessageService, "handleCommandReturnMessageService");
         this.handleProtocolMessage = Objects.requireNonNull(handleProtocolMessage, "handleProtocolMessage");
+        this.config = Objects.requireNonNull(config, "config");
         this.wsClientList = new ArrayList<>();
         this.reconnectScheduler = createReconnectScheduler();
+    }
+
+    /**
+     * 获取共享重连调度器
+     *
+     * <p>包级可见：仅供同包测试断言其生命周期（已关闭 / 未关闭），
+     * 避免测试使用反射读取私有字段。生产代码不应调用。
+     *
+     * @return 共享重连调度器
+     */
+    ScheduledThreadPoolExecutor reconnectSchedulerForTest() {
+        return this.reconnectScheduler;
     }
 
     /**
@@ -154,7 +180,7 @@ public class WebsocketManager {
     private void startClients(Object commandReturner) {
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
 
-        WebSocketClientConfig clientConfig = GlobalContext.getConfig().getWebsocketClient();
+        WebSocketClientConfig clientConfig = this.config.getWebsocketClient();
         WebSocketUrlNormalizer.Result normalized = WebSocketUrlNormalizer.normalize(clientConfig.getUrlList());
 
         for (String rejectedUrl : normalized.getRejected()) {
@@ -191,9 +217,9 @@ public class WebsocketManager {
                     this.reconnectScheduler,
                     reconnectPolicy,
                     this.handleProtocolMessage,
-                    GlobalContext.getConfig().getServerName(),
-                    GlobalContext.getConfig().getAccessToken(),
-                    GlobalContext.getConfig().isEnable()
+                    this.config.getServerName(),
+                    this.config.getAccessToken(),
+                    this.config.isEnable()
             );
             // 先纳入管理列表：保证 connect() 同步抛异常时该实例仍能被回收，Manager 始终拥有 Client 生命周期
             this.wsClientList.add(wsClient);
@@ -283,7 +309,7 @@ public class WebsocketManager {
     private void restartClients(Object commandReturner) {
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.RELOADING);
         stopClients(CLOSE_CODE_NORMAL, WebsocketConstantMessage.CLOSE_BY_RELOAD, commandReturner);
-        if (GlobalContext.getConfig().getWebsocketClient().isEnable()) {
+        if (this.config.getWebsocketClient().isEnable()) {
             startClients(commandReturner);
         }
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.RELOADED);
@@ -292,22 +318,22 @@ public class WebsocketManager {
     private void startServer(Object commandReturner) {
         wsServer = new WsServer(
                 new InetSocketAddress(
-                        GlobalContext.getConfig().getWebsocketServer().getHost(),
-                        GlobalContext.getConfig().getWebsocketServer().getPort()
+                        this.config.getWebsocketServer().getHost(),
+                        this.config.getWebsocketServer().getPort()
                 ),
                 logger,
                 handleProtocolMessage,
-                GlobalContext.getConfig().getServerName(),
-                GlobalContext.getConfig().getAccessToken(),
-                GlobalContext.getConfig().isEnable()
+                this.config.getServerName(),
+                this.config.getAccessToken(),
+                this.config.isEnable()
         );
         wsServer.start();
         this.handleCommandReturnMessageService.sendReturnMessage(
                 commandReturner,
                 Tool.format(
                         WebsocketConstantMessage.Server.SERVER_STARTING,
-                        GlobalContext.getConfig().getWebsocketServer().getHost(),
-                        GlobalContext.getConfig().getWebsocketServer().getPort()
+                        this.config.getWebsocketServer().getHost(),
+                        this.config.getWebsocketServer().getPort()
                 )
         );
     }
@@ -327,7 +353,7 @@ public class WebsocketManager {
 
     private void restartServer(Object commandReturner) {
         stopServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
-        if (GlobalContext.getConfig().getWebsocketServer().isEnable()) {
+        if (this.config.getWebsocketServer().isEnable()) {
             startServer(commandReturner);
         }
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
@@ -351,10 +377,10 @@ public class WebsocketManager {
                 return;
             }
             started = true;
-            if (GlobalContext.getConfig().getWebsocketClient().isEnable()) {
+            if (this.config.getWebsocketClient().isEnable()) {
                 startClients(commandReturner);
             }
-            if (GlobalContext.getConfig().getWebsocketServer().isEnable()) {
+            if (this.config.getWebsocketServer().isEnable()) {
                 startServer(commandReturner);
             }
         }
@@ -386,16 +412,19 @@ public class WebsocketManager {
     /**
      * 重载（保留共享调度器）
      *
-     * <p>不允许 stop scheduler 后再复用已关闭的 scheduler。
+     * <p>先替换配置快照，再按新配置重建 Client 与 Server。
+     * 不允许 stop scheduler 后再复用已关闭的 scheduler。
      *
+     * @param newConfig       新的配置快照（由 QueQiaoRuntime 在 reload 时加载）
      * @param commandReturner 命令执行者，可为 null
      */
-    public void restart(Object commandReturner) {
+    public void restart(Config newConfig, Object commandReturner) {
         synchronized (lifecycleLock) {
             if (destroyed) {
                 Tool.debugLog("WebsocketManager 已销毁，忽略重载请求");
                 return;
             }
+            this.config = Objects.requireNonNull(newConfig, "newConfig");
             restartClients(commandReturner);
             restartServer(commandReturner);
             started = true;
@@ -427,7 +456,7 @@ public class WebsocketManager {
      * @param event 事件
      */
     public void sendEvent(BaseEvent event) {
-        if (!GlobalContext.getConfig().isEnable()) {
+        if (!this.config.isEnable()) {
             return;
         }
 

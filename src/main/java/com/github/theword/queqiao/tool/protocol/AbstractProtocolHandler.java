@@ -2,6 +2,7 @@ package com.github.theword.queqiao.tool.protocol;
 
 import com.github.theword.queqiao.tool.constant.ProtocolConstants;
 import com.github.theword.queqiao.tool.exception.protocol.ProtocolException;
+import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.payload.EmptyPayload;
 import com.github.theword.queqiao.tool.utils.GsonUtils;
 import com.google.gson.JsonParseException;
@@ -20,8 +21,9 @@ import java.util.Objects;
  * <p>全部输入应来自方法参数，输出通过返回值表达。
  * 违反该约束会引入静默的数据竞争：不同连接的请求会互相污染中间状态。
  *
- * <p>日志实现由 {@link ProtocolRouter} 注入，处理器<b>不应</b>再访问
- * {@code GlobalContext.getLogger()}——那会让协议层依赖全局状态、无法独立测试。
+ * <p><b>依赖来源</b>：日志实现与平台 API 实现均由 {@link ProtocolRouter} 注入，
+ * 处理器<b>不应</b>访问 {@code GlobalContext}——
+ * 那会让协议层依赖全局状态、无法独立测试（连"成功路径"都测不到）。
  *
  * @param <P> 负载类型
  * @param <R> 返回类型
@@ -34,10 +36,19 @@ public abstract class AbstractProtocolHandler<P, R> {
      */
     protected final Logger logger;
 
+    /**
+     * 平台 API 实现，由 ProtocolRouter 注入
+     *
+     * <p>允许为 null：运行时空对象（尚未 {@code init}）状态下平台实现尚未注入，
+     * 但该状态下不存在任何连接，因此处理器不可能被调用。
+     */
+    protected final HandleApiService handleApiService;
+
     private final Class<P> payloadType;
 
-    protected AbstractProtocolHandler(Logger logger, Class<P> payloadType) {
+    protected AbstractProtocolHandler(Logger logger, HandleApiService handleApiService, Class<P> payloadType) {
         this.logger = Objects.requireNonNull(logger, "logger");
+        this.handleApiService = handleApiService;
         this.payloadType = Objects.requireNonNull(payloadType, "payloadType");
     }
 

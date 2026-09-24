@@ -1,7 +1,5 @@
 package com.github.theword.queqiao.tool.event;
 
-import com.github.theword.queqiao.tool.GlobalContext;
-import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.event.model.PlayerModel;
 import com.github.theword.queqiao.tool.event.model.TranslateModel;
 import com.github.theword.queqiao.tool.event.model.achievement.AchievementModel;
@@ -21,8 +19,6 @@ class PlayerAchievementEventTest {
 
     @BeforeEach
     void setUp() {
-        Config config = Config.loadConfig(false, logger);
-        GlobalContext.setConfig(config);
     }
 
     private PlayerModel createFakePlayerModel() {
@@ -95,7 +91,12 @@ class PlayerAchievementEventTest {
         assertEquals("PlayerAchievementEvent", event.getEventName());
         assertEquals("notice", event.getPostType());
         assertEquals("player_achievement", event.getSubType());
-        assertNotNull(event.getServerName());
+        // WS-F：服务器上下文由发布时填充，构造不再依赖全局状态
+        assertNull(event.getServerName(), "构造后尚未填充");
+        event.fillServerContext("TestServer", "1.20.1", "spigot");
+        assertEquals("TestServer", event.getServerName());
+        assertEquals("1.20.1", event.getServerVersion());
+        assertEquals("spigot", event.getServerType());
         assertTrue(event.getTimestamp() > 0);
 
         // 验证数据模型

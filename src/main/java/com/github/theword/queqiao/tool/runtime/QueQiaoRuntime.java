@@ -99,7 +99,10 @@ public final class QueQiaoRuntime {
         this.logger = logger;
         this.gson = GsonUtils.getGson();
         this.config = config;
-        this.handleProtocolMessage = new HandleProtocolMessage(logger, this.gson);
+        // 平台 API 实现与 RCON 执行器由协议层注入，协议层因此不再读 GlobalContext。
+        // 这里传入 this::sendRconCommand 是安全的：该 lambda 只在收到请求时才会被调用，
+        // 此时对象早已构造完成（构造期间不会被发布）。
+        this.handleProtocolMessage = new HandleProtocolMessage(logger, this.gson, handleApiService, this::sendRconCommand);
     }
 
     /**
@@ -163,7 +166,7 @@ public final class QueQiaoRuntime {
         ServerStatusCollector.initPingTarget(logger);
         WebsocketManager manager = websocketManager;
         if (manager != null) {
-            manager.restart(commandReturner);
+            manager.restart(config, commandReturner);
         }
         restartRconClient();
         if (handleCommandReturnMessageService != null) {
@@ -211,11 +214,13 @@ public final class QueQiaoRuntime {
             Tool.debugLog("运行时尚未启动或已关闭，事件未分发");
             return;
         }
+        // 事件对象的构造不再读全局状态；服务器上下文在发布前统一填充
+        baseEvent.fillServerContext(config.getServerName(), serverVersion, serverType);
         manager.sendEvent(baseEvent);
     }
 
     private void initWebsocketManager() {
-        websocketManager = new WebsocketManager(logger, gson, handleCommandReturnMessageService, handleProtocolMessage);
+        websocketManager = new WebsocketManager(logger, gson, handleCommandReturnMessageService, handleProtocolMessage, config);
         websocketManager.start(null);
     }
 

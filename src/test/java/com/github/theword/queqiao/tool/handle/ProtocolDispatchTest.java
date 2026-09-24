@@ -1,6 +1,10 @@
 package com.github.theword.queqiao.tool.handle;
 
 import com.github.theword.queqiao.tool.constant.ProtocolConstants;
+import com.github.theword.queqiao.tool.exception.rcon.RconException;
+import com.github.theword.queqiao.tool.handle.HandleApiService;
+import com.github.theword.queqiao.tool.protocol.RconCommandExecutor;
+import com.github.theword.queqiao.tool.support.PlatformStubs;
 import com.github.theword.queqiao.tool.response.Response;
 import com.google.gson.Gson;
 import org.junit.jupiter.api.DisplayName;
@@ -11,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * 协议分发矩阵测试
@@ -35,10 +40,17 @@ class ProtocolDispatchTest {
     private static final int INTERNAL_ERROR = ProtocolConstants.Status.INTERNAL_ERROR;
 
     /**
-     * 分发一个请求并解析回 {@link Response}
+     * 分发一个请求并解析回 {@link Response}（使用空平台实现）
      */
     private static Response dispatch(String rawJson) {
-        String responseJson = new HandleProtocolMessage(LOGGER, GSON).handleHttpJson(rawJson);
+        return dispatch(rawJson, PlatformStubs.noopApiService(), PlatformStubs.rconExecutorReturning(""));
+    }
+
+    /**
+     * 分发一个请求并解析回 {@link Response}（指定平台实现与 RCON 执行器）
+     */
+    private static Response dispatch(String rawJson, HandleApiService apiService, RconCommandExecutor rconCommandExecutor) {
+        String responseJson = PlatformStubs.newDispatcher(LOGGER, GSON, apiService, rconCommandExecutor).handleHttpJson(rawJson);
         Response response = GSON.fromJson(responseJson, Response.class);
         assertNotNull(response, "分发结果不应为 null，原始响应=" + responseJson);
         assertNotNull(response.getCode(), "响应应带状态码，原始响应=" + responseJson);
@@ -126,14 +138,16 @@ class ProtocolDispatchTest {
     }
 
     @Test
-    @DisplayName("send_title 的合法时长通过校验（进入平台调用前即返回，不触发 400）")
-    void sendTitleWithValidDurationPassesValidation() {
+    @DisplayName("send_title 的合法时长通过校验并真正调用平台实现")
+    void sendTitleWithValidDurationReachesPlatform() {
         String body = "{\"api\":\"send_title\",\"data\":{\"title\":{\"text\":\"hi\"},\"fade_in\":10,\"stay\":70,\"fade_out\":20}}";
-        Response response = dispatch(body);
+        PlatformStubs.RecordingApiService apiService = PlatformStubs.recordingApiService();
 
-        // 未初始化 HandleApiService，因此会落到 500；关键是"不是 400"，
-        // 说明时长校验已放行、异常来自平台调用缺失而非参数校验
-        assertFalse(response.getCode().intValue() == BAD_REQUEST, "合法时长不应被判为参数错误");
+        Response response = dispatch(body, apiService, PlatformStubs.rconExecutorReturning(""));
+
+        assertEquals(ProtocolConstants.Status.SUCCESS, response.getCode().intValue(), "合法请求应成功");
+        assertEquals(1, apiService.getTitleCalls().size(), "应真正调用平台实现一次：" + apiService.getTitleCalls());
+        assertTrue(apiService.getTitleCalls().get(0).contains("fadeIn=10"), "应透传时长参数：" + apiService.getTitleCalls());
     }
 
     @Test
@@ -151,6 +165,81 @@ class ProtocolDispatchTest {
 
         assertEquals(BAD_REQUEST, response.getCode().intValue());
         assertEquals(ProtocolConstants.Message.RCON_COMMAND_EMPTY, response.getMessage());
+    }
+
+    // ------------------------------------------------------------------
+    // 成功路径（WS-F：协议层注入平台能力后才可验证）
+    //
+    // 在依赖 GlobalContext 的时期，平台实现只能为 null，
+    // 这些用例最多只能断言"不是 400"（实际落到 500）——无法验证成功路径。
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("broadcast 成功路径真正调用平台实现")
+    void broadcastReachesPlatform() {
+        PlatformStubs.RecordingApiService apiService = PlatformStubs.recordingApiService();
+
+        Response response = dispatch(
+                "{\"api\":\"broadcast\",\"data\":{\"message\":{\"text\":\"hi\"}}}",
+                apiService,
+                PlatformStubs.rconExecutorReturning(""));
+
+        assertEquals(ProtocolConstants.Status.SUCCESS, response.getCode().intValue(), "合法请求应成功");
+        assertEquals(1, apiService.getBroadcasts().size(), "应调用平台广播：" + apiService.getBroadcasts());
+    }
+
+    @Test
+    @DisplayName("send_private_msg 成功路径调用平台实现并归一化昵称")
+    void privateMessageReachesPlatformWithTrimmedNickname() {
+        PlatformStubs.RecordingApiService apiService = PlatformStubs.recordingApiService();
+
+        Response response = dispatch(
+                "{\"api\":\"send_private_msg\",\"data\":{\"nickname\":\"  Steve  \",\"message\":{\"text\":\"hi\"}}}",
+                apiService,
+                PlatformStubs.rconExecutorReturning(""));
+
+        assertEquals(ProtocolConstants.Status.SUCCESS, response.getCode().intValue(), "合法请求应成功");
+        assertEquals(1, apiService.getPrivateMessages().size(), "应调用平台私聊：" + apiService.getPrivateMessages());
+        assertTrue(
+                apiService.getPrivateMessages().get(0).contains("nickname=Steve"),
+                "昵称应被 trim 后传递：" + apiService.getPrivateMessages());
+    }
+
+    @Test
+    @DisplayName("send_rcon_command 成功路径返回执行结果")
+    void rconCommandReturnsExecutionResult() {
+        Response response = dispatch(
+                "{\"api\":\"send_rcon_command\",\"data\":{\"command\":\"list\"}}",
+                PlatformStubs.noopApiService(),
+                PlatformStubs.rconExecutorReturning("There are 3 players"));
+
+        assertEquals(ProtocolConstants.Status.SUCCESS, response.getCode().intValue(), "合法请求应成功");
+        assertEquals("There are 3 players", response.getData(), "应返回 Rcon 执行结果");
+    }
+
+    @Test
+    @DisplayName("Rcon 未启用时返回 503（服务暂不可用）")
+    void rconDisabledReturnsServiceUnavailable() {
+        Response response = dispatch(
+                "{\"api\":\"send_rcon_command\",\"data\":{\"command\":\"list\"}}",
+                PlatformStubs.noopApiService(),
+                PlatformStubs.rconExecutorFailing(RconException.Kind.DISABLED));
+
+        assertEquals(
+                ProtocolConstants.Status.SERVICE_UNAVAILABLE,
+                response.getCode().intValue(),
+                "未启用属服务不可用，不应判为调用方参数错误");
+    }
+
+    @Test
+    @DisplayName("Rcon 命令执行失败时返回 500")
+    void rconCommandFailedReturnsInternalError() {
+        Response response = dispatch(
+                "{\"api\":\"send_rcon_command\",\"data\":{\"command\":\"list\"}}",
+                PlatformStubs.noopApiService(),
+                PlatformStubs.rconExecutorFailing(RconException.Kind.COMMAND_FAILED));
+
+        assertEquals(ProtocolConstants.Status.INTERNAL_ERROR, response.getCode().intValue());
     }
 
     // ------------------------------------------------------------------
@@ -187,7 +276,7 @@ class ProtocolDispatchTest {
         String marker = "s3cr3t-payload-marker";
         String malformedBody = "{\"api\":\"broadcast\",\"data\":{\"note\":\"" + marker + "\"";
 
-        String responseJson = new HandleProtocolMessage(LOGGER, GSON).handleHttpJson(malformedBody);
+        String responseJson = PlatformStubs.newDispatcher(LOGGER, GSON).handleHttpJson(malformedBody);
 
         assertFalse(responseJson.contains(marker), "响应不得包含原始请求内容：" + responseJson);
         assertFalse(responseJson.contains("rawJsonMessage"), "响应不得包含 rawJsonMessage 字段：" + responseJson);

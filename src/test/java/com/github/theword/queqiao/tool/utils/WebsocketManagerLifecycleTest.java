@@ -1,14 +1,24 @@
 package com.github.theword.queqiao.tool.utils;
 
+import com.github.theword.queqiao.tool.config.Config;
+import com.github.theword.queqiao.tool.config.WebSocketClientConfig;
+import com.github.theword.queqiao.tool.config.WebSocketServerConfig;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
 import com.github.theword.queqiao.tool.handle.HandleProtocolMessage;
+import com.github.theword.queqiao.tool.support.PlatformStubs;
+import com.github.theword.queqiao.tool.websocket.WsClient;
 import com.google.gson.Gson;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,20 +27,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * WebsocketManager 调度器所有权与生命周期测试
+ * WebsocketManager 生命周期与启动健壮性测试
  *
- * <p>验证 WS-A4 的所有权约束：
+ * <p>WS-F 之后 {@code WebsocketManager} 通过构造器接收 {@code Config}，
+ * 因此可以用<b>内存构造的配置</b>直接实例化，无需写配置文件、无需 {@code GlobalContext}。
+ * 这也让此前只能靠代码审查的两个验收项得以自动化：
  * <ul>
- *     <li>调度器在构造阶段创建（{@link ScheduledThreadPoolExecutor} 的 core 线程在首次提交任务时才启动，
- *         因此构造后无实际线程开销）</li>
- *     <li>{@code stop()} 是唯一释放调度器的路径</li>
- *     <li>{@code stop()} 幂等</li>
+ *     <li><b>WS-A #14</b>：{@code start()} 幂等</li>
+ *     <li><b>WS-A #23</b>：单个 endpoint 启动失败不阻断其它 endpoint</li>
  * </ul>
- *
- * <p>说明：{@code start()} 的幂等性与 endpoint 隔离未在此处覆盖——
- * 它们依赖 {@code GlobalContext} 配置，而现有配置加载会读写工作目录下的
- * {@code plugins/queqiao/config.yml} 并可能绑定真实端口，属于已知的测试隔离问题，
- * 待测试基础设施批次处理。
  */
 class WebsocketManagerLifecycleTest {
 
@@ -44,23 +49,49 @@ class WebsocketManagerLifecycleTest {
     /**
      * 与生产一致：协议分发入口由上层创建后注入 Manager
      */
-    private static final HandleProtocolMessage HANDLE_PROTOCOL_MESSAGE = new HandleProtocolMessage(LOGGER, GSON);
+    private static final HandleProtocolMessage HANDLE_PROTOCOL_MESSAGE = PlatformStubs.newDispatcher(LOGGER, GSON);
 
     /**
-     * 通过反射读取私有字段，避免为测试污染生产 API
+     * 基础配置：全部传输层禁用——不绑端口、不建连接
      */
-    private static ScheduledThreadPoolExecutor readReconnectScheduler(WebsocketManager manager) throws Exception {
-        Field field = WebsocketManager.class.getDeclaredField("reconnectScheduler");
-        field.setAccessible(true);
-        return (ScheduledThreadPoolExecutor) field.get(manager);
+    private static Config disabledTransportsConfig() {
+        Config config = Config.defaults(LOGGER);
+        config.setWebsocketServer(new WebSocketServerConfig(false, "127.0.0.1", 0));
+        config.setWebsocketClient(new WebSocketClientConfig(false, 1, 1, new ArrayList<>()));
+        return config;
     }
+
+    /**
+     * 启用 Client，并指定 URL 列表
+     */
+    private static Config clientConfig(List<String> urlList) {
+        Config config = Config.defaults(LOGGER);
+        config.setWebsocketServer(new WebSocketServerConfig(false, "127.0.0.1", 0));
+        config.setWebsocketClient(new WebSocketClientConfig(true, 1, 1, new ArrayList<>(urlList)));
+        return config;
+    }
+
+    private static WebsocketManager newManager(Config config) {
+        return new WebsocketManager(LOGGER, GSON, new NoopReturnMessageService(), HANDLE_PROTOCOL_MESSAGE, config);
+    }
+
+    private static int findFreePort() throws IOException {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            socket.setReuseAddress(true);
+            return socket.getLocalPort();
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 调度器所有权
+    // ------------------------------------------------------------------
 
     @Test
     @DisplayName("构造阶段即创建共享调度器，且未提交任务")
-    void schedulerIsCreatedInConstructor() throws Exception {
-        WebsocketManager manager = new WebsocketManager(LOGGER, GSON, new NoopReturnMessageService(), HANDLE_PROTOCOL_MESSAGE);
+    void schedulerIsCreatedInConstructor() {
+        WebsocketManager manager = newManager(disabledTransportsConfig());
         try {
-            ScheduledThreadPoolExecutor scheduler = readReconnectScheduler(manager);
+            ScheduledThreadPoolExecutor scheduler = manager.reconnectSchedulerForTest();
             assertNotNull(scheduler, "构造后应已持有共享调度器");
             assertFalse(scheduler.isShutdown(), "构造后调度器应可用");
             assertEquals(2, scheduler.getCorePoolSize(), "corePoolSize 应为 2");
@@ -76,9 +107,9 @@ class WebsocketManagerLifecycleTest {
 
     @Test
     @DisplayName("stop() 释放共享调度器，且重复调用幂等")
-    void stopShutsDownSchedulerAndIsIdempotent() throws Exception {
-        WebsocketManager manager = new WebsocketManager(LOGGER, GSON, new NoopReturnMessageService(), HANDLE_PROTOCOL_MESSAGE);
-        ScheduledThreadPoolExecutor scheduler = readReconnectScheduler(manager);
+    void stopShutsDownSchedulerAndIsIdempotent() {
+        WebsocketManager manager = newManager(disabledTransportsConfig());
+        ScheduledThreadPoolExecutor scheduler = manager.reconnectSchedulerForTest();
         assertFalse(scheduler.isShutdown(), "初始状态不应为已关闭");
 
         manager.stop(1000, "test", null);
@@ -91,13 +122,78 @@ class WebsocketManagerLifecycleTest {
 
     @Test
     @DisplayName("stop() 之后 restart() 不抛异常（已销毁保护）")
-    void restartAfterStopIsSafe() throws Exception {
-        WebsocketManager manager = new WebsocketManager(LOGGER, GSON, new NoopReturnMessageService(), HANDLE_PROTOCOL_MESSAGE);
+    void restartAfterStopIsSafe() {
+        WebsocketManager manager = newManager(disabledTransportsConfig());
         manager.stop(1000, "test", null);
 
         // 已销毁后重载应被安全忽略，而不是复用已关闭的 scheduler
-        manager.restart(null);
-        assertTrue(readReconnectScheduler(manager).isShutdown(), "已销毁后不应复活调度器");
+        manager.restart(disabledTransportsConfig(), null);
+        assertTrue(manager.reconnectSchedulerForTest().isShutdown(), "已销毁后不应复活调度器");
+    }
+
+    @Test
+    @DisplayName("restart() 用新配置重建连接，且保留共享调度器")
+    void restartKeepsSchedulerAndAppliesNewConfig() throws Exception {
+        int deadPort = findFreePort();
+        WebsocketManager manager = newManager(disabledTransportsConfig());
+        try {
+            ScheduledThreadPoolExecutor scheduler = manager.reconnectSchedulerForTest();
+            assertTrue(manager.getWsClientList().isEmpty(), "初始不应有客户端");
+
+            manager.restart(clientConfig(Collections.singletonList("ws://127.0.0.1:" + deadPort + "/a")), null);
+
+            assertEquals(1, manager.getWsClientList().size(), "重载后应按新配置创建 1 个客户端");
+            assertFalse(scheduler.isShutdown(), "restart 不得销毁共享调度器");
+        } finally {
+            manager.stop(1000, "test cleanup", null);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // WS-A #14：start() 幂等
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("start() 幂等：重复调用不会创建第二套 Client（WS-A #14）")
+    void startIsIdempotent() throws Exception {
+        int deadPort = findFreePort();
+        WebsocketManager manager = newManager(clientConfig(Collections.singletonList("ws://127.0.0.1:" + deadPort + "/a")));
+        try {
+            manager.start(null);
+            int afterFirstStart = manager.getWsClientList().size();
+            assertEquals(1, afterFirstStart, "首次 start 应创建 1 个客户端");
+
+            manager.start(null);
+
+            assertEquals(afterFirstStart, manager.getWsClientList().size(), "重复 start 不得追加重复客户端");
+        } finally {
+            manager.stop(1000, "test cleanup", null);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // WS-A #23：单个 endpoint 失败不阻断其它 endpoint
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("单个 endpoint 启动失败不阻断其它 endpoint（WS-A #23）")
+    void failedEndpointDoesNotBlockOthers() throws Exception {
+        int deadPort = findFreePort();
+        // 第一个 URL 能通过 scheme 校验，但无法被解析为合法 URI → 触发 startClient 的异常隔离分支；
+        // 第二个 URL 合法，应被正常创建
+        Config config = clientConfig(Arrays.asList("ws://[invalid", "ws://127.0.0.1:" + deadPort + "/ok"));
+        WebsocketManager manager = newManager(config);
+        try {
+            manager.start(null);
+
+            List<WsClient> clients = manager.getWsClientList();
+            assertEquals(1, clients.size(), "合法 endpoint 应被创建，非法 endpoint 不应阻断它");
+            assertTrue(
+                    clients.get(0).getURI().toString().contains("/ok"),
+                    "被创建的应是合法 endpoint，实际=" + clients.get(0).getURI());
+        } finally {
+            manager.stop(1000, "test cleanup", null);
+        }
     }
 
     /**

@@ -4,6 +4,7 @@ import com.github.theword.queqiao.tool.constant.CommonConstants;
 import com.github.theword.queqiao.tool.constant.ProtocolConstants;
 import com.github.theword.queqiao.tool.payload.BasePayload;
 import com.github.theword.queqiao.tool.protocol.ProtocolRouter;
+import com.github.theword.queqiao.tool.protocol.RconCommandExecutor;
 import com.github.theword.queqiao.tool.response.Response;
 import com.github.theword.queqiao.tool.utils.LogSanitizer;
 import com.github.theword.queqiao.tool.utils.Tool;
@@ -45,10 +46,10 @@ public class HandleProtocolMessage {
     private final Logger logger;
     private final ProtocolRouter protocolRouter;
 
-    public HandleProtocolMessage(Logger logger, Gson gson) {
+    public HandleProtocolMessage(Logger logger, Gson gson, HandleApiService handleApiService, RconCommandExecutor rconCommandExecutor) {
         this.logger = logger;
         this.gson = gson;
-        this.protocolRouter = new ProtocolRouter(logger);
+        this.protocolRouter = new ProtocolRouter(logger, handleApiService, rconCommandExecutor);
     }
 
     /**

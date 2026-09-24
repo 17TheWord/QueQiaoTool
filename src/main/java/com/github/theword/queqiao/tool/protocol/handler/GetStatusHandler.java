@@ -1,6 +1,7 @@
 package com.github.theword.queqiao.tool.protocol.handler;
 
 import com.github.theword.queqiao.tool.payload.EmptyPayload;
+import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.protocol.AbstractProtocolHandler;
 import com.github.theword.queqiao.tool.protocol.handler.status.ServerStatusCollector;
 import org.slf4j.Logger;
@@ -9,8 +10,8 @@ import java.util.Map;
 
 public class GetStatusHandler extends AbstractProtocolHandler<EmptyPayload, Map<String, Object>> {
 
-    public GetStatusHandler(Logger logger) {
-        super(logger, EmptyPayload.class);
+    public GetStatusHandler(Logger logger, HandleApiService handleApiService) {
+        super(logger, handleApiService, EmptyPayload.class);
     }
 
     /**

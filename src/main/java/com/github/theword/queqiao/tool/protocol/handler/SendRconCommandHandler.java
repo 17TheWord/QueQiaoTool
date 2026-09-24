@@ -1,18 +1,29 @@
 package com.github.theword.queqiao.tool.protocol.handler;
 
-import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.constant.ProtocolConstants;
 import com.github.theword.queqiao.tool.exception.protocol.ProtocolException;
 import com.github.theword.queqiao.tool.exception.rcon.RconException;
+import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.payload.CommandPayload;
 import com.github.theword.queqiao.tool.protocol.AbstractProtocolHandler;
+import com.github.theword.queqiao.tool.protocol.RconCommandExecutor;
 import com.github.theword.queqiao.tool.response.RconCommandError;
 import org.slf4j.Logger;
 
+import java.util.Objects;
+
 public class SendRconCommandHandler extends AbstractProtocolHandler<CommandPayload, String> {
 
-    public SendRconCommandHandler(Logger logger) {
-        super(logger, CommandPayload.class);
+    /**
+     * RCON 命令执行器，由 ProtocolRouter 注入
+     *
+     * <p>只有本处理器需要它，因此不进基类——避免把"仅一处使用的依赖"扩散到所有处理器。
+     */
+    private final RconCommandExecutor rconCommandExecutor;
+
+    public SendRconCommandHandler(Logger logger, HandleApiService handleApiService, RconCommandExecutor rconCommandExecutor) {
+        super(logger, handleApiService, CommandPayload.class);
+        this.rconCommandExecutor = Objects.requireNonNull(rconCommandExecutor, "rconCommandExecutor");
     }
 
     /**
@@ -41,7 +52,7 @@ public class SendRconCommandHandler extends AbstractProtocolHandler<CommandPaylo
         }
 
         try {
-            String result = GlobalContext.sendRconCommand(command);
+            String result = this.rconCommandExecutor.execute(command);
             this.logger.info("已通过 Rcon 执行命令（长度 {}）", command.length());
             if (this.logger.isDebugEnabled()) {
                 this.logger.debug("Rcon 命令内容（可能含敏感信息，仅 debug 级别输出）：{}", command);

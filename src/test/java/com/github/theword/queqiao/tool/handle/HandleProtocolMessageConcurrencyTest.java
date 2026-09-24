@@ -1,6 +1,7 @@
 package com.github.theword.queqiao.tool.handle;
 
 import com.github.theword.queqiao.tool.constant.ProtocolConstants;
+import com.github.theword.queqiao.tool.support.PlatformStubs;
 import com.github.theword.queqiao.tool.payload.BasePayload;
 import com.github.theword.queqiao.tool.response.Response;
 import com.google.gson.Gson;
@@ -84,7 +85,7 @@ class HandleProtocolMessageConcurrencyTest {
     @Test
     @DisplayName("同一个协议分发入口可被多线程并发安全使用")
     void sharedDispatcherIsSafeUnderConcurrentUse() throws Exception {
-        HandleProtocolMessage sharedDispatcher = new HandleProtocolMessage(LOGGER, GSON);
+        HandleProtocolMessage sharedDispatcher = PlatformStubs.newDispatcher(LOGGER, GSON);
         ExecutorService pool = Executors.newFixedThreadPool(THREAD_COUNT);
         CountDownLatch startGate = new CountDownLatch(1);
         List<Future<?>> futures = new ArrayList<>();

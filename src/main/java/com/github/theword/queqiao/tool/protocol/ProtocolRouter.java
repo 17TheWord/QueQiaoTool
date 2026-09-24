@@ -3,6 +3,7 @@ package com.github.theword.queqiao.tool.protocol;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.github.theword.queqiao.tool.constant.ProtocolConstants;
 import com.github.theword.queqiao.tool.exception.protocol.ProtocolException;
+import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.payload.BasePayload;
 import com.github.theword.queqiao.tool.protocol.handler.BroadcastHandler;
 import com.github.theword.queqiao.tool.protocol.handler.GetStatusHandler;
@@ -26,8 +27,9 @@ import java.util.Objects;
  * <p><b>线程安全</b>：处理器表只在构造阶段写入（{@code register} 为 private 且仅构造器调用），
  * 之后只读，因此本类构造后即不可变、可被多连接并发使用，且<b>不含任何锁</b>。
  *
- * <p><b>不依赖全局状态</b>：日志实现由构造器注入，不再访问 {@code GlobalContext.getLogger()}，
- * 使路由与处理器层可脱离全局上下文独立测试。
+ * <p><b>不依赖全局状态</b>：日志实现、平台 API 实现与 RCON 执行器均由构造器注入，
+ * 不再访问 {@code GlobalContext}——使协议层可脱离全局上下文独立测试
+ * （包括此前无法验证的"成功路径"）。
  *
  * @since 0.6.11
  */
@@ -35,25 +37,36 @@ public class ProtocolRouter {
 
     private final Logger logger;
 
+    /**
+     * 平台 API 实现，允许为 null（运行时空对象状态）
+     */
+    private final HandleApiService handleApiService;
+
+    private final RconCommandExecutor rconCommandExecutor;
+
     private final Map<String, AbstractProtocolHandler<?, ?>> handlers = new HashMap<>();
 
     /**
      * 构造路由器
      *
-     * @param logger 日志实现，不得为 null
+     * @param logger               日志实现，不得为 null
+     * @param handleApiService     平台 API 实现，允许为 null（未初始化状态）
+     * @param rconCommandExecutor  RCON 命令执行器，不得为 null
      */
-    public ProtocolRouter(Logger logger) {
+    public ProtocolRouter(Logger logger, HandleApiService handleApiService, RconCommandExecutor rconCommandExecutor) {
         this.logger = Objects.requireNonNull(logger, "logger");
+        this.handleApiService = handleApiService;
+        this.rconCommandExecutor = Objects.requireNonNull(rconCommandExecutor, "rconCommandExecutor");
 
-        BroadcastHandler broadcastHandler = new BroadcastHandler(logger);
+        BroadcastHandler broadcastHandler = new BroadcastHandler(logger, handleApiService);
         register(ProtocolConstants.Api.BROADCAST, broadcastHandler);
         register(ProtocolConstants.Api.SEND_MSG, broadcastHandler);
-        register(ProtocolConstants.Api.SEND_TITLE, new SendTitleHandler(logger));
-        register(ProtocolConstants.Api.SEND_ACTIONBAR, new SendActionBarHandler(logger));
-        register(ProtocolConstants.Api.SEND_PRIVATE_MSG, new SendPrivateMessageHandler(logger));
-        register(ProtocolConstants.Api.SEND_COMMAND, new SendCommandHandler(logger));
-        register(ProtocolConstants.Api.SEND_RCON_COMMAND, new SendRconCommandHandler(logger));
-        register(ProtocolConstants.Api.GET_STATUS, new GetStatusHandler(logger));
+        register(ProtocolConstants.Api.SEND_TITLE, new SendTitleHandler(logger, handleApiService));
+        register(ProtocolConstants.Api.SEND_ACTIONBAR, new SendActionBarHandler(logger, handleApiService));
+        register(ProtocolConstants.Api.SEND_PRIVATE_MSG, new SendPrivateMessageHandler(logger, handleApiService));
+        register(ProtocolConstants.Api.SEND_COMMAND, new SendCommandHandler(logger, handleApiService));
+        register(ProtocolConstants.Api.SEND_RCON_COMMAND, new SendRconCommandHandler(logger, handleApiService, rconCommandExecutor));
+        register(ProtocolConstants.Api.GET_STATUS, new GetStatusHandler(logger, handleApiService));
     }
 
     /**
@@ -63,7 +76,7 @@ public class ProtocolRouter {
      * <ul>
      *     <li>{@code 400} —— 请求本身不合法（payload 为 null、缺少 api 字段、负载解析失败）</li>
      *     <li>{@code 404} —— api 未注册</li>
-     *     <li>处理器抛出的 {@link ProtocolException} —— 使用其自带状态码（如 400 / 500）</li>
+     *     <li>处理器抛出的 {@link ProtocolException} —— 使用其自带状态码（如 400 / 500 / 503）</li>
      *     <li>{@code 500} —— 真正的服务端未预期异常</li>
      * </ul>
      *

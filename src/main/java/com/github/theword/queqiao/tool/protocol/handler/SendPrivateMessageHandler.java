@@ -1,6 +1,6 @@
 package com.github.theword.queqiao.tool.protocol.handler;
 
-import com.github.theword.queqiao.tool.GlobalContext;
+import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.exception.protocol.ProtocolException;
 import com.github.theword.queqiao.tool.payload.PrivateMessagePayload;
 import com.github.theword.queqiao.tool.protocol.AbstractProtocolHandler;
@@ -9,8 +9,8 @@ import org.slf4j.Logger;
 
 public class SendPrivateMessageHandler extends AbstractProtocolHandler<PrivateMessagePayload, PrivateMessageResponse> {
 
-    public SendPrivateMessageHandler(Logger logger) {
-        super(logger, PrivateMessagePayload.class);
+    public SendPrivateMessageHandler(Logger logger, HandleApiService handleApiService) {
+        super(logger, handleApiService, PrivateMessagePayload.class);
     }
 
     /**
@@ -37,6 +37,6 @@ public class SendPrivateMessageHandler extends AbstractProtocolHandler<PrivateMe
             throw ProtocolException.badRequest(response.getMessage(), response);
         }
 
-        return GlobalContext.getHandleApiService().handleSendPrivateMessage(normalizedNickname, payload.getUuid(), payload.getMessage());
+        return this.handleApiService.handleSendPrivateMessage(normalizedNickname, payload.getUuid(), payload.getMessage());
     }
 }
