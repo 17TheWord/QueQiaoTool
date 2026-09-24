@@ -66,6 +66,13 @@
 
 ### 新增
 
+- **`Tool.format(String template, Object... args)`**：支持 `{}` 占位符的格式化工具。
+  项目内的共享消息常量（`WebsocketConstantMessage`、`CommandConstant`）统一使用 `{}`（与 SLF4J 一致），
+  但同一常量往往还要用于非日志场景（关闭原因、命令输出），而 `String.format` 需要 `%s`——
+  把 `{}` 常量交给它会导致**占位符原样输出且参数被静默忽略**（见「修复」第一条）。
+  约定：**本项目自己的消息一律用 `Tool.format`**；
+  **来自 Minecraft 语言文件的翻译模板必须继续用 `String.format`**（它使用 `%1$s` 位置参数，`Tool.format` 不支持）。
+- `WebsocketConstantMessage.SHUTDOWN`：整体关闭时使用的关闭原因（纯文本）。
 - `ReconnectPolicy`：重连退避策略纯组件，无网络与线程依赖，可独立测试。
 - `ReconnectReason`：重连原因枚举（`REMOTE_CLOSE` / `MANUAL`）。
 - `WebSocketUrlNormalizer`：WebSocket URL 归一化（trim / 去空 / 去重 / `ws://` `wss://` scheme 校验）与日志脱敏。
@@ -78,6 +85,33 @@
 
 ### 变更
 
+- **`Authorization` 仍支持通过 URL query 传递，并已在 javadoc 中说明其安全代价**：
+  浏览器的 WebSocket API **无法设置自定义请求头**（`new WebSocket(url)` 不接受 headers 选项），
+  去掉 query 支持会让浏览器客户端完全无法接入，因此保留。
+  但 URL 会进入反向代理日志、监控 / APM、浏览器历史与抓包工具，
+  **能设置请求头的客户端应优先使用请求头**；仅浏览器等无法设置请求头的场景使用 query。
+  失败日志（debug 级）会指出凭据来源，便于运维发现 token 被放进 URL 的情况。
+- **握手字段的解码策略改为按字段显式决定**（不再共用一套解析）：
+  `x-self-name` 两个来源都解码一次（客户端约定对该字段编码）；
+  `x-client-origin` 与 `Authorization` 的请求头值按原样、query 值解码一次
+  （请求头由客户端原样发送，若也解码会破坏 token 中合法的 `%` / `+`；
+  query 值在 URL 中必然被编码，例如空格会变成 `+`）。
+- **未配置 `access_token` 却绑定非回环地址时输出告警**：
+  该组合意味着任何能访问该端口的人都可发送消息并执行 Rcon 命令。
+  仅告警不拒绝——"置于反向代理 / 私有网络之后由外层鉴权"是合法部署。
+  `config.yml` 相应位置也补充了说明。
+- **凭据校验使用常量时间比较**（`MessageDigest.isEqual`）替代 `String.equals`。
+- **未携带凭据与凭据错误现在有不同的日志与关闭原因**：
+  此前两者共用一条日志（`Authorization Header is wrong`），排查时无法区分；
+  现在未携带凭据的关闭原因为 `Authorization is required`。
+- **`client reconnect` 的结束提示改为"已安排重连，实际结果请查看日志"**：
+  该命令只是把重连任务**投递到调度器**，并不保证连接成功，此前提示"已重新连接"会误导执行者。
+  同时起始提示由陈述句"存在未处于打开状态的 Websocket Client..."改为动作描述"正在重连未打开的 Websocket Client..."。
+- **`server info` 对无法获取远端地址的连接输出"来自未知地址的连接"**，不再抛 NPE；
+  远端地址改用 `getHostString()` / `getPort()` 获取（与 `WsServer` 保持一致）。
+- **`server info` 的连接集合、`client list` 的配置 URL 列表均只读取一次**：
+  此前 `getConnections()` 被调用三次、`getConfig().getWebsocketClient().getUrlList()` 在循环条件里每轮调用两次，
+  期间集合/列表可能变化，会出现"显示 N 个却列出 M 条"的自相矛盾输出。
 - **`WsServer` 的连接丢失检测周期显式设为 60 秒**，不再依赖 Java-WebSocket 的默认值
   （该检测会 ping 客户端，超时未收到 pong 时关闭连接）。
 - **`WsServer` 构造器把 `serverName` / `accessToken` 的 `null` 归一化为空串**。
@@ -118,6 +152,24 @@
 
 ### 修复
 
+- **关闭帧的原因里带着字面 `{}`**：`WebsocketManager` 用 `String.format` 处理一个使用 `{}` 占位符的
+  消息常量，而该字符串不含 `%s`，`String.format` 会**原样返回并忽略参数**，
+  于是客户端收到的关闭原因是 `连接至：{} 的 WebSocket Client 正在关闭，Code {}，Reason：{}。`。
+  现已统一改用 `Tool.format`。
+  **升级提示**：关闭原因文本发生变化，若客户端按关闭原因做字符串匹配需适配。
+- **`client list` 的编号从 0 开始**：同一条命令的两个分支编号规则不一致
+  （"未启用"分支从 1 起、"已启用"分支从 0 起）。现统一为**从 1 开始**。
+- **平台实现为 null 时启动阶段不报错**：`GlobalContext.init(...)` 现在会校验
+  `handleApiImpl` 与 `handleCommandReturnMessageImpl`，为 null 时**立即抛出并指明参数名**。
+  此前会拖到"第一条协议请求"或"第一条命令"执行时才抛 NPE，定位成本很高。
+- **`WebsocketManager` 的必填依赖改为构造期校验**：`handleCommandReturnMessageService` 为 null 时，
+  此前会在 `stop()` 中途抛 NPE——此时客户端已全部停止、而**共享调度器尚未关闭**，
+  导致调度器与线程泄漏，且 `QueQiaoRuntime.shutdown()` 后续的 Rcon 关闭与日志都不执行。
+  现在接线错误在构造阶段即暴露。
+- **`x-self-name` 通过 URL query 传递时被解码两次**：解析函数此前对 query 值解码、对请求头值不解码，
+  而调用方又统一解码一次，导致 query 来源被解码两次——
+  服务器名含 `%` 时第二次解码会因非法转义抛异常，连接被以"解码失败"拒绝。
+  现已改为每个字段在使用处显式决定解码策略，且**恰好解码一次**。
 - **握手异常导致鉴权旁路**（严重，安全）：Java-WebSocket 的 `WebSocketImpl.open()` 会
   **吞掉 `onOpen` 抛出的 `RuntimeException` 并让连接保持 `OPEN`**（只上报、不关闭、不重抛）。
   因此一旦 `onOpen` 内部抛异常，未通过鉴权的连接会被保留、后续消息仍被正常处理。

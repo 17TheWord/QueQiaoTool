@@ -18,6 +18,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -107,8 +108,11 @@ public class WebsocketManager {
                     HandleProtocolMessage handleProtocolMessage) {
         this.logger = logger;
         this.gson = gson;
-        this.handleCommandReturnMessageService = handleCommandReturnMessageService;
-        this.handleProtocolMessage = handleProtocolMessage;
+        // 内部不变量：这两个依赖由 QueQiaoRuntime 注入，为 null 属接线缺陷。
+        // 快速失败，避免在 stop() 中途（客户端已全部停止、调度器尚未关闭）才抛 NPE。
+        this.handleCommandReturnMessageService =
+                Objects.requireNonNull(handleCommandReturnMessageService, "handleCommandReturnMessageService");
+        this.handleProtocolMessage = Objects.requireNonNull(handleProtocolMessage, "handleProtocolMessage");
         this.wsClientList = new ArrayList<>();
         this.reconnectScheduler = createReconnectScheduler();
     }
@@ -233,7 +237,7 @@ public class WebsocketManager {
      */
     private static String buildUriErrorMessage(String websocketUrl) {
         String sanitizedUrl = WebSocketUrlNormalizer.sanitizeForLog(websocketUrl);
-        return String.format(WebsocketConstantMessage.Client.URI_SYNTAX_ERROR.replace("{}", "%s"), sanitizedUrl);
+        return Tool.format(WebsocketConstantMessage.Client.URI_SYNTAX_ERROR, sanitizedUrl);
     }
 
     /**
@@ -241,20 +245,41 @@ public class WebsocketManager {
      *
      * <p>只停止 Client，<b>绝不</b>关闭共享调度器。
      *
+     * <p>{@code reason} 是<b>纯文本</b>关闭原因，直接透传给底层；
+     * 给命令执行者的提示另行用 {@link Tool#format} 插值。
+     * 此前这里把 {@code {}} 模板直接交给 {@code String.format}，
+     * 由于该字符串不含 {@code %s}，{@code String.format} 会原样返回、参数被静默忽略，
+     * 导致<b>关闭帧的原因里带着字面 {@code {}}</b>。
+     *
      * @param code            关闭码
-     * @param reason          关闭原因模板
+     * @param reason          关闭原因（纯文本，不作为格式模板使用）
      * @param commandReturner 命令执行者，可为 null
      */
     private void stopClients(int code, String reason, Object commandReturner) {
         for (WsClient wsClient : wsClientList) {
-            String closeReason = String.format(reason, wsClient.getURI());
-            this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, closeReason);
-            wsClient.stopWithoutReconnect(code, closeReason);
+            wsClient.stopWithoutReconnect(code, reason);
+            this.handleCommandReturnMessageService.sendReturnMessage(
+                    commandReturner,
+                    Tool.format(WebsocketConstantMessage.Client.CLOSING_CONNECTION, wsClient.getURI(), code, reason));
         }
         wsClientList.clear();
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.CLEAR_WEBSOCKET_CLIENT_LIST);
     }
 
+    /**
+     * 按新配置重建所有 Client
+     *
+     * <p><b>语义：先停全部旧连接，再按新配置逐个尽力启动。</b>
+     * 单个 endpoint 失败不影响其它 endpoint；最终 {@code wsClientList} 只包含
+     * <b>成功启动</b>的客户端，失败项均有日志——最终状态可预测。
+     *
+     * <p><b>有意不做回滚</b>：回滚需要保留旧连接直到新连接全部就绪，
+     * 而旧连接是用<b>旧配置</b>（可能已变更的地址 / 凭据）建立的，
+     * 保留它会让系统停在"用旧配置运行、却声称已重载完成"的状态，比
+     * "部分启动 + 明确日志"更难排查；实现回滚还需双份连接共存与原子切换，复杂度与收益不成比例。
+     *
+     * @param commandReturner 命令执行者，可为 null
+     */
     private void restartClients(Object commandReturner) {
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.RELOADING);
         stopClients(CLOSE_CODE_NORMAL, WebsocketConstantMessage.CLOSE_BY_RELOAD, commandReturner);
@@ -279,8 +304,8 @@ public class WebsocketManager {
         wsServer.start();
         this.handleCommandReturnMessageService.sendReturnMessage(
                 commandReturner,
-                String.format(
-                        WebsocketConstantMessage.Server.SERVER_STARTING.replace("{}", "%s"),
+                Tool.format(
+                        WebsocketConstantMessage.Server.SERVER_STARTING,
                         GlobalContext.getConfig().getWebsocketServer().getHost(),
                         GlobalContext.getConfig().getWebsocketServer().getPort()
                 )
@@ -425,6 +450,16 @@ public class WebsocketManager {
         }
     }
 
+    /**
+     * 向单个 Client 发送事件
+     *
+     * <p><b>{@code isOpen()} 只是优化判断，不是线程安全保证</b>：
+     * 检查与发送之间连接可能刚好关闭（TOCTOU），
+     * 因此下面的异常捕获<b>必须保留</b>——不要因为"已经判过 isOpen 了"而删除它。
+     *
+     * @param wsClient 客户端
+     * @param json     已序列化的事件
+     */
     private void sendClientEvent(WsClient wsClient, String json) {
         try {
             if (wsClient.isOpen()) {

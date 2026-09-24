@@ -188,6 +188,9 @@ public class LanguageService {
         }
 
         try {
+            // 这里必须用 String.format 而非 Tool.format：
+            // 翻译模板来自 Minecraft 语言文件，使用 %s / %1$s 这类占位符，
+            // 其中位置参数（%1$s）是 Tool.format 的 {} 语义无法表达的。
             return String.format(template, args);
         } catch (Exception e) {
             logger.warn("格式化异常，Key: {}, 模板: {}", key, template);

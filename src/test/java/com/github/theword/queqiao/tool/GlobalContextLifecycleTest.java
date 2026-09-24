@@ -1,9 +1,12 @@
 package com.github.theword.queqiao.tool;
 
 import com.github.theword.queqiao.tool.event.PlayerChatEvent;
+import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
+import com.github.theword.queqiao.tool.response.PrivateMessageResponse;
 import com.github.theword.queqiao.tool.runtime.QueQiaoRuntime;
 import com.github.theword.queqiao.tool.utils.WebsocketManager;
+import com.google.gson.JsonElement;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,12 +19,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.UUID;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -51,6 +56,28 @@ class GlobalContextLifecycleTest {
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalContextLifecycleTest.class);
+
+    /**
+     * 平台侧 API 实现，测试中不需要真实行为
+     */
+    private static final HandleApiService NOOP_API_SERVICE = new HandleApiService() {
+        @Override
+        public void handleBroadcastMessage(JsonElement jsonData) {
+        }
+
+        @Override
+        public void handleSendTitleMessage(JsonElement titlePayload, JsonElement subTitlePayload, int fadeIn, int stay, int fadeOut) {
+        }
+
+        @Override
+        public void handleSendActionBarMessage(JsonElement jsonData) {
+        }
+
+        @Override
+        public PrivateMessageResponse handleSendPrivateMessage(String nickname, UUID uuid, JsonElement jsonData) {
+            return null;
+        }
+    };
 
     /**
      * 平台侧命令返回消息实现，测试中不需要真实行为
@@ -132,6 +159,34 @@ class GlobalContextLifecycleTest {
     }
 
     // ------------------------------------------------------------------
+    // E1：API 边界的必填依赖校验
+    // ------------------------------------------------------------------
+
+    /**
+     * E1 回归：平台实现为 null 时必须在 {@code init()} 入口立即失败并指明参数名。
+     *
+     * <p>若不在此处拦截，会拖到"第一条协议请求"或"第一条命令"执行时才抛 NPE，定位成本很高。
+     */
+    @Test
+    @DisplayName("init 时平台实现为 null 立即失败并指明参数名（E1）")
+    void initRejectsNullPlatformImplementations() {
+        NullPointerException apiException = assertThrows(
+                NullPointerException.class,
+                () -> GlobalContext.init(false, "1.20.1", "test", null, NOOP_RETURN_MESSAGE_SERVICE));
+        assertTrue(
+                apiException.getMessage() != null && apiException.getMessage().contains("handleApiImpl"),
+                "错误信息应指明参数名，实际=" + apiException.getMessage());
+
+        NullPointerException serviceException = assertThrows(
+                NullPointerException.class,
+                () -> GlobalContext.init(false, "1.20.1", "test", NOOP_API_SERVICE, null));
+        assertTrue(
+                serviceException.getMessage() != null
+                        && serviceException.getMessage().contains("handleCommandReturnMessageImpl"),
+                "错误信息应指明参数名，实际=" + serviceException.getMessage());
+    }
+
+    // ------------------------------------------------------------------
     // G2：重复 init 必须关闭旧实例
     // ------------------------------------------------------------------
 
@@ -139,13 +194,13 @@ class GlobalContextLifecycleTest {
     @DisplayName("重复 init 会关闭旧实例的共享调度器，不泄漏资源（G2 回归）")
     void repeatedInitShutsDownPreviousRuntime() throws Exception {
         try (DisabledConfigFixture ignored = new DisabledConfigFixture()) {
-            GlobalContext.init(false, "1.20.1", "test", null, NOOP_RETURN_MESSAGE_SERVICE);
+            GlobalContext.init(false, "1.20.1", "test", NOOP_API_SERVICE, NOOP_RETURN_MESSAGE_SERVICE);
             WebsocketManager firstManager = GlobalContext.getWebsocketManager();
             assertNotNull(firstManager, "首次 init 后应存在 WebsocketManager");
             ScheduledThreadPoolExecutor firstScheduler = readReconnectScheduler(firstManager);
             assertFalse(firstScheduler.isShutdown(), "首次 init 的共享调度器应可用");
 
-            GlobalContext.init(false, "1.20.1", "test", null, NOOP_RETURN_MESSAGE_SERVICE);
+            GlobalContext.init(false, "1.20.1", "test", NOOP_API_SERVICE, NOOP_RETURN_MESSAGE_SERVICE);
 
             assertTrue(
                     firstScheduler.isShutdown(),
@@ -158,7 +213,7 @@ class GlobalContextLifecycleTest {
     @DisplayName("shutdown 可重复调用，且关闭后仍可安全读取上下文（G2/G3 组合）")
     void shutdownIsIdempotentAndLeavesContextUsable() throws Exception {
         try (DisabledConfigFixture ignored = new DisabledConfigFixture()) {
-            GlobalContext.init(false, "1.20.1", "test", null, NOOP_RETURN_MESSAGE_SERVICE);
+            GlobalContext.init(false, "1.20.1", "test", NOOP_API_SERVICE, NOOP_RETURN_MESSAGE_SERVICE);
             WebsocketManager manager = GlobalContext.getWebsocketManager();
             ScheduledThreadPoolExecutor scheduler = readReconnectScheduler(manager);
 

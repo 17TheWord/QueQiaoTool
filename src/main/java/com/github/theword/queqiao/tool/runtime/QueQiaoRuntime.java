@@ -180,7 +180,7 @@ public final class QueQiaoRuntime {
     public void shutdown() {
         WebsocketManager manager = websocketManager;
         if (manager != null) {
-            manager.stop(1000, WebsocketConstantMessage.Client.CLOSING_CONNECTION, null);
+            manager.stop(1000, WebsocketConstantMessage.SHUTDOWN, null);
             websocketManager = null;
         }
 

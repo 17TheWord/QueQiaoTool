@@ -4,6 +4,14 @@ public class WebsocketConstantMessage {
     public static final String PARSE_MESSAGE_ERROR_ON_MESSAGE = "解析来自 {} 的 WebSocket 消息时出现异常";
     public static final String CLOSE_BY_RELOAD = "Websocket 正在重载";
 
+    /**
+     * 鹊桥整体关闭时使用的关闭原因
+     *
+     * <p><b>纯文本，不作为格式模板使用</b>——它会被直接作为关闭帧的原因下发给对端。
+     * 此前这里误用了带 {@code {}} 占位符的模板，导致关闭原因里出现字面 {@code {}}。
+     */
+    public static final String SHUTDOWN = "鹊桥正在关闭";
+
     public static class Client {
         public static final String SEND_MESSAGE = "发送至 {} 的消息：{}";
         public static final String LAUNCHING = "WebSocket Client 正在启动...";

@@ -1,5 +1,6 @@
 package com.github.theword.queqiao.tool.payload;
 
+import com.github.theword.queqiao.tool.utils.Tool;
 import com.google.gson.JsonElement;
 import com.google.gson.annotations.SerializedName;
 
@@ -60,7 +61,7 @@ public class PrivateMessagePayload extends MessagePayload {
 
         if (nickname != null && !nickname.isEmpty()) {
             if (uuid != null) {
-                tempTargetPlayerName = String.format("@%s:%s", nickname, uuid);
+                tempTargetPlayerName = Tool.format("@{}:{}", nickname, uuid);
             } else {
                 tempTargetPlayerName = nickname;
             }
@@ -70,6 +71,6 @@ public class PrivateMessagePayload extends MessagePayload {
             tempTargetPlayerName = "Unknown player";
         }
 
-        return String.format("send private message to %s: %s", tempTargetPlayerName, super.toString());
+        return Tool.format("send private message to {}: {}", tempTargetPlayerName, super.toString());
     }
 }

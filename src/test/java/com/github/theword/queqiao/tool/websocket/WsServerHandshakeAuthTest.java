@@ -10,9 +10,12 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -95,7 +98,8 @@ class WsServerHandshakeAuthTest {
             assertEquals(CLOSE_CODE_POLICY_VIOLATION, wrongTokenClient.getCloseCode(), "应以 1008 关闭");
 
             correctTokenClient.connect();
-            assertTrue(correctTokenClient.awaitOpen(10_000L), "携带正确 token 的连接应被接受");
+            assertTrue(correctTokenClient.awaitOpen(10_000L), "携带正确 token 的连接应通过协议层握手");
+            correctTokenClient.expectAccepted("correct-token");
         } finally {
             wrongTokenClient.close();
             correctTokenClient.close();
@@ -186,18 +190,125 @@ class WsServerHandshakeAuthTest {
         ProbeClient client = new ProbeClient(port, SERVER_NAME, null);
         try {
             client.connect();
-            assertTrue(client.awaitOpen(10_000L), "不鉴权配置下连接应被接受");
-
-            // 鉴权通过后消息应被正常处理：未知 api 会返回 404 响应
-            client.send("{\"api\":\"no_such_api\",\"echo\":\"positive-path\"}");
-            assertTrue(client.awaitMessage(10_000L), "已鉴权连接的消息应被处理并返回响应");
-            assertTrue(
-                    client.getLastMessage().contains("positive-path"),
-                    "响应应回传 echo，实际=" + client.getLastMessage());
+            assertTrue(client.awaitOpen(10_000L), "应通过协议层握手");
+            client.expectAccepted("no-auth-configured");
         } finally {
             client.close();
             server.stop(1000);
         }
+    }
+
+    // ------------------------------------------------------------------
+    // D1：query 兜底（浏览器客户端无法设置自定义请求头）
+    // ------------------------------------------------------------------
+
+    /**
+     * 浏览器的 WebSocket API 无法设置自定义请求头，只能把凭据放进 URL query，
+     * 因此 query 兜底必须保留。
+     */
+    @Test
+    @DisplayName("通过 URL query 传递 Authorization 仍被接受（浏览器兼容）")
+    void authorizationViaQueryIsAccepted() throws Exception {
+        int port = findFreePort();
+        WsServer server = new WsServer(
+                new InetSocketAddress("127.0.0.1", port), LOGGER, HANDLE_PROTOCOL_MESSAGE, SERVER_NAME, ACCESS_TOKEN, true);
+        server.start();
+
+        ProbeClient client = new ProbeClient(port, SERVER_NAME, "Bearer " + ACCESS_TOKEN, true);
+        try {
+            client.connect();
+            assertTrue(client.awaitOpen(10_000L), "应通过协议层握手");
+            client.expectAccepted("query-token");
+        } finally {
+            client.close();
+            server.stop(1000);
+        }
+    }
+
+    @Test
+    @DisplayName("已配置 token 但连接未携带凭据时被拒绝（1008）")
+    void missingCredentialIsRejected() throws Exception {
+        int port = findFreePort();
+        WsServer server = new WsServer(
+                new InetSocketAddress("127.0.0.1", port), LOGGER, HANDLE_PROTOCOL_MESSAGE, SERVER_NAME, ACCESS_TOKEN, true);
+        server.start();
+
+        ProbeClient client = new ProbeClient(port, SERVER_NAME, null);
+        try {
+            client.connect();
+            assertTrue(client.awaitClosed(10_000L), "未携带凭据的连接应被关闭");
+            assertEquals(CLOSE_CODE_POLICY_VIOLATION, client.getCloseCode(), "应以 1008 关闭");
+        } finally {
+            client.close();
+            server.stop(1000);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // D2：解析拆分后，decode 恰好一次
+    // ------------------------------------------------------------------
+
+    /**
+     * D2 回归：query 来源的服务器名此前被**解码两次**。
+     *
+     * <p>名字里含 {@code %} 时，第二次解码会因非法转义而抛 {@code IllegalArgumentException}，
+     * 连接被以"解码失败"拒绝——本用例在修复前会失败。
+     */
+    @Test
+    @DisplayName("query 来源的服务器名只解码一次，含 % 的名字可正常匹配（D2 回归）")
+    void queryServerNameIsDecodedExactlyOnce() throws Exception {
+        int port = findFreePort();
+        String serverNameWithPercent = "Test%Server";
+
+        WsServer server = new WsServer(
+                new InetSocketAddress("127.0.0.1", port), LOGGER, HANDLE_PROTOCOL_MESSAGE, serverNameWithPercent, "", true);
+        server.start();
+
+        // 传原始名字，由 ProbeClient 统一编码一次（此前误传已编码值导致双重编码）
+        ProbeClient client = new ProbeClient(port, serverNameWithPercent, null, true);
+        try {
+            client.connect();
+            assertTrue(client.awaitOpen(10_000L), "应通过协议层握手");
+            client.expectAccepted("percent-name");
+        } finally {
+            client.close();
+            server.stop(1000);
+        }
+    }
+
+    @Test
+    @DisplayName("query 来源的服务器名仍可正常匹配（兼容保留）")
+    void queryServerNameStillWorks() throws Exception {
+        int port = findFreePort();
+        WsServer server = new WsServer(
+                new InetSocketAddress("127.0.0.1", port), LOGGER, HANDLE_PROTOCOL_MESSAGE, SERVER_NAME, "", true);
+        server.start();
+
+        ProbeClient client = new ProbeClient(port, SERVER_NAME, null, true);
+        try {
+            client.connect();
+            assertTrue(client.awaitOpen(10_000L), "应通过协议层握手");
+            client.expectAccepted("query-server-name");
+        } finally {
+            client.close();
+            server.stop(1000);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // D3：非回环 + 空 token 的判定
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("回环地址判定：回环为 true，其余按非回环处理（D3）")
+    void loopbackAddressDetection() {
+        assertTrue(WsServer.isLoopbackAddress(new InetSocketAddress("127.0.0.1", 8080)), "127.0.0.1 是回环");
+        assertTrue(WsServer.isLoopbackAddress(new InetSocketAddress("localhost", 8080)), "localhost 是回环");
+        assertFalse(WsServer.isLoopbackAddress(new InetSocketAddress("0.0.0.0", 8080)), "0.0.0.0 不是回环");
+        assertFalse(WsServer.isLoopbackAddress(null), "null 按非回环处理");
+        assertFalse(
+                WsServer.isLoopbackAddress(InetSocketAddress.createUnresolved("example.com", 8080)),
+                "未解析地址按非回环处理（宁可多告警，也不漏报）");
     }
 
     /**
@@ -212,14 +323,38 @@ class WsServerHandshakeAuthTest {
         private volatile String lastMessage;
 
         private ProbeClient(int port, String selfName, String authorization) throws Exception {
-            super(new URI("ws://127.0.0.1:" + port + "/minecraft/ws"));
+            this(port, selfName, authorization, false);
+        }
+
+        /**
+         * @param viaQuery true 表示把字段放进 URL query（模拟无法设置请求头的浏览器客户端）
+         */
+        private ProbeClient(int port, String selfName, String authorization, boolean viaQuery) throws Exception {
+            super(new URI("ws://127.0.0.1:" + port + "/minecraft/ws" + buildQuery(viaQuery, selfName, authorization)));
+            if (!viaQuery) {
+                if (selfName != null) {
+                    addHeader("x-self-name", selfName);
+                }
+                addHeader("x-client-origin", "test-probe");
+                if (authorization != null) {
+                    addHeader("Authorization", authorization);
+                }
+            }
+        }
+
+        private static String buildQuery(boolean viaQuery, String selfName, String authorization) throws UnsupportedEncodingException {
+            if (!viaQuery) {
+                return "";
+            }
+            StringBuilder query = new StringBuilder("?");
             if (selfName != null) {
-                addHeader("x-self-name", selfName);
+                query.append("x-self-name=").append(URLEncoder.encode(selfName, StandardCharsets.UTF_8.name()));
             }
-            addHeader("x-client-origin", "test-probe");
+            query.append("&x-client-origin=test-probe");
             if (authorization != null) {
-                addHeader("Authorization", authorization);
+                query.append("&Authorization=").append(URLEncoder.encode(authorization, StandardCharsets.UTF_8.name()));
             }
+            return query.toString();
         }
 
         @Override
@@ -245,6 +380,25 @@ class WsServerHandshakeAuthTest {
 
         private boolean awaitOpen(long timeoutMillis) throws InterruptedException {
             return openLatch.await(timeoutMillis, TimeUnit.MILLISECONDS);
+        }
+
+        /**
+         * 断言连接被服务端**真正接受**且可用
+         *
+         * <p><b>不能用 {@link #awaitOpen} 判断接受与否</b>：客户端完成 WebSocket 协议层握手
+         * 就会触发 {@code onOpen}，而服务端的字段校验发生在**之后**——
+         * 校验失败时服务端随即关闭连接，但客户端早已收到过 {@code onOpen}。
+         * 因此"收到 onOpen"并不等于"被接受"。
+         *
+         * <p>这里改为发送一条请求并等待响应：只有连接被接受且 {@code onMessage} 正常工作，
+         * 才可能收到响应（未知 api 会返回 404 响应，无需平台实现）。
+         *
+         * @param marker 用于回显校验的标记
+         */
+        private void expectAccepted(String marker) throws InterruptedException {
+            send("{\"api\":\"no_such_api\",\"echo\":\"" + marker + "\"}");
+            assertTrue(awaitMessage(10_000L), "连接应被接受并可处理消息（marker=" + marker + "）");
+            assertTrue(getLastMessage().contains(marker), "响应应回传 echo，实际=" + getLastMessage());
         }
 
         private boolean awaitClosed(long timeoutMillis) throws InterruptedException {

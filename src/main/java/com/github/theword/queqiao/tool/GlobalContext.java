@@ -11,6 +11,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.slf4j.Logger;
 
+import java.util.Objects;
+
 /**
  * 全局上下文门面
  *
@@ -68,6 +70,12 @@ public final class GlobalContext {
      * @param handleCommandReturnMessageImpl    平台命令返回消息实现
      */
     public static void init(boolean isModServer, String serverVersion, String serverType, HandleApiService handleApiImpl, HandleCommandReturnMessageService handleCommandReturnMessageImpl) {
+        // 平台实现是 API 边界的必填依赖。为 null 时若不在此处拦截，
+        // 会拖到"第一条协议请求"或"第一条命令"执行时才抛 NPE，定位成本很高；
+        // 在入口快速失败并给出明确参数名，可让接线错误在启动阶段立刻暴露。
+        Objects.requireNonNull(handleApiImpl, "handleApiImpl 不能为 null：平台必须提供 HandleApiService 实现");
+        Objects.requireNonNull(handleCommandReturnMessageImpl, "handleCommandReturnMessageImpl 不能为 null：平台必须提供 HandleCommandReturnMessageService 实现");
+
         synchronized (INIT_LOCK) {
             if (initialized) {
                 getLogger().warn("鹊桥已被初始化过，将先关闭旧实例再重新初始化，以避免 WebSocket / Rcon / 线程泄漏");

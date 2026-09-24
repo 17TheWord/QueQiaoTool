@@ -3,9 +3,11 @@ package com.github.theword.queqiao.tool.websocket;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.handle.HandleProtocolMessage;
 import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -108,6 +110,63 @@ public class WsServer extends WebSocketServer {
         this.enabled = enabled;
         this.handleProtocolMessage = handleProtocolMessage;
         this.setConnectionLostTimeout(CONNECTION_LOST_TIMEOUT_SECONDS);
+        warnIfExposedWithoutToken(address);
+    }
+
+    /**
+     * 当监听地址为非回环地址且未配置访问令牌时输出告警
+     *
+     * <p>该组合意味着<b>任何能访问该端口的人都可以调用 {@code send_rcon_command}</b>，
+     * 等价于在 MC 服务器上执行任意命令。这里只告警不拒绝，
+     * 因为"服务端置于反向代理 / 私有网络之后、由外层负责鉴权"是合法部署，直接拒绝会误伤。
+     *
+     * @param address 监听地址
+     */
+    private void warnIfExposedWithoutToken(InetSocketAddress address) {
+        if (!this.accessToken.isEmpty() || isLoopbackAddress(address)) {
+            return;
+        }
+        this.logger.warn(
+                "WebSocket Server 绑定在非回环地址 {} 且未配置 access_token："
+                        + "任何能访问该端口的人都可发送消息并执行 Rcon 命令。"
+                        + "请设置 access_token，或将 websocket_server.host 改回 127.0.0.1。",
+                address);
+    }
+
+    /**
+     * 判断监听地址是否仅限本机回环
+     *
+     * <p>解析失败（{@code getAddress()} 为 null）时按"非回环"处理——
+     * 宁可多告警，也不漏报。
+     *
+     * <p>包级可见以便单元测试（该方法只做地址判定，无副作用）。
+     *
+     * @param address 监听地址
+     * @return true 表示仅本机可访问
+     */
+    static boolean isLoopbackAddress(InetSocketAddress address) {
+        if (address == null) {
+            return false;
+        }
+        InetAddress resolved = address.getAddress();
+        return resolved != null && resolved.isLoopbackAddress();
+    }
+
+    /**
+     * 常量时间比较
+     *
+     * <p>{@link String#equals(Object)} 会在首个不同字符处提前返回，耗时随内容变化。
+     * 网络场景下实际可利用性很低（抖动远大于逐字节时间差），
+     * 但 {@link MessageDigest#isEqual} 是零成本的标准做法，没有理由不用。
+     *
+     * @param provided 客户端提供的值
+     * @param expected 期望值
+     * @return 是否相等
+     */
+    private static boolean constantTimeEquals(String provided, String expected) {
+        return MessageDigest.isEqual(
+                provided.getBytes(StandardCharsets.UTF_8),
+                expected.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -137,12 +196,44 @@ public class WsServer extends WebSocketServer {
         return remoteAddress.getHostString() + ":" + remoteAddress.getPort();
     }
 
-    private String getHeaderOrQueryParam(ClientHandshake clientHandshake, String name) {
-        String headerValue = clientHandshake.getFieldValue(name);
-        if (!headerValue.isEmpty()) {
-            return headerValue;
-        }
+    /**
+     * 读取请求头
+     *
+     * <p>头部名<b>大小写不敏感</b>（Java-WebSocket 内部使用
+     * {@code TreeMap} + {@code String.CASE_INSENSITIVE_ORDER}）。
+     * 头部缺失时返回空串，不会返回 null。
+     *
+     * @param clientHandshake 握手信息
+     * @param name            头部名
+     * @return 头部值（未解码），缺失时为空串
+     */
+    private static String getHeader(ClientHandshake clientHandshake, String name) {
+        String value = clientHandshake.getFieldValue(name);
+        return value == null ? "" : value;
+    }
 
+    /**
+     * 读取 URL query 参数
+     *
+     * <p><b>为什么保留 query 兜底</b>：浏览器的 WebSocket API <b>无法设置自定义请求头</b>
+     * （{@code new WebSocket(url)} 不接受 headers 选项），
+     * 因此浏览器客户端只能把 {@code x-self-name}、{@code Authorization} 等字段放进 URL。
+     * 去掉 query 支持会让浏览器客户端完全无法接入。
+     *
+     * <p><b>安全提示（重要）</b>：URL 会出现在反向代理访问日志、监控 / APM 系统、
+     * 浏览器历史与抓包工具的默认视图里。
+     * 因此<b>通过 query 传递 {@code Authorization} 会让 token 扩散到这些渠道</b>——
+     * 能设置请求头的客户端（服务端程序、桌面应用、命令行工具）应当优先使用请求头；
+     * 只有浏览器这类确实无法设置请求头的客户端才使用 query，并请自行评估日志暴露面。
+     *
+     * <p><b>本方法不对值做 URL 解码</b>：解码策略由各字段在使用处显式决定，
+     * 因为不同字段的编码约定并不相同（见 {@link #decodeQueryValue(String)}）。
+     *
+     * @param clientHandshake 握手信息
+     * @param name            参数名
+     * @return 参数值（未解码），缺失时为空串
+     */
+    private static String getQueryParameter(ClientHandshake clientHandshake, String name) {
         String resource = clientHandshake.getResourceDescriptor();
         int queryStart = resource == null ? -1 : resource.indexOf('?');
         if (queryStart < 0 || queryStart + 1 >= resource.length()) {
@@ -156,12 +247,36 @@ public class WsServer extends WebSocketServer {
             String value = splitIndex >= 0 ? pair.substring(splitIndex + 1) : "";
             try {
                 if (URLDecoder.decode(key, StandardCharsets.UTF_8.name()).equals(name)) {
-                    return URLDecoder.decode(value, StandardCharsets.UTF_8.name());
+                    return value;
                 }
             } catch (IllegalArgumentException | UnsupportedEncodingException ignored) {
             }
         }
         return "";
+    }
+
+    /**
+     * 解码来自 URL query 的值
+     *
+     * <p><b>为什么 query 值需要解码而请求头值不需要</b>：query 值在 URL 中必然经过一次编码
+     * （例如 {@code "Bearer xxx"} 中的空格会变成 {@code +}），必须解码一次才能还原；
+     * 而请求头值由客户端按原样发送，若也解码，token 中合法的 {@code %} / {@code +} 反而会被破坏。
+     *
+     * <p>这正是原清单 #12 的教训：<b>不同字段的解码策略本就不同，不应共用一套解析行为</b>。
+     * 因此本类不提供"统一取值"的复合方法，而是在每个字段的使用处显式写出其解码策略。
+     *
+     * @param value query 原始值
+     * @return 解码结果；为空或解码失败时返回空串（调用方按"该字段缺失/无效"处理）
+     */
+    private static String decodeQueryValue(String value) {
+        if (value == null || value.isEmpty()) {
+            return "";
+        }
+        try {
+            return URLDecoder.decode(value, StandardCharsets.UTF_8.name());
+        } catch (IllegalArgumentException | UnsupportedEncodingException e) {
+            return "";
+        }
     }
 
     /**
@@ -188,20 +303,48 @@ public class WsServer extends WebSocketServer {
     /**
      * 校验握手字段
      *
+     * <p><b>各字段的取值与解码策略（显式写出，不共用统一解析）</b>：
+     * <table border="1">
+     *     <tr><th>字段</th><th>请求头</th><th>URL query</th><th>原因</th></tr>
+     *     <tr>
+     *         <td>{@code x-self-name}</td>
+     *         <td>解码 1 次</td><td>解码 1 次</td>
+     *         <td>客户端约定对该字段做 URL 编码（服务器名可能含中文 / 空格），故两个来源都需解码</td>
+     *     </tr>
+     *     <tr>
+     *         <td>{@code x-client-origin}</td>
+     *         <td>不解码</td><td>解码 1 次</td>
+     *         <td>纯 ASCII 标识；query 来源可能被编码，解码可避免用编码绕过 minecraft 校验</td>
+     *     </tr>
+     *     <tr>
+     *         <td>{@code Authorization}</td>
+     *         <td>不解码</td><td>解码 1 次</td>
+     *         <td>请求头由客户端原样发送；query 值在 URL 中必然被编码（空格会变成 {@code +}）</td>
+     *     </tr>
+     * </table>
+     *
      * @param webSocket       客户端
      * @param clientHandshake 客户端握手信息
      * @return true 表示校验通过；false 表示校验失败且已关闭连接
      */
     private boolean validateHandshake(WebSocket webSocket, ClientHandshake clientHandshake) {
-        String originServerName = getHeaderOrQueryParam(clientHandshake, "x-self-name");
-        if (originServerName.isEmpty()) {
+        String rawServerName = getHeader(clientHandshake, "x-self-name");
+        if (rawServerName.isEmpty()) {
+            rawServerName = getQueryParameter(clientHandshake, "x-self-name");
+        }
+        if (rawServerName.isEmpty()) {
             this.logger.warn(
                     WebsocketConstantMessage.Server.MISSING_SERVER_NAME_HEADER, getClientAddress(webSocket));
             closeQuietly(webSocket, CLOSE_CODE_POLICY_VIOLATION, "Missing X-Self-name Header");
             return false;
         }
 
-        String clientOrigin = getHeaderOrQueryParam(clientHandshake, "x-client-origin");
+        // 该字段用于拒绝"来源为 minecraft"的连接（防自连），因此 query 来源也要读并解码，
+        // 否则一个通过 query 声明 minecraft 的客户端反而会被接受。
+        String clientOrigin = getHeader(clientHandshake, "x-client-origin");
+        if (clientOrigin.isEmpty()) {
+            clientOrigin = decodeQueryValue(getQueryParameter(clientHandshake, "x-client-origin"));
+        }
         if (clientOrigin.equalsIgnoreCase("minecraft")) {
             this.logger.warn(
                     WebsocketConstantMessage.Server.INVALID_CLIENT_ORIGIN_HEADER, getClientAddress(webSocket));
@@ -211,10 +354,10 @@ public class WsServer extends WebSocketServer {
 
         String decodedServerName;
         try {
-            decodedServerName = URLDecoder.decode(originServerName, StandardCharsets.UTF_8.name());
+            decodedServerName = URLDecoder.decode(rawServerName, StandardCharsets.UTF_8.name());
         } catch (IllegalArgumentException | UnsupportedEncodingException e) {
             this.logger.error(
-                    WebsocketConstantMessage.Server.SERVER_NAME_DECODE_FAILED_HEADER, getClientAddress(webSocket), originServerName, e.getMessage());
+                    WebsocketConstantMessage.Server.SERVER_NAME_DECODE_FAILED_HEADER, getClientAddress(webSocket), rawServerName, e.getMessage());
             closeQuietly(webSocket, CLOSE_CODE_POLICY_VIOLATION, "X-Self-name Header decode failed");
             return false;
         }
@@ -233,16 +376,34 @@ public class WsServer extends WebSocketServer {
             return false;
         }
 
-        String accessToken = getHeaderOrQueryParam(clientHandshake, "Authorization");
-        if (!this.accessToken.isEmpty() && !accessToken.equals("Bearer " + this.accessToken)) {
-            // 安全：绝不记录客户端提交的 Authorization / accessToken / Bearer token 内容，仅记录来源地址。
-            this.logger.warn(
-                    WebsocketConstantMessage.Server.INVALID_ACCESS_TOKEN_HEADER, getClientAddress(webSocket));
-            if (this.logger.isDebugEnabled()) {
-                this.logger.debug("认证失败详情：客户端是否携带 Authorization 头部 = {}", !accessToken.isEmpty());
+        if (!this.accessToken.isEmpty()) {
+            // 请求头按原样取值；query 来源需要解码（URL 中的空格会变成 '+'）
+            String accessToken = getHeader(clientHandshake, "Authorization");
+            boolean credentialFromHeader = !accessToken.isEmpty();
+            if (!credentialFromHeader) {
+                accessToken = decodeQueryValue(getQueryParameter(clientHandshake, "Authorization"));
             }
-            closeQuietly(webSocket, CLOSE_CODE_POLICY_VIOLATION, "Authorization Header is wrong");
-            return false;
+
+            if (accessToken.isEmpty()) {
+                // 明确区分"未携带凭据"与"凭据错误"：此前两者共用同一条日志，排查时难以定位
+                this.logger.warn("连接未携带 Authorization 凭据，已拒绝。来自：{}", getClientAddress(webSocket));
+                closeQuietly(webSocket, CLOSE_CODE_POLICY_VIOLATION, "Authorization is required");
+                return false;
+            }
+
+            if (!constantTimeEquals(accessToken, "Bearer " + this.accessToken)) {
+                // 安全：绝不记录客户端提交的 Authorization / accessToken / Bearer token 内容，仅记录来源地址。
+                this.logger.warn(
+                        WebsocketConstantMessage.Server.INVALID_ACCESS_TOKEN_HEADER, getClientAddress(webSocket));
+                if (this.logger.isDebugEnabled()) {
+                    // 仅记录"凭据来自哪里"，不记录内容；便于运维发现 token 被放进 URL 的情况
+                    this.logger.debug(
+                            "认证失败详情：凭据来源 = {}",
+                            credentialFromHeader ? "请求头" : "URL query（URL 可能进入反向代理日志，建议改用请求头）");
+                }
+                closeQuietly(webSocket, CLOSE_CODE_POLICY_VIOLATION, "Authorization is wrong");
+                return false;
+            }
         }
 
         return true;

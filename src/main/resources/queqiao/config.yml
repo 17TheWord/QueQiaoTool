@@ -4,6 +4,12 @@ debug: false # DEBUG，开启后会打印所有日志
 
 server_name: "Server" # 服务器名称，当有多个服务器时，请使用不同的命名
 
+# 访问令牌，用于连接时进行验证
+# 安全提示：若把下方 websocket_server.host 改为非回环地址（如 0.0.0.0）而此处留空，
+# 则任何能访问该端口的人都可发送消息、并执行 Rcon 命令（等价于在服务器上执行任意命令）。
+# 对外暴露前请务必设置该令牌。
+# 注意：浏览器无法在 WebSocket 握手中设置自定义请求头，只能通过 URL query 传递该令牌；
+# 而 URL 会进入反向代理日志与监控系统，因此能用请求头的客户端请优先使用请求头。
 access_token: "" # 用于连接时进行验证
 
 # 消息前缀
@@ -24,7 +30,7 @@ enable_translation: false
 # WebSocket Server配置项
 websocket_server:
   enable: true          # 是否启用
-  host: "127.0.0.1"     # WebSocket Server 地址
+  host: "127.0.0.1"     # WebSocket Server 地址；默认仅本机可访问。改为 0.0.0.0 等非回环地址前，请先设置 access_token
   port: 8080            # WebSocket Server 端口
 
 # WebSocket Client配置项
