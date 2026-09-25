@@ -8,6 +8,7 @@ import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.function.Consumer;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -84,6 +85,7 @@ public class WsServer extends WebSocketServer {
     private final String accessToken;
     private final boolean enabled;
     private final HandleProtocolMessage handleProtocolMessage;
+    private final Consumer<WsServer> serverFailureHandler;
 
     /**
      * 构造函数
@@ -97,6 +99,20 @@ public class WsServer extends WebSocketServer {
      */
     public WsServer(
                     InetSocketAddress address, Logger logger, HandleProtocolMessage handleProtocolMessage, String serverName, String accessToken, boolean enabled) {
+        this(address, logger, handleProtocolMessage, serverName, accessToken, enabled, null);
+    }
+
+    /**
+     * 构造可向生命周期所有者报告服务端级启动/运行错误的 WebSocket Server。
+     */
+    public WsServer(
+            InetSocketAddress address,
+            Logger logger,
+            HandleProtocolMessage handleProtocolMessage,
+            String serverName,
+            String accessToken,
+            boolean enabled,
+            Consumer<WsServer> serverFailureHandler) {
         super(address);
         super.setReuseAddr(true);
         this.logger = logger;
@@ -109,6 +125,7 @@ public class WsServer extends WebSocketServer {
         this.accessToken = accessToken == null ? "" : accessToken;
         this.enabled = enabled;
         this.handleProtocolMessage = handleProtocolMessage;
+        this.serverFailureHandler = serverFailureHandler;
         this.setConnectionLostTimeout(CONNECTION_LOST_TIMEOUT_SECONDS);
         warnIfExposedWithoutToken(address);
     }
@@ -476,6 +493,13 @@ public class WsServer extends WebSocketServer {
                 WebsocketConstantMessage.Server.CONNECTION_ERROR,
                 getClientAddress(webSocket),
                 resolveErrorMessage(exception));
+        if (webSocket == null && serverFailureHandler != null) {
+            try {
+                serverFailureHandler.accept(this);
+            } catch (RuntimeException callbackError) {
+                this.logger.error("处理 WebSocket Server 生命周期错误时发生异常", callbackError);
+            }
+        }
     }
 
     /**

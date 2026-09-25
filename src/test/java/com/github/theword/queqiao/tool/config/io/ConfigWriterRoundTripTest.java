@@ -215,6 +215,31 @@ class ConfigWriterRoundTripTest {
                 "save 不得隐式执行 sync：未知核心字段必须保留");
     }
 
+    @Test
+    @DisplayName("闭环：未知嵌套 YAML 值及特殊键名保存后保持等价")
+    void unknownNestedYamlValuesAndKeysSurviveRoundTrip(@TempDir Path tempDir) throws IOException {
+        ConfigRegistry registry = new ConfigRegistry();
+        ConfigKeys.registerAll(registry);
+        Config runtime = new Config(registry);
+        ConfigLoadResult first = new ConfigLoader(registry, runtime).load(
+                ConfigFileState.VALID,
+                parse("addons:\n"
+                        + "  future:\n"
+                        + "    \"odd:key\":\n"
+                        + "      - name: alpha\n"
+                        + "        flags: [true, false]\n"
+                        + "      - name: beta\n"
+                        + "    nested:\n"
+                        + "      - - a\n"
+                        + "        - b\n"));
+
+        Path target = tempDir.resolve("config.yml");
+        writer.write(ConfigWriteSnapshot.of(registry, runtime, first.getDocument()), target, null);
+
+        ConfigDocument written = new ConfigDocument(readYaml(target));
+        assertEquals(first.getDocument().get("addons"), written.get("addons"));
+    }
+
     // ------------------------------------------------------------------
     // 首次生成（§27）
     // ------------------------------------------------------------------

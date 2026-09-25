@@ -116,6 +116,11 @@ public final class ConfigSynchronizer {
         for (ConfigKey<?> key : schema.keys()) {
             String path = key.getPath();
 
+            if (hasInvalidSectionAncestor(schema, document, path)) {
+                // 子字段无法在标量区块下寻址；保留原结构，不能用默认值覆盖父节点。
+                continue;
+            }
+
             if (!document.has(path)) {
                 // 缺失：使用 Schema 默认值（defaultValue() 已由 codec 复制，不会共享可变对象）
                 additions.add(new ConfigChange(ConfigChange.Kind.ADD, path, key.defaultValue()));
@@ -161,6 +166,8 @@ public final class ConfigSynchronizer {
             if (schema.isSection(path)) {
                 if (value instanceof Map) {
                     collectStructuralChanges((Map<String, Object>) value, path, schema, removals, preserved);
+                } else {
+                    preserved.add(new ConfigChange(ConfigChange.Kind.KEEP, path, value));
                 }
                 // 区块写成标量属于结构非法 → 保留用户内容，不删除
                 continue;
@@ -194,6 +201,16 @@ public final class ConfigSynchronizer {
                 preserved.add(new ConfigChange(ConfigChange.Kind.KEEP, path, value));
             }
         }
+    }
+
+    private static boolean hasInvalidSectionAncestor(
+            ConfigSchemaIndex schema, ConfigDocument document, String path) {
+        for (String ancestor : ConfigPaths.ancestorsOf(path)) {
+            if (schema.isSection(ancestor) && document.has(ancestor) && !document.isSection(ancestor)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ------------------------------------------------------------------

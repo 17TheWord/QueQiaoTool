@@ -139,6 +139,22 @@ class ConfigSynchronizerTest {
     }
 
     @Test
+    @DisplayName("非法区块结构 → KEEP，不能用缺失子项默认值覆盖")
+    void preservesInvalidSectionInsteadOfAddingChildren() {
+        ConfigTree tree = newRegistry().snapshot();
+        ConfigDocument document = doc("websocket_server: broken\n");
+
+        ConfigSyncPlan plan = synchronizer.plan(tree, document);
+
+        assertFalse(plan.getAdditions().stream()
+                .anyMatch(change -> change.getPath().startsWith("websocket_server.")));
+        assertTrue(plan.getPreserved().stream()
+                .anyMatch(change -> "websocket_server".equals(change.getPath())));
+        ConfigDocument next = synchronizer.apply(plan, document);
+        assertEquals("broken", next.get("websocket_server"));
+    }
+
+    @Test
     @DisplayName("显式写了默认值 → 既不 ADD 也不 REMOVE（NO CHANGE）")
     void explicitDefaultIsNoChange() {
         ConfigRegistry registry = newRegistry();

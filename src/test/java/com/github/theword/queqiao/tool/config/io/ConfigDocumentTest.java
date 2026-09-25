@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -67,5 +68,32 @@ class ConfigDocumentTest {
         raw.put("section", nested);
 
         assertThrows(ConfigValidationException.class, () -> new ConfigDocument(raw));
+    }
+
+    @Test
+    @DisplayName("Date 与二进制值也不会通过构造参数或读取结果泄漏引用")
+    @SuppressWarnings("unchecked")
+    void mutableYamlScalarsAreCopiedOnRead() {
+        Date originalDate = new Date(1000L);
+        byte[] originalBytes = new byte[] {1, 2};
+        Map<String, Object> raw = new LinkedHashMap<>();
+        raw.put("date", originalDate);
+        raw.put("binary", originalBytes);
+        ConfigDocument document = new ConfigDocument(raw);
+
+        originalDate.setTime(2000L);
+        originalBytes[0] = 9;
+        Date fromGet = (Date) document.get("date");
+        byte[] bytesFromGet = (byte[]) document.get("binary");
+        fromGet.setTime(3000L);
+        bytesFromGet[0] = 8;
+
+        assertEquals(1000L, ((Date) document.get("date")).getTime());
+        assertEquals(1, ((byte[]) document.get("binary"))[0]);
+        Map<String, Object> root = document.getRoot();
+        ((Date) root.get("date")).setTime(4000L);
+        ((byte[]) root.get("binary"))[0] = 7;
+        assertEquals(1000L, ((Date) document.get("date")).getTime());
+        assertEquals(1, ((byte[]) document.get("binary"))[0]);
     }
 }

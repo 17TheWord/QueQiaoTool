@@ -1,7 +1,9 @@
 package com.github.theword.queqiao.tool;
 
 import com.github.theword.queqiao.tool.config.Config;
+import com.github.theword.queqiao.tool.config.ConfigKey;
 import com.github.theword.queqiao.tool.config.ConfigKeys;
+import com.github.theword.queqiao.tool.config.codec.StringCodec;
 import com.github.theword.queqiao.tool.event.PlayerChatEvent;
 import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
@@ -113,6 +115,22 @@ class GlobalContextLifecycleTest {
         assertNotNull(GlobalContext.getLogger(), "getLogger() 不应返回 null");
         assertNotNull(GlobalContext.getConfig(), "getConfig() 不应返回 null");
         assertNotNull(GlobalContext.getGson(), "getGson() 不应返回 null");
+    }
+
+    @Test
+    @DisplayName("运行时创建时允许 Addon 在配置加载前注册 Schema")
+    void runtimeAcceptsStartupConfigRegistration() {
+        ConfigKey<String> addonKey = ConfigKey.builder("addons.ai.model", StringCodec.INSTANCE)
+                .defaultValue("default-model")
+                .build();
+
+        QueQiaoRuntime runtime = QueQiaoRuntime.create(
+                false, "test", "test", NOOP_API_SERVICE, NOOP_RETURN_MESSAGE_SERVICE,
+                registry -> registry.register(addonKey));
+
+        assertNotNull(runtime.getConfigRegistry().findByPath("addons.ai.model"));
+        assertFalse(runtime.getConfigRegistry().isFrozen());
+        assertEquals("default-model", runtime.getConfig().get(addonKey));
     }
 
     @Test

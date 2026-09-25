@@ -36,6 +36,7 @@ import org.slf4j.helpers.NOPLogger;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.function.Consumer;
 
 public final class QueQiaoRuntime {
 
@@ -128,8 +129,6 @@ public final class QueQiaoRuntime {
         // 配置系统接线：Schema 只注册一次，Config 只建一份，全局唯一配置状态
         this.configRegistry = new ConfigRegistry();
         ConfigKeys.registerAll(this.configRegistry);
-        // Addon 配置注册应在此处完成；配置加载开始前冻结 Schema，确保整个生命周期一致。
-        this.configRegistry.freeze();
         this.config = new Config(this.configRegistry);
         this.configDocument = ConfigDocument.empty();
         // 平台 API 实现与 RCON 执行器由协议层注入，协议层因此不再读 GlobalContext。
@@ -165,8 +164,24 @@ public final class QueQiaoRuntime {
     }
 
     public static QueQiaoRuntime create(boolean modServer, String serverVersion, String serverType, HandleApiService handleApiService, HandleCommandReturnMessageService handleCommandReturnMessageService) {
+        return create(modServer, serverVersion, serverType, handleApiService, handleCommandReturnMessageService, null);
+    }
+
+    /**
+     * 创建运行时并在配置加载前注册扩展配置。
+     *
+     * @param configurer 可选的启动期 Schema 注册回调
+     * @return 尚未启动的运行时
+     */
+    public static QueQiaoRuntime create(
+            boolean modServer,
+            String serverVersion,
+            String serverType,
+            HandleApiService handleApiService,
+            HandleCommandReturnMessageService handleCommandReturnMessageService,
+            Consumer<ConfigRegistry> configurer) {
         Logger runtimeLogger = LoggerFactory.getLogger(BaseConstant.MODULE_NAME);
-        return new QueQiaoRuntime(
+        QueQiaoRuntime runtime = new QueQiaoRuntime(
                 modServer,
                 serverVersion,
                 serverType,
@@ -174,6 +189,10 @@ public final class QueQiaoRuntime {
                 handleCommandReturnMessageService,
                 runtimeLogger
         );
+        if (configurer != null) {
+            configurer.accept(runtime.configRegistry);
+        }
+        return runtime;
     }
 
     /**
@@ -248,6 +267,9 @@ public final class QueQiaoRuntime {
 
     public void start() {
         logger.info(BaseConstant.LAUNCHING);
+
+        // 核心与 Addon 在启动期完成注册；加载配置前冻结 Schema。
+        configRegistry.freeze();
 
         // §6 固定顺序：先把配置加载并提交，再启动任何依赖配置的服务。
         // 配置非法时这里会抛异常，从而不会出现"半套配置 + 服务已启动"的状态（§12/§38）。

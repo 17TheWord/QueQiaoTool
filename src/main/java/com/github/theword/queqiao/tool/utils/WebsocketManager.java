@@ -317,7 +317,7 @@ public class WebsocketManager {
     }
 
     private void startServer(Object commandReturner) {
-        wsServer = new WsServer(
+        WsServer server = new WsServer(
                 new InetSocketAddress(
                         this.config.get(ConfigKeys.WebSocket.HOST),
                         this.config.get(ConfigKeys.WebSocket.PORT)
@@ -326,9 +326,11 @@ public class WebsocketManager {
                 handleProtocolMessage,
                 this.config.get(ConfigKeys.SERVER_NAME),
                 this.config.get(ConfigKeys.ACCESS_TOKEN),
-                this.config.get(ConfigKeys.ENABLE)
+                this.config.get(ConfigKeys.ENABLE),
+                this::onServerFailure
         );
-        wsServer.start();
+        wsServer = server;
+        server.start();
         this.handleCommandReturnMessageService.sendReturnMessage(
                 commandReturner,
                 Tool.format(
@@ -337,6 +339,15 @@ public class WebsocketManager {
                         this.config.get(ConfigKeys.WebSocket.PORT)
                 )
         );
+    }
+
+    /**
+     * 清除仍指向当前失败实例的引用。volatile identity check 可避免旧实例的迟到回调清掉新 Server。
+     */
+    private void onServerFailure(WsServer failedServer) {
+        if (wsServer == failedServer) {
+            wsServer = null;
+        }
     }
 
     private void stopServer(Object commandReturner, String reason) {
@@ -374,7 +385,12 @@ public class WebsocketManager {
                 return;
             }
             if (started) {
-                Tool.debugLog("WebsocketManager 已启动，忽略重复启动");
+                // Client 已启动时保持幂等；如果先前 Server 绑定失败，则允许单独重试 Server。
+                if (wsServer == null && this.config.get(ConfigKeys.WebSocket.ENABLE)) {
+                    startServer(commandReturner);
+                } else {
+                    Tool.debugLog("WebsocketManager 已启动，忽略重复启动");
+                }
                 return;
             }
             started = true;

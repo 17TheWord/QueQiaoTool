@@ -62,7 +62,9 @@ public final class ConfigKey<T> extends ConfigNode {
      * @return 默认值副本
      */
     public T defaultValue() {
-        return codec.copy(defaultValueSupplier.get());
+        T value = codec.read(getPath(), defaultValueSupplier.get());
+        validate(value);
+        return codec.copy(value);
     }
 
     public ConfigCodec<T> getCodec() {
@@ -175,7 +177,10 @@ public final class ConfigKey<T> extends ConfigNode {
             if (defaultValueSupplier == null) {
                 throw new IllegalStateException("必须为 " + path + " 指定默认值");
             }
-            return new ConfigKey<>(path, commentLines, codec, defaultValueSupplier, validator);
+            ConfigKey<T> key = new ConfigKey<>(path, commentLines, codec, defaultValueSupplier, validator);
+            // Schema 中的默认值是程序定义，不应静默回退；在注册前暴露错误路径。
+            key.defaultValue();
+            return key;
         }
     }
 }

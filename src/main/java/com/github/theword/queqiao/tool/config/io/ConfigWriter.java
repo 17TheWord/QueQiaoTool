@@ -170,19 +170,19 @@ public final class ConfigWriter {
      */
     @SuppressWarnings("unchecked")
     private void emitUnknown(String name, Object value, int depth, StringBuilder out) {
-        if (value instanceof Map) {
-            Map<String, Object> nested = (Map<String, Object>) value;
-            if (nested.isEmpty()) {
-                out.append(indent(depth)).append(name).append(": {}\n");
-                return;
+        DumperOptions options = new DumperOptions();
+        options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+        options.setIndent(2);
+        options.setIndicatorIndent(0);
+        options.setPrettyFlow(true);
+        options.setSplitLines(false);
+        String dumped = new Yaml(options).dump(Collections.singletonMap(name, value));
+        String prefix = indent(depth);
+        for (String line : dumped.split("\\n", -1)) {
+            if (!line.isEmpty()) {
+                out.append(prefix).append(line).append('\n');
             }
-            out.append(indent(depth)).append(name).append(":\n");
-            for (Map.Entry<String, Object> entry : nested.entrySet()) {
-                emitUnknown(entry.getKey(), entry.getValue(), depth + 1, out);
-            }
-            return;
         }
-        out.append(indent(depth)).append(name).append(": ").append(emitYamlValue(value, depth)).append('\n');
     }
 
     // ------------------------------------------------------------------

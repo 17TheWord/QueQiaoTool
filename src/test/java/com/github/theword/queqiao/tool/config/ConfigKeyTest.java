@@ -107,6 +107,19 @@ class ConfigKeyTest {
     }
 
     @Test
+    @DisplayName("默认值不满足 validator 时构建失败并报告配置路径")
+    void invalidDefaultValueIsRejectedAtBuildTime() {
+        ConfigValidationException e = assertThrows(
+                ConfigValidationException.class,
+                () -> ConfigKey.builder("websocket_server.port", IntegerCodec.INSTANCE)
+                        .defaultValue(70000)
+                        .validator(ConfigValidators.range(1, 65535))
+                        .build());
+
+        assertTrue(e.getMessage().contains("websocket_server.port"), e.getMessage());
+    }
+
+    @Test
     @DisplayName("默认值：可变类型每次返回副本，不在多个 Config 之间共享")
     void mutableDefaultIsCopied() {
         ConfigKey<List<String>> key = ConfigKey.builder("a.list", ListCodec.INSTANCE)

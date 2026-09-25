@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Date;
 
 /**
  * 已解析的配置文档
@@ -56,7 +57,7 @@ public final class ConfigDocument {
      * @return 只读根节点
      */
     public Map<String, Object> getRoot() {
-        return root;
+        return freezeMap(root, ROOT_PATH);
     }
 
     /**
@@ -79,7 +80,7 @@ public final class ConfigDocument {
      */
     public Object get(String path) {
         Object located = locate(path);
-        return located == ABSENT ? null : located;
+        return located == ABSENT ? null : freezeValue(located, path == null ? ROOT_PATH : path);
     }
 
     /**
@@ -150,6 +151,12 @@ public final class ConfigDocument {
                 copy.add(freezeValue(item, path));
             }
             return Collections.unmodifiableList(copy);
+        }
+        if (value instanceof Date) {
+            return new Date(((Date) value).getTime());
+        }
+        if (value instanceof byte[]) {
+            return ((byte[]) value).clone();
         }
         return value;
     }

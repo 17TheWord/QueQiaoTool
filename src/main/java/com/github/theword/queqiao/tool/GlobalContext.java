@@ -1,6 +1,7 @@
 package com.github.theword.queqiao.tool;
 
 import com.github.theword.queqiao.tool.config.Config;
+import com.github.theword.queqiao.tool.config.ConfigRegistry;
 import com.github.theword.queqiao.tool.event.base.BaseEvent;
 import com.github.theword.queqiao.tool.exception.rcon.RconException;
 import com.github.theword.queqiao.tool.handle.HandleApiService;
@@ -12,6 +13,7 @@ import com.google.gson.JsonElement;
 import org.slf4j.Logger;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * 全局上下文门面
@@ -70,6 +72,19 @@ public final class GlobalContext {
      * @param handleCommandReturnMessageImpl    平台命令返回消息实现
      */
     public static void init(boolean isModServer, String serverVersion, String serverType, HandleApiService handleApiImpl, HandleCommandReturnMessageService handleCommandReturnMessageImpl) {
+        init(isModServer, serverVersion, serverType, handleApiImpl, handleCommandReturnMessageImpl, null);
+    }
+
+    /**
+     * 初始化并在配置加载前注册扩展配置。
+     */
+    public static void init(
+            boolean isModServer,
+            String serverVersion,
+            String serverType,
+            HandleApiService handleApiImpl,
+            HandleCommandReturnMessageService handleCommandReturnMessageImpl,
+            Consumer<ConfigRegistry> configurer) {
         // 平台实现是 API 边界的必填依赖。为 null 时若不在此处拦截，
         // 会拖到"第一条协议请求"或"第一条命令"执行时才抛 NPE，定位成本很高；
         // 在入口快速失败并给出明确参数名，可让接线错误在启动阶段立刻暴露。
@@ -81,7 +96,8 @@ public final class GlobalContext {
                 getLogger().warn("鹊桥已被初始化过，将先关闭旧实例再重新初始化，以避免 WebSocket / Rcon / 线程泄漏");
                 shutdownInternal();
             }
-            QueQiaoRuntime newRuntime = QueQiaoRuntime.create(isModServer, serverVersion, serverType, handleApiImpl, handleCommandReturnMessageImpl);
+            QueQiaoRuntime newRuntime = QueQiaoRuntime.create(
+                    isModServer, serverVersion, serverType, handleApiImpl, handleCommandReturnMessageImpl, configurer);
             runtime = newRuntime;
             initialized = true;
             newRuntime.start();
