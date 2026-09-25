@@ -1,6 +1,7 @@
 package com.github.theword.queqiao.tool.localize;
 
 import com.github.theword.queqiao.tool.GlobalContext;
+import com.github.theword.queqiao.tool.config.ConfigKeys;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.github.theword.queqiao.tool.utils.GsonUtils;
 import com.google.gson.reflect.TypeToken;
@@ -91,7 +92,7 @@ public class LanguageService {
      * 3. 采用原子级方式更新内存映射，成功更新后重置缺失键记录。
      */
     public synchronized void reload() {
-        if (!GlobalContext.getConfig().isEnableTranslation()) {
+        if (!GlobalContext.getConfig().get(ConfigKeys.ENABLE_TRANSLATION)) {
             this.internalEnable = false;
             this.translations.clear();
             this.missingKeys.clear();
@@ -171,7 +172,7 @@ public class LanguageService {
      * @return 翻译并格式化后的文本，或原始 Key
      */
     public String translate(String key, Object[] args) {
-        if (!GlobalContext.getConfig().isEnableTranslation()) return key;
+        if (!GlobalContext.getConfig().get(ConfigKeys.ENABLE_TRANSLATION)) return key;
 
         if (!internalEnable) return key;
 

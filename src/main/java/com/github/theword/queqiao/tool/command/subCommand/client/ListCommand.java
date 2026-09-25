@@ -2,7 +2,8 @@ package com.github.theword.queqiao.tool.command.subCommand.client;
 
 import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.command.SubCommand;
-import com.github.theword.queqiao.tool.config.WebSocketClientConfig;
+import com.github.theword.queqiao.tool.config.ConfigKeys;
+import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
 import com.github.theword.queqiao.tool.utils.Tool;
 import com.github.theword.queqiao.tool.websocket.WsClient;
@@ -50,10 +51,10 @@ public class ListCommand extends SubCommand {
     @Override
     protected void onExecute(Object commandReturner, List<String> args) {
         HandleCommandReturnMessageService returnMessageService = GlobalContext.getHandleCommandReturnMessageService();
-        WebSocketClientConfig clientConfig = GlobalContext.getConfig().getWebsocketClient();
+        Config config = GlobalContext.getConfig();
 
-        if (!clientConfig.isEnable()) {
-            List<String> urlList = new ArrayList<>(clientConfig.getUrlList());
+        if (!config.get(ConfigKeys.WebSocketClient.ENABLE)) {
+            List<String> urlList = new ArrayList<>(config.get(ConfigKeys.WebSocketClient.URL_LIST));
             returnMessageService.sendReturnMessage(
                     commandReturner, "Websocket Client 配置项未启用，如需开启，请在 config.yml 中启用 WebsocketClient 配置项");
             returnMessageService.sendReturnMessage(

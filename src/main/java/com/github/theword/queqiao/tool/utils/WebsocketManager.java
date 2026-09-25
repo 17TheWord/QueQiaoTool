@@ -1,7 +1,7 @@
 package com.github.theword.queqiao.tool.utils;
 
+import com.github.theword.queqiao.tool.config.ConfigKeys;
 import com.github.theword.queqiao.tool.config.Config;
-import com.github.theword.queqiao.tool.config.WebSocketClientConfig;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
 import com.github.theword.queqiao.tool.event.base.BaseEvent;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
@@ -180,8 +180,8 @@ public class WebsocketManager {
     private void startClients(Object commandReturner) {
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.LAUNCHING);
 
-        WebSocketClientConfig clientConfig = this.config.getWebsocketClient();
-        WebSocketUrlNormalizer.Result normalized = WebSocketUrlNormalizer.normalize(clientConfig.getUrlList());
+        WebSocketUrlNormalizer.Result normalized =
+                WebSocketUrlNormalizer.normalize(this.config.get(ConfigKeys.WebSocketClient.URL_LIST));
 
         for (String rejectedUrl : normalized.getRejected()) {
             this.logger.warn("WebSocket URL scheme 不受支持（仅支持 ws:// 与 wss://），已跳过：{}", rejectedUrl);
@@ -190,7 +190,8 @@ public class WebsocketManager {
         }
 
         ReconnectPolicy reconnectPolicy = new ReconnectPolicy(
-                clientConfig.getReconnectInterval(), clientConfig.getReconnectMaxTimes());
+                this.config.get(ConfigKeys.WebSocketClient.RECONNECT_INTERVAL),
+                this.config.get(ConfigKeys.WebSocketClient.RECONNECT_MAX_TIMES));
         if (!reconnectPolicy.isAutoReconnectEnabled()) {
             this.logger.warn("WebSocket 自动重连未启用（reconnect_max_times <= 0），连接断开后不会自动重连");
         }
@@ -217,9 +218,9 @@ public class WebsocketManager {
                     this.reconnectScheduler,
                     reconnectPolicy,
                     this.handleProtocolMessage,
-                    this.config.getServerName(),
-                    this.config.getAccessToken(),
-                    this.config.isEnable()
+                    this.config.get(ConfigKeys.SERVER_NAME),
+                    this.config.get(ConfigKeys.ACCESS_TOKEN),
+                    this.config.get(ConfigKeys.ENABLE)
             );
             // 先纳入管理列表：保证 connect() 同步抛异常时该实例仍能被回收，Manager 始终拥有 Client 生命周期
             this.wsClientList.add(wsClient);
@@ -309,7 +310,7 @@ public class WebsocketManager {
     private void restartClients(Object commandReturner) {
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.RELOADING);
         stopClients(CLOSE_CODE_NORMAL, WebsocketConstantMessage.CLOSE_BY_RELOAD, commandReturner);
-        if (this.config.getWebsocketClient().isEnable()) {
+        if (this.config.get(ConfigKeys.WebSocketClient.ENABLE)) {
             startClients(commandReturner);
         }
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Client.RELOADED);
@@ -318,22 +319,22 @@ public class WebsocketManager {
     private void startServer(Object commandReturner) {
         wsServer = new WsServer(
                 new InetSocketAddress(
-                        this.config.getWebsocketServer().getHost(),
-                        this.config.getWebsocketServer().getPort()
+                        this.config.get(ConfigKeys.WebSocket.HOST),
+                        this.config.get(ConfigKeys.WebSocket.PORT)
                 ),
                 logger,
                 handleProtocolMessage,
-                this.config.getServerName(),
-                this.config.getAccessToken(),
-                this.config.isEnable()
+                this.config.get(ConfigKeys.SERVER_NAME),
+                this.config.get(ConfigKeys.ACCESS_TOKEN),
+                this.config.get(ConfigKeys.ENABLE)
         );
         wsServer.start();
         this.handleCommandReturnMessageService.sendReturnMessage(
                 commandReturner,
                 Tool.format(
                         WebsocketConstantMessage.Server.SERVER_STARTING,
-                        this.config.getWebsocketServer().getHost(),
-                        this.config.getWebsocketServer().getPort()
+                        this.config.get(ConfigKeys.WebSocket.HOST),
+                        this.config.get(ConfigKeys.WebSocket.PORT)
                 )
         );
     }
@@ -353,7 +354,7 @@ public class WebsocketManager {
 
     private void restartServer(Object commandReturner) {
         stopServer(commandReturner, WebsocketConstantMessage.Server.RELOADING);
-        if (this.config.getWebsocketServer().isEnable()) {
+        if (this.config.get(ConfigKeys.WebSocket.ENABLE)) {
             startServer(commandReturner);
         }
         this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.RELOADED);
@@ -377,10 +378,10 @@ public class WebsocketManager {
                 return;
             }
             started = true;
-            if (this.config.getWebsocketClient().isEnable()) {
+            if (this.config.get(ConfigKeys.WebSocketClient.ENABLE)) {
                 startClients(commandReturner);
             }
-            if (this.config.getWebsocketServer().isEnable()) {
+            if (this.config.get(ConfigKeys.WebSocket.ENABLE)) {
                 startServer(commandReturner);
             }
         }
@@ -456,7 +457,7 @@ public class WebsocketManager {
      * @param event 事件
      */
     public void sendEvent(BaseEvent event) {
-        if (!this.config.isEnable()) {
+        if (!this.config.get(ConfigKeys.ENABLE)) {
             return;
         }
 

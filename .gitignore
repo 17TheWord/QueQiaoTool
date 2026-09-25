@@ -11,6 +11,10 @@
 .mtj.tmp/
 target/
 
+.workbuddy-ai/
+tmp/
+ENGINEERING_REVIEW.md
+
 # Package Files #
 *.jar
 *.war

@@ -3,7 +3,6 @@ package com.github.theword.queqiao.tool.config;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,11 +13,12 @@ import java.util.Map;
  * 配置文件读取器
  *
  * <p>只负责"读 + 判定状态"，<b>不写盘、不校验、不补默认值</b>。
+ * 它是"文件 + YAML 解析"这一层的唯一入口：{@code ConfigLoader} 接收的是它产出的已解析 Map。
  * 严格区分 {@link ConfigFileState} 的四种状态——这是避免"配置写错即被默认值覆盖"的关键。
  *
  * @since 0.6.11
  */
-final class ConfigFileReader {
+public final class ConfigFileReader {
 
     private ConfigFileReader() {
     }
@@ -26,7 +26,7 @@ final class ConfigFileReader {
     /**
      * 读取结果
      */
-    static final class Result {
+    public static final class Result {
 
         private final ConfigFileState state;
         private final Map<String, Object> map;
@@ -38,18 +38,18 @@ final class ConfigFileReader {
             this.errorMessage = errorMessage;
         }
 
-        ConfigFileState getState() {
+        public ConfigFileState getState() {
             return state;
         }
 
         /**
          * @return 仅当状态为 {@link ConfigFileState#VALID} / {@link ConfigFileState#EMPTY} 时非 null
          */
-        Map<String, Object> getMap() {
+        public Map<String, Object> getMap() {
             return map;
         }
 
-        String getErrorMessage() {
+        public String getErrorMessage() {
             return errorMessage;
         }
     }
@@ -60,7 +60,7 @@ final class ConfigFileReader {
      * @param path 文件路径
      * @return 读取结果（含四态判定）
      */
-    static Result read(Path path) {
+    public static Result read(Path path) {
         if (!Files.exists(path)) {
             return new Result(ConfigFileState.MISSING, null, null);
         }
@@ -76,26 +76,12 @@ final class ConfigFileReader {
     }
 
     /**
-     * 读取内置模板资源
-     *
-     * @param inputStream 资源流
-     * @return 读取结果
-     */
-    static Result readResource(InputStream inputStream) {
-        try {
-            return parse(new String(readAll(inputStream), StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            return new Result(ConfigFileState.INVALID, null, "读取内置模板失败：" + e.getMessage());
-        }
-    }
-
-    /**
      * 解析文本内容并判定状态
      *
      * @param content YAML 文本
      * @return 读取结果
      */
-    static Result parse(String content) {
+    public static Result parse(String content) {
         if (content == null || content.trim().isEmpty()) {
             // 空文件（或只有空白）→ EMPTY，与 INVALID 严格区分
             return new Result(ConfigFileState.EMPTY, new LinkedHashMap<>(), null);
@@ -121,15 +107,5 @@ final class ConfigFileReader {
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>) raw;
         return new Result(ConfigFileState.VALID, map, null);
-    }
-
-    private static byte[] readAll(InputStream inputStream) throws IOException {
-        java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
-        byte[] chunk = new byte[8192];
-        int read;
-        while ((read = inputStream.read(chunk)) != -1) {
-            buffer.write(chunk, 0, read);
-        }
-        return buffer.toByteArray();
     }
 }

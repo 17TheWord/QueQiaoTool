@@ -1,5 +1,7 @@
 package com.github.theword.queqiao.tool;
 
+import com.github.theword.queqiao.tool.config.Config;
+import com.github.theword.queqiao.tool.config.ConfigKeys;
 import com.github.theword.queqiao.tool.event.PlayerChatEvent;
 import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
@@ -19,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
@@ -135,27 +138,24 @@ class GlobalContextLifecycleTest {
     @Test
     @DisplayName("默认配置不触碰文件系统，且忽略命令已预置（G3 配套）")
     void emptyRuntimeConfigHasDefaultIgnoredCommands() {
-        QueQiaoRuntime empty = QueQiaoRuntime.empty();
+        Config config = QueQiaoRuntime.empty().getConfig();
 
-        assertNotNull(empty.getConfig(), "空对象的 config 不应为 null");
-        assertNotNull(empty.getConfig().getIgnoredCommands(), "忽略命令集合不应为 null");
-        assertTrue(
-                empty.getConfig().getIgnoredCommands().contains("login"),
-                "默认配置应预置登录命令为忽略项，实际=" + empty.getConfig().getIgnoredCommands());
-        assertTrue(empty.getConfig().getIgnoredCommands().contains("register"), "默认配置应预置注册命令为忽略项");
+        assertNotNull(config, "空对象的 config 不应为 null");
+        Set<String> ignored = ConfigKeys.effectiveIgnoredCommands(config);
+        assertNotNull(ignored, "忽略命令集合不应为 null");
+        assertTrue(ignored.contains("login"), "默认配置应预置登录命令为忽略项，实际=" + ignored);
+        assertTrue(ignored.contains("register"), "默认配置应预置注册命令为忽略项");
     }
 
     @Test
     @DisplayName("空对象的 getConfig 可被安全读取常用字段")
     void emptyRuntimeConfigFieldsAreUsable() {
-        QueQiaoRuntime empty = QueQiaoRuntime.empty();
+        Config config = QueQiaoRuntime.empty().getConfig();
 
-        assertTrue(empty.getConfig().isEnable());
-        assertNotNull(empty.getConfig().getWebsocketClient());
-        assertNotNull(empty.getConfig().getWebsocketServer());
-        assertNotNull(empty.getConfig().getRcon());
-        assertNotNull(empty.getConfig().getSubscribeEvent());
-        assertEquals("", empty.getConfig().getAccessToken());
+        assertTrue(config.get(ConfigKeys.ENABLE));
+        assertNotNull(config.get(ConfigKeys.WebSocketClient.URL_LIST));
+        assertEquals("127.0.0.1", config.get(ConfigKeys.WebSocket.HOST));
+        assertEquals("", config.get(ConfigKeys.ACCESS_TOKEN));
     }
 
     // ------------------------------------------------------------------

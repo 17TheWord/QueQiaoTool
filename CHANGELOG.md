@@ -10,8 +10,8 @@
 
 ## [Unreleased]
 
-本段包含 WebSocket 生命周期（WS-A）与协议分发（WS-B）两批改造。
-**其中「破坏性变更」一节请务必阅读**——协议状态码与部分响应字段发生了变化。
+本段包含三批改造：WebSocket 生命周期（WS-A~WS-F）、协议分发、以及**配置系统重写**。
+**其中「破坏性变更」一节请务必阅读**——协议状态码、部分响应字段、配置读取方式与配置类的公开 API 都发生了变化。
 
 ### ⚠️ 破坏性变更
 
@@ -64,36 +64,66 @@
 | `ProtocolRouter` | 新增 `Logger` 参数（不再依赖全局状态） |
 | `AbstractProtocolHandler` 及全部 7 个 handler | 新增 `Logger` 参数 |
 
-#### 5. 配置系统改为「双文件」模型
+#### 5. 配置系统重写为「Schema 驱动」的单文件模型
 
-配置目录会新增一个 **`config.example.yml`**（当前版本官方 Schema / 文档）。
+配置只有一个文件：**`config.yml`**（**不再生成 `config.example.yml`**）。
+配置项的路径、类型、默认值、取值范围与注释集中声明在代码内的 **Schema**（`ConfigKeys`）中，
+读取 / 校验 / 生成 / 持久化分别由单一职责组件承担。
 
 | 行为 | 旧 | 新 |
 | --- | --- | --- |
-| `config.yml` 缺失字段 | **重写文件**补默认值（丢注释/顺序/格式） | 仅在**内存**补默认值，文件不动 |
+| `config.yml` 缺失 / 为空 | 用内置模板生成 | **生成**一份带注释的完整 `config.yml`（保证首次启动可用） |
+| `config.yml` 缺失字段 | **重写文件**补默认值（丢注释 / 顺序 / 格式） | 仅在**内存**补默认值，文件不动 |
 | `config.yml` 含未知字段 | **删除**未知字段 | **保留** + 告警（列出字段路径） |
-| YAML 解析失败 | 当作空配置 → **用默认值覆盖原文件** | 原文件**绝不被覆盖**，回退安全默认值并 ERROR |
-| 类型 / 范围错误 | 部分静默接受 | 内存回退默认值 + 逐字段路径告警 |
-| 用户注释 | 每次同步即丢失 | **完整保留** |
+| YAML 语法错误 / 根节点不是 Map | 当作空配置 → **用默认值覆盖原文件** | 原文件**绝不被覆盖**，抛错并**终止启动** |
+| 字段类型 / 取值范围错误 | 部分静默接受 | 抛错并**终止启动**（指明字段路径与取值范围） |
+| 用户注释 | 每次同步即丢失 | **完整保留**（正常启动不写文件） |
 
 **升级提示**：
-- 配置目录会多出 `config.example.yml`，它由程序在**每次启动时覆盖**，请勿把它当作持久化文件修改；
-  查看当前版本支持哪些配置项、取值范围与说明，以它为准。
+- 配置目录**不会**再多出 `config.example.yml`（该文件已删除）。想了解当前版本支持哪些配置项、
+  取值范围与说明，请查看发布说明，或直接看 `config.yml` 首次生成时的注释。
+- 配置存在 **YAML 语法错误**或**字段类型 / 范围错误**时，程序**不再带默认值继续启动，而是直接启动失败**。
+  这是有意为之：把错误配置静默换成默认值，会造成"服务看起来正常、实际配置没生效"，
+  比启动失败更难排查。失败时原文件**保持不动**，修正后即可正常启动。
 - 若你有依赖"程序自动删除未知字段"的用法，请注意该行为已取消（这是修复，不是回归）。
+
+#### 6. 配置 API 变更（源码级）
+
+配置状态现在只有一个来源：`Config`（配置运行时值存储）。
+读取方式统一为 `GlobalContext.getConfig().get(ConfigKeys.XXX)`。
+
+| 移除 | 替代 |
+| --- | --- |
+| `CommonConfig` | `ConfigKeys`（Schema 声明）+ `ConfigLoader`（文档 → 运行时） |
+| `ConfigFieldRules` | `ConfigKey` 上的 `validator`，如 `ConfigValidators.range(1, 65535)` |
+| `ConfigSynchronizer`（旧版，模板合并 + 写盘） | `config.sync.ConfigChecker` / `ConfigSynchronizer`（**能力已保留，尚未接线**） |
+| `WebSocketServerConfig` / `WebSocketClientConfig` / `SubscribeEventConfig` / `RconConfig` | `ConfigKeys.WebSocket.*` / `ConfigKeys.WebSocketClient.*` / `ConfigKeys.SubscribeEvent.*` / `ConfigKeys.Rcon.*` |
+| `SyncReport` | `config.sync.ConfigSyncResult` / `ConfigCheckResult` |
+| `Config.getWebsocketServer()` 等嵌套 getter | `Config.get(ConfigKeys.WebSocket.HOST)` 等 |
+| `Config.isDebug()` 等标量 getter | `Config.get(ConfigKeys.DEBUG)` 等 |
+| `Config.loadConfig(isModServer, logger, baseDirectory)` | 由 `QueQiaoRuntime.start()` 按固定顺序完成（先加载配置，再启动依赖配置的服务） |
+| `Config.defaults(logger)` | `new Config(registry)`：未加载任何文档时 `get` 即返回 Schema 默认值 |
+
+**升级提示**：`GlobalContext.getConfig()` 的**返回类型名仍是 `Config`**，但语义已完全改变——
+它不再是原来的 POJO 门面，而是"配置运行时值存储"。此前依赖 `config.getWebsocketServer().getHost()`
+这类调用链的代码需要改写为 `config.get(ConfigKeys.WebSocket.HOST)`。
 
 ### 新增
 
-- **配置系统拆分为两个文件**：
-  - **`config.example.yml`** —— 当前版本官方 Schema / 文档，**每次启动从内置资源刷新**（可被覆盖），
-    始终代表当前版本支持的全部配置项、默认值、注释与取值范围；
-  - **`config.yml`** —— 用户实际配置，**正常启动只读不写**。
-- `ConfigFileState`（`MISSING` / `EMPTY` / `VALID` / `INVALID` 四态）、`ConfigFileReader`、
-  `ConfigSynchronizer`（查漏补缺，**不写盘**）、`ConfigWriter`（原子写 + 备份轮换）、
-  `SyncReport`、`ConfigValidationException`、`ConfigFieldRules`（集中式范围校验）。
-- `Config(isModServer, logger, baseDirectory)` 与 `Config.loadConfig(isModServer, logger, baseDirectory)`：
-  可指定配置根目录，使配置读写不依赖工作目录（生产可自定义数据目录，测试可 `@TempDir` 隔离）。
-- `config.example.yml` 的 `addons` 扩展命名空间说明：供 Addon 存放自己的配置，
-  Core 只校验它本身是 Map，内部结构不校验、不删除、不告警。
+- **Schema 驱动的配置系统**（单文件 `config.yml`）：
+  - `ConfigKeys` —— 全部配置项的**唯一声明处**（路径 / 类型 / 默认值 / 取值范围 / 注释）；
+  - `ConfigKey` / `ConfigRegistry` / `ConfigTree` / `ConfigNode` / `ConfigSectionNode` —— Schema 模型与节点树；
+  - `Config` —— 配置运行时值存储（`get` / `set` / `reset` / `contains` / `isDefault` / `load` / `snapshot`）；
+  - `ConfigCodec`（`Boolean` / `Integer` / `String` / `List`）、`ConfigValidator` / `ConfigValidators`、
+    `ConfigValueSource`（`DEFAULT` / `USER`）、`ConfigSnapshot`、`ConfigValidationException`。
+- `ConfigFileState`（`MISSING` / `EMPTY` / `VALID` / `INVALID` 四态）、`ConfigFileReader`（文件 + YAML 解析）、
+  `ConfigDocument`（路径解析 + 未知字段保留）、`ConfigLoader`（文档 → 运行时，**原子提交**）、
+  `ConfigWriteSnapshot` / `ConfigWriter`（Runtime → YAML）、`ConfigStore`（**原子写** + 5 份备份轮换）。
+- `config.sync` 包：`ConfigChecker` / `ConfigSynchronizer` / `ConfigSyncPlan` / `ConfigSyncResult` /
+  `ConfigSchemaIndex` / `ConfigPaths` / `ConfigIssue`——配置查漏补缺（**只算计划、不写盘**）。
+  作为**保留能力**提供（与运行时解耦、可独立测试），当前启动路径不调用。
+- `addons` 扩展命名空间：供 Addon 存放自己的配置。Core 只校验 `addons` 本身是 Mapping，
+  内部结构不校验、不删除、不告警；`addons` 下的未知字段与核心未知字段**分开记录**。
 - **`Tool.format(String template, Object... args)`**：支持 `{}` 占位符的格式化工具。
   项目内的共享消息常量（`WebsocketConstantMessage`、`CommandConstant`）统一使用 `{}`（与 SLF4J 一致），
   但同一常量往往还要用于非日志场景（关闭原因、命令输出），而 `String.format` 需要 `%s`——
@@ -117,23 +147,23 @@
 
 ### 变更
 
-- **配置加载不再重写 `config.yml`**：查漏补缺只在**内存**中进行——缺失字段使用模板默认值、
-  类型或范围非法的字段重置为默认值，但**用户文件不被改动**。
-  用户可通过每次启动刷新的 `config.example.yml` 了解当前版本的配置项与说明。
+- **正常启动不再写 `config.yml`**：只有文件**缺失或为空**时才会生成一份带注释的完整配置；
+  文件正常时**只读不写**——缺失字段在**内存**中取 Schema 默认值，用户文件一个字都不动。
   真正需要覆盖用户文件的场景（未来的配置迁移、显式"同步配置"命令）由
-  `ConfigSynchronizer` + `ConfigWriter` 承担，且必须走"备份 + 原子写"。
-- **未知配置字段一律保留**：不再因为"模板里没有"就删除。用户可能在参考其它版本文档、
+  `ConfigChecker` + `ConfigSynchronizer` + `ConfigWriter` 承担，且必须走"备份 + 原子写"。
+- **未知配置字段一律保留**：不再因为"Schema 里没有"就删除。用户可能在参考其它版本文档、
   使用第三方扩展、或提前写好未来配置；自动删除会让用户以为"程序吃掉了自己的配置"。
-  未知字段会记录 WARN 并列出**具体字段路径**，但不参与运行时配置。
-- **`addons` 扩展命名空间**：Core 只校验 `addons` 本身是 Map；其内部结构完全交给 Addon，
-  既不校验也不告警。`addons` 本身不是 Map 时会被显式识别为结构不合法，但仍原样保留。
-- **类型 / 范围错误改为"内存回退 + 逐字段日志"**：新增集中式范围校验
+  未知字段会记录 WARN 并列出**具体字段路径**，但不参与运行时配置；
+  `addons` 下的未知字段按"扩展配置"处理（INFO 级），与核心未知字段区分。
+- **`addons` 扩展命名空间**：Core 只校验 `addons` 本身是 Mapping；其内部结构完全交给 Addon，
+  既不校验也不告警。`addons` 本身不是 Mapping 时会被显式识别为结构不合法并报错。
+- **字段类型 / 范围错误改为"明确报错"**：取值范围集中声明在 Schema 上
   （`websocket_server.port` / `rcon.port` 1~65535；`reconnect_interval` 1~3600；
-  `reconnect_max_times` 0~1000）。日志不再只给"共 N 项"，而是列出**每个字段的完整路径**，
-  并区分"新增/补默认值""类型或范围非法被重置""当前版本不认识""结构不合法"四类。
+  `reconnect_max_times` 0~1000）。错误信息包含**字段完整路径**与**允许范围**，
+  不再只给"共 N 项"这类无法定位的汇总。
 - **用户配置错误与程序缺陷严格区分**：只有显式识别的配置错误（`ConfigValidationException`）
-  才会回退默认值；其它 `RuntimeException` 会以 **ERROR + 堆栈** 向上抛出，
-  不再被静默转换成默认配置——否则真实缺陷会被伪装成"配置问题"而永远查不出来。
+  才会按"配置问题"处理；其它 `RuntimeException` 一律**原样上抛**（带堆栈），
+  绝不静默转换成默认配置——否则真实缺陷会被伪装成"配置问题"而永远查不出来。
 - **传输层不再依赖全局状态**：`WebsocketManager` 改为通过构造器接收 `Config` 快照，
   reload 时调用 `restart(Config, Object)` 传入新快照。
   此前它会在 14 处直接读取 `GlobalContext.getConfig()`。
@@ -221,12 +251,12 @@
 - **配置文件语法错误会导致整份配置被默认值覆盖**（严重）：此前 YAML 解析失败时被当作"空配置"，
   于是所有字段都被视为缺失、进而用默认值重写整个文件——用户少一个缩进就会丢掉全部配置。
   现在严格区分 `EMPTY` 与 `INVALID`：**解析失败时原文件绝不被覆盖**，
-  只记录 ERROR 并使用安全默认配置继续运行。
+  并明确报错、终止启动（不再用默认值静默顶替）。
 - **未知字段被自动删除**：此前同步逻辑会删掉所有不在模板中的键，破坏 Addon 生态与用户自定义字段。现改为保留 + 告警。
 - **配置重写丢失用户注释**：此前每次判定"有变化"就用 snakeyaml 重新 dump 整个文件，
   注释、空行、字段顺序全部丢失。现在正常启动不重写文件。
 - **数值范围无校验**：`port: -1`、`reconnect_interval: 0`（会导致立即重连风暴）等此前会被直接接受，
-  现在会识别为非法并回退默认值。
+  现在会识别为非法并报错，错误信息中给出**字段路径与允许范围**。
 - **`RconClient.connect()` 在已连接状态下仍继续建立新连接**（A#29）：
   "已连接"分支缺少 `return`，会执行 `new Rcon(...)` 覆盖 `client` 字段，
   旧连接的 socket 不被关闭 → **socket 泄漏**，且日志自相矛盾（说"无需重复连接"却重新连接）。
@@ -268,9 +298,11 @@
 - **运行时的跨线程可见性缺陷**（严重）：`GlobalContext.runtime` 此前非 `volatile`，
   且运行时字段既非 `final` 也无 `volatile`，由初始化线程写入、由游戏线程与 WebSocket 线程读取，
   可能读到旧引用或半初始化对象（且难以复现）。现已用 `volatile` + `final` 显式声明修复。
-- **`Config.getIgnoredCommands()` 可能返回 null**：该字段此前无初始值，
+- **忽略命令列表可能为 null**：该字段此前无初始值，
   一旦配置加载中途失败便会保持 null，导致 `Tool.isIgnoredCommand` 抛 `NullPointerException`。
-  现已初始化为空集合，并在默认配置中预置注册/登录命令。
+  现在 `ConfigKeys.IGNORED_COMMANDS` 的默认值为空列表（可变类型每次取用都是独立副本），
+  且注册 / 登录命令作为**强制项**由 `ConfigKeys.effectiveIgnoredCommands(...)` 与用户配置取并集，
+  用户无法通过配置放开它们。
 - **重连退避溢出**（严重）：原实现 `reconnectInterval * (1L << reconnectTimes)` 在
   `reconnectTimes >= 63` 时移位溢出为负数，负数延迟被调度器当作"立即执行"，
   会形成**无间隔重连风暴**。现改为无位移的封顶翻倍算法，并保证延迟恒在合法区间。
@@ -304,21 +336,29 @@
   前者只断言 JDK 的 `URLEncoder` 行为（对 `WsClient` 零覆盖），
   后者同样只断言 `URLEncoder` / `URLDecoder`，且其 `testOnOpen` 仅在固定端口 25565
   启动服务端后断言非空、从不关闭。已由真实 socket 集成测试取代。
+- 删除旧配置体系的全部类（见「破坏性变更」第 6 条）：`CommonConfig`、`ConfigFieldRules`、
+  旧 `ConfigSynchronizer`、`SyncReport`、旧 `ConfigValidationException`、旧 `ConfigWriter`，
+  以及 4 个配置 POJO（`WebSocketServerConfig` / `WebSocketClientConfig` /
+  `SubscribeEventConfig` / `RconConfig`）与其对应测试。
+- 删除随包资源 `config.example.yml`：配置项的唯一来源改为代码中的 Schema（`ConfigKeys`），
+  不再维护一份可能与代码漂移的 YAML 副本。
 
 ### 测试
 
 - **测试与工作目录彻底解耦**：
   - 构建层：`tasks.test` 的工作目录重定向到 `build/test-workdir`，测试不再触碰项目根目录下的
     `plugins/queqiao/config.yml`；
-  - 用例层：配置相关用例通过 `@TempDir` + `Config.loadConfig(..., baseDirectory)` 逐用例隔离。
-- 新增 `config.example.yml` 的 **Schema 回归测试**：资源存在、可解析、根节点为 Map、
-  关键字段与默认值类型有效、默认值安全（Rcon 关闭 + 仅监听回环），
-  并验证它**可以直接当作 `config.yml` 使用**（这是"Schema 与代码一致"最强的检验）。
-- 新增"内置默认值必须与模板默认值一致"的一致性测试，守护配置回退路径。
-- 新增 `ConfigWriter`（原子写 + 备份轮换）测试。
+  - 用例层：配置相关用例通过 `@TempDir` 逐用例隔离，或直接构造 `new Config(registry)`
+    （完全不触碰文件系统）。
+- 配置测试覆盖：Schema 声明与路径（`ConfigKeyTest` / `ConfigRegistryTest`）、
+  编解码与校验（`ConfigCodecTest` / `ConfigValidatorsTest`）、运行时值存储不变量（`ConfigTest`）、
+  四态加载与未知字段（`ConfigLoaderTest`）、写出与闭环（`ConfigWriterTest` / `ConfigWriterRoundTripTest`）、
+  原子写与备份轮换（`ConfigStoreTest`）、查漏补缺（`ConfigCheckerTest` / `ConfigSynchronizerTest`）、
+  旧配置兼容性回归（`LegacyConfigCompatibilityTest`）、
+  全链路与首次生成（`ConfigIntegrationTest` / `GeneratedConfigIntegrationTest`）。
 - 新增 `RconClientTest`（A#29 回归）。
 
-- 测试用例数由 68 增至 98，项目整体行覆盖率由 37.7% 提升至 47.6%。
+- 测试用例数由 68 增至 **267**（44 个测试类），项目整体行覆盖率由 37.7% 提升至 **71.5%**（分支 60.1%）。
 - 新增真实 socket 集成测试（随机端口 + `CountDownLatch`，不使用 `Thread.sleep` 做断言）：
   重连回归、停止隔离、多客户端共享调度器、线程数上界与 daemon 校验、握手认证矩阵。
 - 新增协议分发矩阵测试与日志脱敏测试。

@@ -1,6 +1,7 @@
 package com.github.theword.queqiao.tool.utils;
 
 import com.github.theword.queqiao.tool.GlobalContext;
+import com.github.theword.queqiao.tool.config.ConfigKeys;
 import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.google.gson.JsonObject;
@@ -42,7 +43,7 @@ public class Tool {
         if (command.startsWith("/")) command = command.substring(1);
 
         String commandHeader = command.split(" ", 2)[0].toLowerCase();
-        if (GlobalContext.getConfig().getIgnoredCommands().contains(commandHeader)) return "";
+        if (ConfigKeys.effectiveIgnoredCommands(GlobalContext.getConfig()).contains(commandHeader)) return "";
         return command;
     }
 
@@ -135,7 +136,7 @@ public class Tool {
      */
     public static boolean isDebugEnabled() {
         Config config = GlobalContext.getConfig();
-        if (config == null || !config.isDebug()) {
+        if (config == null || !config.get(ConfigKeys.DEBUG)) {
             return false;
         }
         return GlobalContext.getLogger() != null;
@@ -153,7 +154,7 @@ public class Tool {
      */
     public static JsonObject getPrefixComponent() {
         JsonObject prefixJsonElement = new JsonObject();
-        prefixJsonElement.addProperty("text", GlobalContext.getConfig().getMessagePrefix());
+        prefixJsonElement.addProperty("text", GlobalContext.getConfig().get(ConfigKeys.MESSAGE_PREFIX));
         prefixJsonElement.addProperty("color", "yellow");
         prefixJsonElement.addProperty("bold", false);
         return prefixJsonElement;

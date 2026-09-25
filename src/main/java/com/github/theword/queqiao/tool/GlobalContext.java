@@ -138,10 +138,18 @@ public final class GlobalContext {
         return runtime.translate(key, args);
     }
 
+    /**
+     * @return 配置运行时状态（<b>唯一</b>配置状态来源）
+     */
     public static Config getConfig() {
         return runtime.getConfig();
     }
 
+    /**
+     * 替换运行时配置状态（供测试与工具注入）
+     *
+     * @param config 新的配置运行时状态
+     */
     public static void setConfig(Config config) {
         runtime.setConfig(config);
     }

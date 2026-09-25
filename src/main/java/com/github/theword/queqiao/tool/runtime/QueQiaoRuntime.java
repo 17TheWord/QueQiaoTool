@@ -1,6 +1,16 @@
 package com.github.theword.queqiao.tool.runtime;
 
+import com.github.theword.queqiao.tool.config.ConfigFileReader;
+import com.github.theword.queqiao.tool.config.ConfigFileState;
+import com.github.theword.queqiao.tool.config.ConfigKeys;
+import com.github.theword.queqiao.tool.config.ConfigRegistry;
 import com.github.theword.queqiao.tool.config.Config;
+import com.github.theword.queqiao.tool.config.io.ConfigDocument;
+import com.github.theword.queqiao.tool.config.io.ConfigLoadResult;
+import com.github.theword.queqiao.tool.config.io.ConfigLoader;
+import com.github.theword.queqiao.tool.config.io.ConfigStore;
+import com.github.theword.queqiao.tool.config.io.ConfigWriteSnapshot;
+import com.github.theword.queqiao.tool.config.io.ConfigWriter;
 import com.github.theword.queqiao.tool.constant.BaseConstant;
 import com.github.theword.queqiao.tool.constant.CommandConstant;
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
@@ -23,6 +33,9 @@ import com.google.gson.JsonSyntaxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.NOPLogger;
+
+import java.io.IOException;
+import java.nio.file.Path;
 
 public final class QueQiaoRuntime {
 
@@ -62,7 +75,22 @@ public final class QueQiaoRuntime {
     // 瞬时不一致可接受，故不为此引入额外复杂度。
     // ------------------------------------------------------------------
 
+    /**
+     * 配置 Schema（整个 Runtime 只有一份）
+     */
+    private final ConfigRegistry configRegistry;
+
+    /**
+     * 配置运行时状态（<b>唯一</b>配置状态来源）
+     */
     private volatile Config config;
+
+    /**
+     * 当前配置文档（保留未知字段与原始结构，供 Writer / Checker / Synchronizer 使用）
+     *
+     * <p>不能只凭 Runtime 重建文档——Runtime 不知道未知字段与文档结构。
+     */
+    private volatile ConfigDocument configDocument;
 
     /**
      * 日志实现
@@ -89,8 +117,7 @@ public final class QueQiaoRuntime {
             String serverType,
             HandleApiService handleApiService,
             HandleCommandReturnMessageService handleCommandReturnMessageService,
-            Logger logger,
-            Config config) {
+            Logger logger) {
         this.modServer = modServer;
         this.serverVersion = serverVersion;
         this.serverType = serverType;
@@ -98,7 +125,11 @@ public final class QueQiaoRuntime {
         this.handleCommandReturnMessageService = handleCommandReturnMessageService;
         this.logger = logger;
         this.gson = GsonUtils.getGson();
-        this.config = config;
+        // 配置系统接线：Schema 只注册一次，Config 只建一份，全局唯一配置状态
+        this.configRegistry = new ConfigRegistry();
+        ConfigKeys.registerAll(this.configRegistry);
+        this.config = new Config(this.configRegistry);
+        this.configDocument = ConfigDocument.empty();
         // 平台 API 实现与 RCON 执行器由协议层注入，协议层因此不再读 GlobalContext。
         // 这里传入 this::sendRconCommand 是安全的：该 lambda 只在收到请求时才会被调用，
         // 此时对象早已构造完成（构造期间不会被发布）。
@@ -127,8 +158,7 @@ public final class QueQiaoRuntime {
                 null,
                 null,
                 null,
-                NOP_LOGGER,
-                Config.defaults(NOP_LOGGER)
+                NOP_LOGGER
         );
     }
 
@@ -140,16 +170,90 @@ public final class QueQiaoRuntime {
                 serverType,
                 handleApiService,
                 handleCommandReturnMessageService,
-                runtimeLogger,
-                Config.loadConfig(modServer, runtimeLogger)
+                runtimeLogger
         );
+    }
+
+    /**
+     * 加载配置文件并提交到 {@link Config}
+     *
+     * <p><b>四状态语义</b>（沿用 {@code ConfigFileState}）：
+     * <ul>
+     *     <li>{@code MISSING} / {@code EMPTY}：全部使用 Schema 默认值，并生成一份完整的
+     *         带注释 {@code config.yml}（首次启动体验）；</li>
+     *     <li>{@code VALID}：加载后<b>只读不写</b>——正常启动不得无条件重写用户文件；</li>
+     *     <li>{@code INVALID}：抛出异常且<b>不修改运行时状态</b>，由上层终止初始化。</li>
+     * </ul>
+     */
+    private void loadConfig() {
+        Path configPath = ConfigStore.resolveConfigPath(modServer);
+        ConfigFileReader.Result result = ConfigFileReader.read(configPath);
+        ConfigLoader loader = new ConfigLoader(configRegistry, config);
+
+        if (result.getState() == ConfigFileState.INVALID) {
+            // 交给 Loader 抛出明确异常；运行时状态保持不变
+            loader.load(ConfigFileState.INVALID, null);
+        }
+
+        if (result.getState() == ConfigFileState.MISSING || result.getState() == ConfigFileState.EMPTY) {
+            logger.warn("配置文件 {} 不存在或为空，将使用默认配置并生成完整配置文件。", configPath);
+            ConfigLoadResult loaded = loader.load(result.getState(), result.getMap());
+            configDocument = loaded.getDocument();
+            writeConfigFile(configPath);
+            return;
+        }
+
+        ConfigLoadResult loaded = loader.load(result.getState(), result.getMap());
+        configDocument = loaded.getDocument();
+        logUnknownFields(loaded);
+    }
+
+    /**
+     * 用当前 Schema + 运行时值 + 文档生成 config.yml（唯一 YAML 输出入口）
+     */
+    private void writeConfigFile(Path configPath) {
+        try {
+            new ConfigWriter().write(
+                    ConfigWriteSnapshot.of(configRegistry, config, configDocument), configPath, logger);
+        } catch (IOException e) {
+            logger.warn("生成配置文件 {} 失败：{}", configPath, e.getMessage());
+        }
+    }
+
+    private void logUnknownFields(ConfigLoadResult loaded) {
+        if (!loaded.getUnknownCorePaths().isEmpty()) {
+            logger.warn("配置文件存在当前版本不支持的字段（已保留、不会生效）：{}", loaded.getUnknownCorePaths());
+        }
+        if (!loaded.getUnknownAddonPaths().isEmpty()) {
+            logger.info("检测到 {} 个扩展配置项（已保留）：{}",
+                    loaded.getUnknownAddonPaths().size(), loaded.getUnknownAddonPaths());
+        }
+    }
+
+    /**
+     * @return 当前配置文档（含未知字段）
+     */
+    public ConfigDocument getConfigDocument() {
+        return configDocument;
+    }
+
+    /**
+     * @return 配置 Schema
+     */
+    public ConfigRegistry getConfigRegistry() {
+        return configRegistry;
     }
 
     public void start() {
         logger.info(BaseConstant.LAUNCHING);
+
+        // §6 固定顺序：先把配置加载并提交，再启动任何依赖配置的服务。
+        // 配置非法时这里会抛异常，从而不会出现"半套配置 + 服务已启动"的状态（§12/§38）。
+        loadConfig();
+
         logger.info(BaseConstant.INITIALIZED);
 
-        messagePrefixJsonElement = initMessagePrefixJsonObject(config.getMessagePrefix());
+        messagePrefixJsonElement = initMessagePrefixJsonObject(config.get(ConfigKeys.MESSAGE_PREFIX));
         languageService = new LanguageService(modServer, logger);
         ServerStatusCollector.initPingTarget(logger);
         initWebsocketManager();
@@ -157,8 +261,8 @@ public final class QueQiaoRuntime {
     }
 
     public void reload(Object commandReturner) {
-        setConfig(Config.loadConfig(modServer, logger));
-        messagePrefixJsonElement = initMessagePrefixJsonObject(config.getMessagePrefix());
+        loadConfig();
+        messagePrefixJsonElement = initMessagePrefixJsonObject(config.get(ConfigKeys.MESSAGE_PREFIX));
         LanguageService service = languageService;
         if (service != null) {
             service.reload();
@@ -215,7 +319,7 @@ public final class QueQiaoRuntime {
             return;
         }
         // 事件对象的构造不再读全局状态；服务器上下文在发布前统一填充
-        baseEvent.fillServerContext(config.getServerName(), serverVersion, serverType);
+        baseEvent.fillServerContext(config.get(ConfigKeys.SERVER_NAME), serverVersion, serverType);
         manager.sendEvent(baseEvent);
     }
 
@@ -225,8 +329,8 @@ public final class QueQiaoRuntime {
     }
 
     private void initRconClient() {
-        if (config.getRcon().isEnable()) {
-            rconClient = new RconClient(logger, config.getRcon().getPort(), config.getRcon().getPassword());
+        if (config.get(ConfigKeys.Rcon.ENABLE)) {
+            rconClient = new RconClient(logger, config.get(ConfigKeys.Rcon.PORT), config.get(ConfigKeys.Rcon.PASSWORD));
             rconClient.connect();
         } else {
             logger.info("Rcon 未启用，跳过 Rcon 客户端初始化");
@@ -234,7 +338,7 @@ public final class QueQiaoRuntime {
     }
 
     private void restartRconClient() {
-        if (!config.getRcon().isEnable()) {
+        if (!config.get(ConfigKeys.Rcon.ENABLE)) {
             if (rconClient != null) {
                 rconClient.stop();
                 rconClient = null;
@@ -247,14 +351,14 @@ public final class QueQiaoRuntime {
             initRconClient();
         } else {
             rconClient.stop();
-            rconClient.setPort(config.getRcon().getPort());
-            rconClient.setPassword(config.getRcon().getPassword());
+            rconClient.setPort(config.get(ConfigKeys.Rcon.PORT));
+            rconClient.setPassword(config.get(ConfigKeys.Rcon.PASSWORD));
             rconClient.connect();
         }
     }
 
     public String sendRconCommand(String command) throws RconException {
-        if (!config.getRcon().isEnable()) {
+        if (!config.get(ConfigKeys.Rcon.ENABLE)) {
             throw RconException.disabled();
         }
         if (rconClient == null || !rconClient.isConnected()) {
@@ -318,11 +422,22 @@ public final class QueQiaoRuntime {
         return service.translate(key, args);
     }
 
+    /**
+     * @return 配置运行时状态（<b>唯一</b>配置状态来源）
+     */
     public Config getConfig() {
         return config;
     }
 
+    /**
+     * 替换运行时配置状态（供测试与工具注入；正常流程由 {@code loadConfig()} 完成）
+     *
+     * @param config 新的配置运行时状态
+     */
     public void setConfig(Config config) {
+        if (config == null) {
+            throw new IllegalArgumentException("Config 不能为 null");
+        }
         this.config = config;
     }
 

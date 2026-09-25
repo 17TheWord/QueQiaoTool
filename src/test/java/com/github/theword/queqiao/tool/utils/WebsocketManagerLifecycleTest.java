@@ -1,8 +1,8 @@
 package com.github.theword.queqiao.tool.utils;
 
+import com.github.theword.queqiao.tool.config.ConfigKeys;
+import com.github.theword.queqiao.tool.config.ConfigRegistry;
 import com.github.theword.queqiao.tool.config.Config;
-import com.github.theword.queqiao.tool.config.WebSocketClientConfig;
-import com.github.theword.queqiao.tool.config.WebSocketServerConfig;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
 import com.github.theword.queqiao.tool.handle.HandleProtocolMessage;
 import com.github.theword.queqiao.tool.support.PlatformStubs;
@@ -12,6 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,20 +57,35 @@ class WebsocketManagerLifecycleTest {
      * 基础配置：全部传输层禁用——不绑端口、不建连接
      */
     private static Config disabledTransportsConfig() {
-        Config config = Config.defaults(LOGGER);
-        config.setWebsocketServer(new WebSocketServerConfig(false, "127.0.0.1", 0));
-        config.setWebsocketClient(new WebSocketClientConfig(false, 1, 1, new ArrayList<>()));
-        return config;
+        return runtimeOf("websocket_server:\n  enable: false\nwebsocket_client:\n  enable: false\n");
     }
 
     /**
      * 启用 Client，并指定 URL 列表
      */
     private static Config clientConfig(List<String> urlList) {
-        Config config = Config.defaults(LOGGER);
-        config.setWebsocketServer(new WebSocketServerConfig(false, "127.0.0.1", 0));
-        config.setWebsocketClient(new WebSocketClientConfig(true, 1, 1, new ArrayList<>(urlList)));
-        return config;
+        StringBuilder yaml = new StringBuilder(
+                "websocket_server:\n  enable: false\nwebsocket_client:\n  enable: true\n  url_list:\n");
+        for (String url : urlList) {
+            yaml.append("    - \"").append(url).append("\"\n");
+        }
+        return runtimeOf(yaml.toString());
+    }
+
+    /**
+     * 用 YAML 构造一个已加载的运行时（Schema 来自 ConfigKeys）
+     */
+    private static Config runtimeOf(String yaml) {
+        ConfigRegistry registry = new ConfigRegistry();
+        ConfigKeys.registerAll(registry);
+        Config runtime = new Config(registry);
+        runtime.load(parse(yaml));
+        return runtime;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> parse(String yaml) {
+        return (Map<String, Object>) new Yaml().load(yaml);
     }
 
     private static WebsocketManager newManager(Config config) {

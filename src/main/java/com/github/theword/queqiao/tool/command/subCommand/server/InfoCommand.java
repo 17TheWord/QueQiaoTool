@@ -2,7 +2,8 @@ package com.github.theword.queqiao.tool.command.subCommand.server;
 
 import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.command.SubCommand;
-import com.github.theword.queqiao.tool.config.WebSocketServerConfig;
+import com.github.theword.queqiao.tool.config.ConfigKeys;
+import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
 import com.github.theword.queqiao.tool.utils.Tool;
 import com.github.theword.queqiao.tool.websocket.WsServer;
@@ -48,12 +49,12 @@ public class InfoCommand extends SubCommand {
     protected void onExecute(Object commandReturner, List<String> args) {
         HandleCommandReturnMessageService returnMessageService = GlobalContext.getHandleCommandReturnMessageService();
 
-        WebSocketServerConfig serverConfig = GlobalContext.getConfig().getWebsocketServer();
-        if (!serverConfig.isEnable()) {
+        Config config = GlobalContext.getConfig();
+        if (!config.get(ConfigKeys.WebSocket.ENABLE)) {
             returnMessageService.sendReturnMessage(
                     commandReturner, "Websocket Server 配置项未启用，如需开启，请在 config.yml 中启用 WebsocketServer 配置项");
             returnMessageService.sendReturnMessage(
-                    commandReturner, Tool.format("配置项中地址为 {}:{}", serverConfig.getHost(), serverConfig.getPort()));
+                    commandReturner, Tool.format("配置项中地址为 {}:{}", config.get(ConfigKeys.WebSocket.HOST), config.get(ConfigKeys.WebSocket.PORT)));
             return;
         }
 
