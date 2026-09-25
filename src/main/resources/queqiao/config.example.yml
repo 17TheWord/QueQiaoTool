@@ -31,20 +31,20 @@ enable_translation: false
 websocket_server:
   enable: true          # 是否启用
   host: "127.0.0.1"     # WebSocket Server 地址；默认仅本机可访问。改为 0.0.0.0 等非回环地址前，请先设置 access_token
-  port: 8080            # WebSocket Server 端口
+  port: 8080            # WebSocket Server 端口（取值范围 1~65535，越界将回退默认值）
 
 # WebSocket Client配置项
 websocket_client:
   enable: false                 # 是否启用
-  reconnect_interval: 5         # 重连间隔（秒）
-  reconnect_max_times: 5        # 最大重连次数
+  reconnect_interval: 5         # 重连间隔（秒）（取值范围 1~3600；为 0 会导致立即重连风暴，将回退默认值）
+  reconnect_max_times: 5        # 最大重连次数（取值范围 0~1000；0 表示禁用自动重连）
   url_list:
     - "ws://127.0.0.1:8080/minecraft/ws"
 
 # Rcon 客户端配置项
 rcon:
   enable: false                # 是否启用
-  port: 25575                  # Rcon 端口
+  port: 25575                  # Rcon 端口（取值范围 1~65535，越界将回退默认值）
   password: ""                # Rcon 密码
 
 # 订阅事件配置项
@@ -59,3 +59,11 @@ subscribe_event:
 # 忽略的命令列表
 # 例如：["tp"]，则所有以 /tp 起始的命令对应的事件均不会被广播
 ignored_commands: []
+
+# 扩展命名空间
+# 供 QueQiao 的 Addon（如 AI / NPC / LLM 等）存放自己的配置。
+# Core 只校验它本身是 Map，其内部结构完全由各 Addon 自行约定：
+# Core 不校验、不删除、不告警。
+# addons:
+#   example_addon:
+#     some_option: true

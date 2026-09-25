@@ -64,8 +64,36 @@
 | `ProtocolRouter` | 新增 `Logger` 参数（不再依赖全局状态） |
 | `AbstractProtocolHandler` 及全部 7 个 handler | 新增 `Logger` 参数 |
 
+#### 5. 配置系统改为「双文件」模型
+
+配置目录会新增一个 **`config.example.yml`**（当前版本官方 Schema / 文档）。
+
+| 行为 | 旧 | 新 |
+| --- | --- | --- |
+| `config.yml` 缺失字段 | **重写文件**补默认值（丢注释/顺序/格式） | 仅在**内存**补默认值，文件不动 |
+| `config.yml` 含未知字段 | **删除**未知字段 | **保留** + 告警（列出字段路径） |
+| YAML 解析失败 | 当作空配置 → **用默认值覆盖原文件** | 原文件**绝不被覆盖**，回退安全默认值并 ERROR |
+| 类型 / 范围错误 | 部分静默接受 | 内存回退默认值 + 逐字段路径告警 |
+| 用户注释 | 每次同步即丢失 | **完整保留** |
+
+**升级提示**：
+- 配置目录会多出 `config.example.yml`，它由程序在**每次启动时覆盖**，请勿把它当作持久化文件修改；
+  查看当前版本支持哪些配置项、取值范围与说明，以它为准。
+- 若你有依赖"程序自动删除未知字段"的用法，请注意该行为已取消（这是修复，不是回归）。
+
 ### 新增
 
+- **配置系统拆分为两个文件**：
+  - **`config.example.yml`** —— 当前版本官方 Schema / 文档，**每次启动从内置资源刷新**（可被覆盖），
+    始终代表当前版本支持的全部配置项、默认值、注释与取值范围；
+  - **`config.yml`** —— 用户实际配置，**正常启动只读不写**。
+- `ConfigFileState`（`MISSING` / `EMPTY` / `VALID` / `INVALID` 四态）、`ConfigFileReader`、
+  `ConfigSynchronizer`（查漏补缺，**不写盘**）、`ConfigWriter`（原子写 + 备份轮换）、
+  `SyncReport`、`ConfigValidationException`、`ConfigFieldRules`（集中式范围校验）。
+- `Config(isModServer, logger, baseDirectory)` 与 `Config.loadConfig(isModServer, logger, baseDirectory)`：
+  可指定配置根目录，使配置读写不依赖工作目录（生产可自定义数据目录，测试可 `@TempDir` 隔离）。
+- `config.example.yml` 的 `addons` 扩展命名空间说明：供 Addon 存放自己的配置，
+  Core 只校验它本身是 Map，内部结构不校验、不删除、不告警。
 - **`Tool.format(String template, Object... args)`**：支持 `{}` 占位符的格式化工具。
   项目内的共享消息常量（`WebsocketConstantMessage`、`CommandConstant`）统一使用 `{}`（与 SLF4J 一致），
   但同一常量往往还要用于非日志场景（关闭原因、命令输出），而 `String.format` 需要 `%s`——
@@ -89,6 +117,23 @@
 
 ### 变更
 
+- **配置加载不再重写 `config.yml`**：查漏补缺只在**内存**中进行——缺失字段使用模板默认值、
+  类型或范围非法的字段重置为默认值，但**用户文件不被改动**。
+  用户可通过每次启动刷新的 `config.example.yml` 了解当前版本的配置项与说明。
+  真正需要覆盖用户文件的场景（未来的配置迁移、显式"同步配置"命令）由
+  `ConfigSynchronizer` + `ConfigWriter` 承担，且必须走"备份 + 原子写"。
+- **未知配置字段一律保留**：不再因为"模板里没有"就删除。用户可能在参考其它版本文档、
+  使用第三方扩展、或提前写好未来配置；自动删除会让用户以为"程序吃掉了自己的配置"。
+  未知字段会记录 WARN 并列出**具体字段路径**，但不参与运行时配置。
+- **`addons` 扩展命名空间**：Core 只校验 `addons` 本身是 Map；其内部结构完全交给 Addon，
+  既不校验也不告警。`addons` 本身不是 Map 时会被显式识别为结构不合法，但仍原样保留。
+- **类型 / 范围错误改为"内存回退 + 逐字段日志"**：新增集中式范围校验
+  （`websocket_server.port` / `rcon.port` 1~65535；`reconnect_interval` 1~3600；
+  `reconnect_max_times` 0~1000）。日志不再只给"共 N 项"，而是列出**每个字段的完整路径**，
+  并区分"新增/补默认值""类型或范围非法被重置""当前版本不认识""结构不合法"四类。
+- **用户配置错误与程序缺陷严格区分**：只有显式识别的配置错误（`ConfigValidationException`）
+  才会回退默认值；其它 `RuntimeException` 会以 **ERROR + 堆栈** 向上抛出，
+  不再被静默转换成默认配置——否则真实缺陷会被伪装成"配置问题"而永远查不出来。
 - **传输层不再依赖全局状态**：`WebsocketManager` 改为通过构造器接收 `Config` 快照，
   reload 时调用 `restart(Config, Object)` 传入新快照。
   此前它会在 14 处直接读取 `GlobalContext.getConfig()`。
@@ -173,6 +218,19 @@
 
 ### 修复
 
+- **配置文件语法错误会导致整份配置被默认值覆盖**（严重）：此前 YAML 解析失败时被当作"空配置"，
+  于是所有字段都被视为缺失、进而用默认值重写整个文件——用户少一个缩进就会丢掉全部配置。
+  现在严格区分 `EMPTY` 与 `INVALID`：**解析失败时原文件绝不被覆盖**，
+  只记录 ERROR 并使用安全默认配置继续运行。
+- **未知字段被自动删除**：此前同步逻辑会删掉所有不在模板中的键，破坏 Addon 生态与用户自定义字段。现改为保留 + 告警。
+- **配置重写丢失用户注释**：此前每次判定"有变化"就用 snakeyaml 重新 dump 整个文件，
+  注释、空行、字段顺序全部丢失。现在正常启动不重写文件。
+- **数值范围无校验**：`port: -1`、`reconnect_interval: 0`（会导致立即重连风暴）等此前会被直接接受，
+  现在会识别为非法并回退默认值。
+- **`RconClient.connect()` 在已连接状态下仍继续建立新连接**（A#29）：
+  "已连接"分支缺少 `return`，会执行 `new Rcon(...)` 覆盖 `client` 字段，
+  旧连接的 socket 不被关闭 → **socket 泄漏**，且日志自相矛盾（说"无需重复连接"却重新连接）。
+  现已补 `return`。
 - **关闭帧的原因里带着字面 `{}`**：`WebsocketManager` 用 `String.format` 处理一个使用 `{}` 占位符的
   消息常量，而该字符串不含 `%s`，`String.format` 会**原样返回并忽略参数**，
   于是客户端收到的关闭原因是 `连接至：{} 的 WebSocket Client 正在关闭，Code {}，Reason：{}。`。
@@ -248,6 +306,17 @@
   启动服务端后断言非空、从不关闭。已由真实 socket 集成测试取代。
 
 ### 测试
+
+- **测试与工作目录彻底解耦**：
+  - 构建层：`tasks.test` 的工作目录重定向到 `build/test-workdir`，测试不再触碰项目根目录下的
+    `plugins/queqiao/config.yml`；
+  - 用例层：配置相关用例通过 `@TempDir` + `Config.loadConfig(..., baseDirectory)` 逐用例隔离。
+- 新增 `config.example.yml` 的 **Schema 回归测试**：资源存在、可解析、根节点为 Map、
+  关键字段与默认值类型有效、默认值安全（Rcon 关闭 + 仅监听回环），
+  并验证它**可以直接当作 `config.yml` 使用**（这是"Schema 与代码一致"最强的检验）。
+- 新增"内置默认值必须与模板默认值一致"的一致性测试，守护配置回退路径。
+- 新增 `ConfigWriter`（原子写 + 备份轮换）测试。
+- 新增 `RconClientTest`（A#29 回归）。
 
 - 测试用例数由 68 增至 98，项目整体行覆盖率由 37.7% 提升至 47.6%。
 - 新增真实 socket 集成测试（随机端口 + `CountDownLatch`，不使用 `Thread.sleep` 做断言）：

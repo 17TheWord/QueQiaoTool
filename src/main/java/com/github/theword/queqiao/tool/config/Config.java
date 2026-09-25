@@ -1,5 +1,6 @@
 package com.github.theword.queqiao.tool.config;
 
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -58,10 +59,15 @@ public class Config extends CommonConfig {
     /**
      * 忽略的命令列表
      *
-     * <p>必须初始化：此前该字段无初始值，一旦配置加载在中途失败（{@code loadIgnoredCommands} 未被调用），
-     * 它会保持 null，导致 {@code Tool.isIgnoredCommand} 抛 {@link NullPointerException}。
+     * <p><b>字段初始值即"内置默认值"</b>：配置加载失败需要回退时，
+     * 基类不会调用 {@code loadConfigValues}，而是直接保留字段初始值——
+     * 因此这里的初始值必须与模板默认值一致（由
+     * {@code ConfigFileSynchronizationTest#fieldDefaultsMatchTemplateDefaults} 守护）。
+     *
+     * <p>同时初始化为非 null 也修掉了"配置加载中途失败导致该字段为 null"的隐患
+     * （此前 {@code Tool.isIgnoredCommand} 会因此抛 NPE）。
      */
-    private Set<String> ignoredCommands = new HashSet<>();
+    private Set<String> ignoredCommands = new HashSet<>(DEFAULT_IGNORED_COMMANDS);
 
     /**
      * WebSocket Server 配置项
@@ -178,7 +184,21 @@ public class Config extends CommonConfig {
      * @param logger      日志实现
      */
     public Config(boolean isModServer, Logger logger) {
-        this(logger);
+        this(isModServer, logger, null);
+    }
+
+    /**
+     * Contractor（可指定配置根目录）
+     *
+     * <p>显式指定 {@code baseDirectory} 后，配置读写不再依赖工作目录。
+     * 生产可用于自定义数据目录；测试可用于 {@code @TempDir} 逐用例隔离。
+     *
+     * @param isModServer   是否为模组服务端
+     * @param logger        日志实现
+     * @param baseDirectory 配置根目录；为 null 时使用默认相对目录（{@code config} / {@code plugins}）
+     */
+    public Config(boolean isModServer, Logger logger, Path baseDirectory) {
+        super(logger, baseDirectory);
         String configFolder = isModServer ? "config" : "plugins";
         String serverType = isModServer ? "模组" : "插件";
         logger.info("当前服务端类型为：{}服", serverType);
@@ -206,9 +226,8 @@ public class Config extends CommonConfig {
      * @return 默认配置，忽略命令列表已预置默认值
      */
     public static Config defaults(Logger logger) {
-        Config config = new Config(logger);
-        config.ignoredCommands.addAll(DEFAULT_IGNORED_COMMANDS);
-        return config;
+        // 字段初始值本身就是内置默认值，无需额外填充
+        return new Config(logger);
     }
 
     /**
@@ -225,18 +244,32 @@ public class Config extends CommonConfig {
     }
 
     /**
+     * 加载配置（可指定配置根目录）
+     *
+     * <p>测试使用 {@code @TempDir} 传入临时目录即可与工作目录完全隔离。
+     *
+     * @param isModServer   是否为模组服务端
+     * @param logger        日志实现
+     * @param baseDirectory 配置根目录；为 null 时使用默认相对目录
+     * @return 已加载的配置
+     */
+    public static Config loadConfig(boolean isModServer, Logger logger, Path baseDirectory) {
+        return new Config(isModServer, logger, baseDirectory);
+    }
+
+    /**
      * 加载配置文件
      *
      * @param configMap 配置文件内容
      */
     @Override
     protected void loadConfigValues(Map<String, Object> configMap) {
-        enable = (boolean) configMap.get("enable");
-        debug = (boolean) configMap.get("debug");
-        serverName = (String) configMap.get("server_name");
-        accessToken = (String) configMap.get("access_token");
-        messagePrefix = (String) configMap.get("message_prefix");
-        enableTranslation = (boolean) configMap.get("enable_translation");
+        enable = requireBoolean(configMap, "enable");
+        debug = requireBoolean(configMap, "debug");
+        serverName = requireString(configMap, "server_name");
+        accessToken = requireString(configMap, "access_token");
+        messagePrefix = requireString(configMap, "message_prefix");
+        enableTranslation = requireBoolean(configMap, "enable_translation");
 
         loadIgnoredCommands(configMap);
         loadWebsocketServerConfig(configMap);
@@ -250,15 +283,10 @@ public class Config extends CommonConfig {
      *
      * @param configMap ignored_commands
      */
-    @SuppressWarnings("unchecked")
     private void loadIgnoredCommands(Map<String, Object> configMap) {
-        if (ignoredCommands == null) {
-            ignoredCommands = new HashSet<>();
-        } else {
-            ignoredCommands.clear();
-        }
-        List<String> ignoredCommandList = (List<String>) configMap.get("ignored_commands");
-        if (ignoredCommandList == null) {
+        ignoredCommands.clear();
+        List<String> ignoredCommandList = optionalStringList(configMap, "ignored_commands");
+        if (ignoredCommandList.isEmpty()) {
             super.getLogger().info("配置项 ignored_commands 为空，将只忽略默认的注册和登录命令");
         } else {
             ignoredCommands.addAll(ignoredCommandList);
@@ -274,12 +302,13 @@ public class Config extends CommonConfig {
      * @param configMap Rcon
      */
     private void loadRconConfig(Map<String, Object> configMap) {
-        Object rconObj = configMap.get("rcon");
-        if (!(rconObj instanceof Map)) return;
-        @SuppressWarnings("unchecked") Map<String, Object> rconConfig = (Map<String, Object>) rconObj;
-        rcon.setEnable((Boolean) rconConfig.getOrDefault("enable", false));
-        rcon.setPort((Integer) rconConfig.getOrDefault("port", 25575));
-        rcon.setPassword((String) rconConfig.getOrDefault("password", ""));
+        Map<String, Object> rconConfig = optionalMap(configMap, "rcon");
+        if (rconConfig == null) {
+            return;
+        }
+        rcon.setEnable(requireBoolean(rconConfig, "enable", "rcon.enable"));
+        rcon.setPort(requireInt(rconConfig, "port", "rcon.port"));
+        rcon.setPassword(requireString(rconConfig, "password", "rcon.password"));
     }
 
     /**
@@ -287,12 +316,14 @@ public class Config extends CommonConfig {
      *
      * @param configMap WebSocket Server
      */
-    @SuppressWarnings("unchecked")
     private void loadWebsocketServerConfig(Map<String, Object> configMap) {
-        Map<String, Object> websocketServerConfig = (Map<String, Object>) configMap.get("websocket_server");
-        websocketServer.setEnable((Boolean) websocketServerConfig.get("enable"));
-        websocketServer.setHost((String) websocketServerConfig.get("host"));
-        websocketServer.setPort((int) websocketServerConfig.get("port"));
+        Map<String, Object> section = optionalMap(configMap, "websocket_server");
+        if (section == null) {
+            return;
+        }
+        websocketServer.setEnable(requireBoolean(section, "enable", "websocket_server.enable"));
+        websocketServer.setHost(requireString(section, "host", "websocket_server.host"));
+        websocketServer.setPort(requireInt(section, "port", "websocket_server.port"));
     }
 
     /**
@@ -300,13 +331,15 @@ public class Config extends CommonConfig {
      *
      * @param configMap WebSocket Client
      */
-    @SuppressWarnings("unchecked")
     private void loadWebsocketClientConfig(Map<String, Object> configMap) {
-        Map<String, Object> websocketClientConfig = (Map<String, Object>) configMap.get("websocket_client");
-        websocketClient.setEnable((Boolean) websocketClientConfig.get("enable"));
-        websocketClient.setReconnectInterval((int) websocketClientConfig.get("reconnect_interval"));
-        websocketClient.setReconnectMaxTimes((int) websocketClientConfig.get("reconnect_max_times"));
-        websocketClient.setUrlList((List<String>) websocketClientConfig.get("url_list"));
+        Map<String, Object> section = optionalMap(configMap, "websocket_client");
+        if (section == null) {
+            return;
+        }
+        websocketClient.setEnable(requireBoolean(section, "enable", "websocket_client.enable"));
+        websocketClient.setReconnectInterval(requireInt(section, "reconnect_interval", "websocket_client.reconnect_interval"));
+        websocketClient.setReconnectMaxTimes(requireInt(section, "reconnect_max_times", "websocket_client.reconnect_max_times"));
+        websocketClient.setUrlList(optionalStringList(section, "url_list"));
     }
 
     /**
@@ -314,14 +347,16 @@ public class Config extends CommonConfig {
      *
      * @param configMap SubscribeEvent
      */
-    @SuppressWarnings("unchecked")
     private void loadSubscribeEventConfig(Map<String, Object> configMap) {
-        Map<String, Object> subscribeEventConfig = (Map<String, Object>) configMap.get("subscribe_event");
-        subscribeEvent.setPlayerChat((boolean) subscribeEventConfig.get("player_chat"));
-        subscribeEvent.setPlayerCommand((boolean) subscribeEventConfig.get("player_command"));
-        subscribeEvent.setPlayerDeath((boolean) subscribeEventConfig.get("player_death"));
-        subscribeEvent.setPlayerJoin((boolean) subscribeEventConfig.get("player_join"));
-        subscribeEvent.setPlayerQuit((boolean) subscribeEventConfig.get("player_quit"));
-        subscribeEvent.setPlayerAdvancement((boolean) subscribeEventConfig.get("player_advancement"));
+        Map<String, Object> section = optionalMap(configMap, "subscribe_event");
+        if (section == null) {
+            return;
+        }
+        subscribeEvent.setPlayerChat(requireBoolean(section, "player_chat", "subscribe_event.player_chat"));
+        subscribeEvent.setPlayerCommand(requireBoolean(section, "player_command", "subscribe_event.player_command"));
+        subscribeEvent.setPlayerDeath(requireBoolean(section, "player_death", "subscribe_event.player_death"));
+        subscribeEvent.setPlayerJoin(requireBoolean(section, "player_join", "subscribe_event.player_join"));
+        subscribeEvent.setPlayerQuit(requireBoolean(section, "player_quit", "subscribe_event.player_quit"));
+        subscribeEvent.setPlayerAdvancement(requireBoolean(section, "player_advancement", "subscribe_event.player_advancement"));
     }
 }

@@ -45,6 +45,15 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+
+    // 测试隔离（第一道安全网）：把测试的工作目录指向 build 目录。
+    // 配置加载会以「相对工作目录」解析路径（plugins/queqiao/config.yml），
+    // 若不重定向，测试会读写项目根目录下的真实配置文件。
+    // 配置相关用例自身还会用 @TempDir 做逐用例隔离（第二道）。
+    val testWorkDir = layout.buildDirectory.dir("test-workdir").get().asFile
+    doFirst { testWorkDir.mkdirs() }
+    workingDir = testWorkDir
+
     finalizedBy(tasks.jacocoTestReport)
 }
 
