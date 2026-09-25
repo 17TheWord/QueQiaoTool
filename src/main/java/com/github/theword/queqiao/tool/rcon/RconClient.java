@@ -22,11 +22,16 @@ public class RconClient {
     }
 
     /**
-     * 尝试连接 Rcon，返回是否成功
+     * 尝试连接 Rcon
+     *
+     * <p>已连接时<b>直接返回</b>：此前缺少 {@code return}，
+     * 导致"已连接"分支打完日志后仍继续 {@code new Rcon(...)}，
+     * 用新连接覆盖 {@link #client} 字段——旧连接的 socket 不会被关闭，形成泄漏。
      */
     public void connect() {
         if (isConnected()) {
             logger.warn("Rcon 已连接，无需重复连接");
+            return;
         }
         try {
             client = new Rcon("localhost", port, password);
