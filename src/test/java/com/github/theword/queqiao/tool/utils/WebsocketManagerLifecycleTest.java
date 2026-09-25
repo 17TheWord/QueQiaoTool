@@ -1,7 +1,7 @@
 package com.github.theword.queqiao.tool.utils;
 
 import com.github.theword.queqiao.tool.config.ConfigKeys;
-import com.github.theword.queqiao.tool.config.ConfigRegistry;
+import com.github.theword.queqiao.tool.config.schema.ConfigRegistry;
 import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
 import com.github.theword.queqiao.tool.handle.HandleProtocolMessage;
@@ -16,7 +16,6 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;

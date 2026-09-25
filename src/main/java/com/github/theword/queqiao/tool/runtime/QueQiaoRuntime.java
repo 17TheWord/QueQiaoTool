@@ -3,7 +3,7 @@ package com.github.theword.queqiao.tool.runtime;
 import com.github.theword.queqiao.tool.config.io.ConfigFileReader;
 import com.github.theword.queqiao.tool.config.io.ConfigFileState;
 import com.github.theword.queqiao.tool.config.ConfigKeys;
-import com.github.theword.queqiao.tool.config.ConfigRegistry;
+import com.github.theword.queqiao.tool.config.schema.ConfigRegistry;
 import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.config.io.ConfigDocument;
 import com.github.theword.queqiao.tool.config.io.ConfigLoadResult;

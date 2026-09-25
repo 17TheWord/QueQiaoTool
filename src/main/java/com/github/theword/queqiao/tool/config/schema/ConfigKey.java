@@ -1,4 +1,4 @@
-package com.github.theword.queqiao.tool.config;
+package com.github.theword.queqiao.tool.config.schema;
 
 import com.github.theword.queqiao.tool.config.codec.ConfigCodec;
 import com.github.theword.queqiao.tool.config.exception.ConfigValidationException;

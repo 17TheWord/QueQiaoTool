@@ -1,7 +1,7 @@
 package com.github.theword.queqiao.tool;
 
 import com.github.theword.queqiao.tool.config.Config;
-import com.github.theword.queqiao.tool.config.ConfigKey;
+import com.github.theword.queqiao.tool.config.schema.ConfigKey;
 import com.github.theword.queqiao.tool.config.ConfigKeys;
 import com.github.theword.queqiao.tool.config.codec.StringCodec;
 import com.github.theword.queqiao.tool.event.PlayerChatEvent;

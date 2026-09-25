@@ -1,8 +1,8 @@
 package com.github.theword.queqiao.tool.config.io;
 
-import com.github.theword.queqiao.tool.config.ConfigKey;
-import com.github.theword.queqiao.tool.config.ConfigNode;
-import com.github.theword.queqiao.tool.config.ConfigSectionNode;
+import com.github.theword.queqiao.tool.config.schema.ConfigKey;
+import com.github.theword.queqiao.tool.config.schema.ConfigNode;
+import com.github.theword.queqiao.tool.config.schema.ConfigSectionNode;
 import com.github.theword.queqiao.tool.config.codec.ConfigCodec;
 import org.slf4j.Logger;
 import org.yaml.snakeyaml.DumperOptions;

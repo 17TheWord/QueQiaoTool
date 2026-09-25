@@ -5,6 +5,8 @@ import com.github.theword.queqiao.tool.config.codec.IntegerCodec;
 import com.github.theword.queqiao.tool.config.codec.ListCodec;
 import com.github.theword.queqiao.tool.config.codec.StringCodec;
 import com.github.theword.queqiao.tool.config.exception.ConfigValidationException;
+import com.github.theword.queqiao.tool.config.schema.ConfigKey;
+import com.github.theword.queqiao.tool.config.schema.ConfigRegistry;
 import com.github.theword.queqiao.tool.config.validation.ConfigValidators;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

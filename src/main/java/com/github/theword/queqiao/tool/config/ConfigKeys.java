@@ -4,6 +4,9 @@ import com.github.theword.queqiao.tool.config.codec.BooleanCodec;
 import com.github.theword.queqiao.tool.config.codec.IntegerCodec;
 import com.github.theword.queqiao.tool.config.codec.ListCodec;
 import com.github.theword.queqiao.tool.config.codec.StringCodec;
+import com.github.theword.queqiao.tool.config.schema.ConfigKey;
+import com.github.theword.queqiao.tool.config.schema.ConfigRegistry;
+import com.github.theword.queqiao.tool.config.schema.ConfigSectionNode;
 import com.github.theword.queqiao.tool.config.validation.ConfigValidators;
 
 import java.util.ArrayList;

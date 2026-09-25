@@ -1,4 +1,4 @@
-package com.github.theword.queqiao.tool.config;
+package com.github.theword.queqiao.tool.config.schema;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -1,7 +1,7 @@
 package com.github.theword.queqiao.tool;
 
 import com.github.theword.queqiao.tool.config.Config;
-import com.github.theword.queqiao.tool.config.ConfigRegistry;
+import com.github.theword.queqiao.tool.config.schema.ConfigRegistry;
 import com.github.theword.queqiao.tool.event.base.BaseEvent;
 import com.github.theword.queqiao.tool.exception.rcon.RconException;
 import com.github.theword.queqiao.tool.handle.HandleApiService;

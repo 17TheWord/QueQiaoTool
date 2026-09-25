@@ -3,6 +3,8 @@ package com.github.theword.queqiao.tool.config;
 import com.github.theword.queqiao.tool.config.codec.ConfigCodec;
 import com.github.theword.queqiao.tool.config.exception.ConfigValidationException;
 import com.github.theword.queqiao.tool.config.io.ConfigDocument;
+import com.github.theword.queqiao.tool.config.schema.ConfigKey;
+import com.github.theword.queqiao.tool.config.schema.ConfigRegistry;
 
 import java.util.ArrayList;
 import java.util.Collections;

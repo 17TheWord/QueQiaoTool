@@ -1,9 +1,9 @@
 package com.github.theword.queqiao.tool.config.io;
 
-import com.github.theword.queqiao.tool.config.ConfigRegistry;
+import com.github.theword.queqiao.tool.config.schema.ConfigRegistry;
 import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.config.ConfigSnapshot;
-import com.github.theword.queqiao.tool.config.ConfigTree;
+import com.github.theword.queqiao.tool.config.schema.ConfigTree;
 
 /**
  * 写盘快照

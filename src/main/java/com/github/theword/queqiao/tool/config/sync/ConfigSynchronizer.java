@@ -1,7 +1,7 @@
 package com.github.theword.queqiao.tool.config.sync;
 
-import com.github.theword.queqiao.tool.config.ConfigKey;
-import com.github.theword.queqiao.tool.config.ConfigTree;
+import com.github.theword.queqiao.tool.config.schema.ConfigKey;
+import com.github.theword.queqiao.tool.config.schema.ConfigTree;
 import com.github.theword.queqiao.tool.config.exception.ConfigValidationException;
 import com.github.theword.queqiao.tool.config.io.ConfigDocument;
 
