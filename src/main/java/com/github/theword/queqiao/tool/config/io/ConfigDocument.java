@@ -39,23 +39,8 @@ public final class ConfigDocument {
      * @param root 根节点，必须为 Map 且 key 全为 String
      * @throws ConfigValidationException 根节点不是 Mapping，或存在非 String 的 key
      */
-    @SuppressWarnings("unchecked")
     public ConfigDocument(Map<?, ?> root) {
-        if (root == null) {
-            this.root = new LinkedHashMap<>();
-            return;
-        }
-        Map<String, Object> validated = new LinkedHashMap<>();
-        for (Map.Entry<?, ?> entry : root.entrySet()) {
-            Object key = entry.getKey();
-            if (!(key instanceof String)) {
-                throw new ConfigValidationException(
-                        String.valueOf(key),
-                        "配置项的键必须是字符串，实际为 " + (key == null ? "null" : key.getClass().getSimpleName()));
-            }
-            validated.put((String) key, entry.getValue());
-        }
-        this.root = Collections.unmodifiableMap(validated);
+        this.root = freezeMap(root == null ? Collections.emptyMap() : root, ROOT_PATH);
     }
 
     /**
@@ -136,6 +121,37 @@ public final class ConfigDocument {
                 paths.add(path);
             }
         }
+    }
+
+    private static Map<String, Object> freezeMap(Map<?, ?> source, String prefix) {
+        Map<String, Object> copy = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : source.entrySet()) {
+            Object key = entry.getKey();
+            if (!(key instanceof String)) {
+                throw new ConfigValidationException(
+                        String.valueOf(key),
+                        "配置项的键必须是字符串，实际为 "
+                                + (key == null ? "null" : key.getClass().getSimpleName()));
+            }
+            String name = (String) key;
+            String path = prefix.isEmpty() ? name : prefix + "." + name;
+            copy.put(name, freezeValue(entry.getValue(), path));
+        }
+        return Collections.unmodifiableMap(copy);
+    }
+
+    private static Object freezeValue(Object value, String path) {
+        if (value instanceof Map) {
+            return freezeMap((Map<?, ?>) value, path);
+        }
+        if (value instanceof List) {
+            List<Object> copy = new ArrayList<>();
+            for (Object item : (List<?>) value) {
+                copy.add(freezeValue(item, path));
+            }
+            return Collections.unmodifiableList(copy);
+        }
+        return value;
     }
 
     /**

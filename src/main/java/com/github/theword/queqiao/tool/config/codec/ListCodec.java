@@ -31,15 +31,17 @@ public final class ListCodec implements ConfigCodec<List<String>> {
         }
 
         List<String> result = new ArrayList<>();
+        int index = 0;
         for (Object element : (List<?>) raw) {
             if (element == null) {
-                continue;
+                throw new ConfigValidationException(path, "列表元素 " + index + " 不能为 null");
             }
             if (!(element instanceof CharSequence)) {
                 throw new ConfigValidationException(
                         path, "列表元素期望 string，实际 " + CodecSupport.describe(element));
             }
             result.add(element.toString());
+            index++;
         }
         return result;
     }

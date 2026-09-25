@@ -48,6 +48,15 @@ class ConfigKeyTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> ConfigKey.builder("a.", BooleanCodec.INSTANCE).defaultValue(true).build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ConfigKey.builder("section.bad:key", BooleanCodec.INSTANCE).defaultValue(true).build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ConfigKey.builder("section.true", BooleanCodec.INSTANCE).defaultValue(true).build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ConfigKey.builder("section.123", BooleanCodec.INSTANCE).defaultValue(true).build());
     }
 
     @Test

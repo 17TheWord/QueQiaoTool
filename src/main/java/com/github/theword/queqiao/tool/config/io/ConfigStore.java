@@ -89,7 +89,10 @@ public final class ConfigStore {
         try {
             try (FileChannel channel = FileChannel.open(
                     temp, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
-                channel.write(ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8)));
+                ByteBuffer buffer = ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8));
+                while (buffer.hasRemaining()) {
+                    channel.write(buffer);
+                }
                 // 尽量 fsync：确保内容真正落盘后再替换原文件
                 channel.force(true);
             }

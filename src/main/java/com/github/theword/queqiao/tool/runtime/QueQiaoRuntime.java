@@ -128,6 +128,8 @@ public final class QueQiaoRuntime {
         // 配置系统接线：Schema 只注册一次，Config 只建一份，全局唯一配置状态
         this.configRegistry = new ConfigRegistry();
         ConfigKeys.registerAll(this.configRegistry);
+        // Addon 配置注册应在此处完成；配置加载开始前冻结 Schema，确保整个生命周期一致。
+        this.configRegistry.freeze();
         this.config = new Config(this.configRegistry);
         this.configDocument = ConfigDocument.empty();
         // 平台 API 实现与 RCON 执行器由协议层注入，协议层因此不再读 GlobalContext。

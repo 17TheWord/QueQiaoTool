@@ -12,9 +12,8 @@ import java.util.Set;
  * <p>Writer 只处理快照，不直接读取 {@link Config}——避免"写盘过程中运行时还在变化"
  * 导致写出混合状态。
  *
- * <p><b>注意</b>：快照中的值与运行时共享同一个对象引用（不做深拷贝）。
- * 这是安全的，因为 {@code Config} 从不在原地修改已存储的值——
- * {@code set}/{@code reset} 都是替换整份状态。
+ * <p>快照创建与读取时都会通过 {@link ConfigCodec#copy(Object)} 复制可变值，
+ * 因此快照与 Runtime、快照调用方彼此隔离。
  *
  * @since 0.6.12
  */
@@ -24,7 +23,11 @@ public final class ConfigSnapshot {
     private final Set<ConfigKey<?>> userKeys;
 
     ConfigSnapshot(Map<ConfigKey<?>, Object> values, Set<ConfigKey<?>> userKeys) {
-        this.values = Collections.unmodifiableMap(new LinkedHashMap<>(values));
+        Map<ConfigKey<?>, Object> copiedValues = new LinkedHashMap<>();
+        for (Map.Entry<ConfigKey<?>, Object> entry : values.entrySet()) {
+            copiedValues.put(entry.getKey(), copyValue(entry.getKey(), entry.getValue()));
+        }
+        this.values = Collections.unmodifiableMap(copiedValues);
         this.userKeys = Collections.unmodifiableSet(new LinkedHashSet<>(userKeys));
     }
 
@@ -34,8 +37,11 @@ public final class ConfigSnapshot {
      * @param key 配置项
      * @return 值
      */
-    public Object valueOf(ConfigKey<?> key) {
-        return values.containsKey(key) ? values.get(key) : key.defaultValue();
+    public <T> T valueOf(ConfigKey<T> key) {
+        if (!values.containsKey(key)) {
+            return key.defaultValue();
+        }
+        return key.getCodec().copy(cast(values.get(key)));
     }
 
     /**
@@ -59,5 +65,15 @@ public final class ConfigSnapshot {
      */
     public Set<ConfigKey<?>> keys() {
         return values.keySet();
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static Object copyValue(ConfigKey<?> key, Object value) {
+        return ((ConfigKey) key).getCodec().copy(value);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T cast(Object value) {
+        return (T) value;
     }
 }

@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -86,6 +87,20 @@ class ConfigWriterTest {
         assertTrue(yaml.contains("server_name: Server"), "默认值应出现在生成的文档中");
         assertTrue(yaml.contains("port: 8080"));
         assertTrue(yaml.contains("port: 25575"));
+    }
+
+    @Test
+    @DisplayName("写盘快照：修改快照读取值不影响输出")
+    void writeSnapshotDoesNotExposeMutableRuntimeValue() {
+        runtime.set(ConfigKeys.WebSocketClient.URL_LIST, Arrays.asList("ws://original"));
+        ConfigWriteSnapshot snapshot = ConfigWriteSnapshot.of(registry, runtime, document);
+
+        List<String> fromSnapshot = snapshot.getRuntime().valueOf(ConfigKeys.WebSocketClient.URL_LIST);
+        fromSnapshot.add("ws://injected");
+
+        String yaml = writer.render(snapshot);
+        assertTrue(yaml.contains("- ws://original"));
+        assertFalse(yaml.contains("ws://injected"));
     }
 
     @Test

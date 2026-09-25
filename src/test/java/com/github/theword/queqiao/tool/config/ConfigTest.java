@@ -160,6 +160,20 @@ class ConfigTest {
     }
 
     @Test
+    @DisplayName("snapshot 返回副本：修改快照值不影响 Runtime")
+    void snapshotDoesNotExposeInternalReference() {
+        Config runtime = newRuntime();
+        runtime.set(URL_LIST, new ArrayList<>(Arrays.asList("ws://a")));
+
+        ConfigSnapshot snapshot = runtime.snapshot();
+        List<String> fromSnapshot = snapshot.valueOf(URL_LIST);
+        fromSnapshot.add("ws://injected");
+
+        assertEquals(Arrays.asList("ws://a"), runtime.get(URL_LIST));
+        assertEquals(Arrays.asList("ws://a"), snapshot.valueOf(URL_LIST));
+    }
+
+    @Test
     @DisplayName("两个 Runtime 不共享同一个可变默认值对象")
     void mutableDefaultIsNotSharedBetweenRuntimes() {
         ConfigRegistry registry = newRegistry();
@@ -247,6 +261,19 @@ class ConfigTest {
                 () -> runtime.load(parse("websocket_server:\n  port: 99999\n")));
 
         assertEquals(19132, runtime.get(PORT));
+    }
+
+    @Test
+    @DisplayName("load 原子性：列表中的 null 元素失败时保持旧状态")
+    void loadAtomicOnNullListElement() {
+        Config runtime = newRuntime();
+        runtime.load(parse("websocket_client:\n  url_list:\n    - ws://old\n"));
+
+        assertThrows(
+                ConfigValidationException.class,
+                () -> runtime.load(parse("websocket_client:\n  url_list:\n    - ws://new\n    - null\n")));
+
+        assertEquals(Arrays.asList("ws://old"), runtime.get(URL_LIST));
     }
 
     @Test

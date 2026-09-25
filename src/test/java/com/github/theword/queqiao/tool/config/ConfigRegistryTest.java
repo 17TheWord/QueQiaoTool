@@ -145,6 +145,20 @@ class ConfigRegistryTest {
         assertEquals(2, section.getBlankLinesBefore());
     }
 
+    @Test
+    @DisplayName("冻结前可注册，冻结后拒绝核心与 Addon 配置")
+    void freezeRejectsFurtherRegistration() {
+        ConfigRegistry registry = new ConfigRegistry();
+        registry.register(intKey("addons.llm.model"));
+        registry.freeze();
+
+        assertTrue(registry.isFrozen());
+        assertThrows(IllegalStateException.class, () -> registry.register(intKey("core.value")));
+        assertThrows(IllegalStateException.class, () -> registry.register(intKey("addons.ai.radius")));
+        assertThrows(IllegalStateException.class, () -> registry.register(ConfigSectionNode.of("addons.ai")));
+        assertEquals(1, registry.snapshot().size());
+    }
+
     private static ConfigSectionNode childSection(ConfigSectionNode parent, String name) {
         for (ConfigNode child : parent.getChildren()) {
             if (child instanceof ConfigSectionNode && name.equals(child.getName())) {

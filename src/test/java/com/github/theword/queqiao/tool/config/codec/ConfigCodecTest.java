@@ -62,6 +62,10 @@ class ConfigCodecTest {
         assertEquals("list of string", ListCodec.INSTANCE.typeName());
 
         assertThrows(ConfigValidationException.class, () -> ListCodec.INSTANCE.read("a.list", null));
+        ConfigValidationException nullElement = assertThrows(
+                ConfigValidationException.class,
+                () -> ListCodec.INSTANCE.read("a.list", Arrays.asList("a", null)));
+        assertTrue(nullElement.getMessage().contains("1"), nullElement.getMessage());
         assertThrows(ConfigValidationException.class, () -> ListCodec.INSTANCE.read("a.list", "not-a-list"));
         assertThrows(ConfigValidationException.class, () -> ListCodec.INSTANCE.read("a.list", Arrays.asList(1, 2)));
     }

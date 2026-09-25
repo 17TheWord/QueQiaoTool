@@ -53,7 +53,39 @@ public abstract class ConfigNode {
         if (trimmed.startsWith(".") || trimmed.endsWith(".") || trimmed.contains("..")) {
             throw new IllegalArgumentException("配置路径不能有空段：" + path);
         }
+        for (String segment : trimmed.split("\\.")) {
+            if (!isSafePathSegment(segment)) {
+                throw new IllegalArgumentException("配置路径段只能包含 ASCII 字母、数字、_ 或 -：" + path);
+            }
+        }
         return trimmed;
+    }
+
+    private static boolean isSafePathSegment(String segment) {
+        if (segment.isEmpty() || (segment.charAt(0) >= '0' && segment.charAt(0) <= '9')) {
+            return false;
+        }
+        String lowerCase = segment.toLowerCase(java.util.Locale.ROOT);
+        if ("true".equals(lowerCase)
+                || "false".equals(lowerCase)
+                || "null".equals(lowerCase)
+                || "yes".equals(lowerCase)
+                || "no".equals(lowerCase)
+                || "on".equals(lowerCase)
+                || "off".equals(lowerCase)) {
+            return false;
+        }
+        for (int index = 0; index < segment.length(); index++) {
+            char c = segment.charAt(index);
+            if (!(c >= 'a' && c <= 'z')
+                    && !(c >= 'A' && c <= 'Z')
+                    && !(c >= '0' && c <= '9')
+                    && c != '_'
+                    && c != '-') {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static String lastSegment(String path) {

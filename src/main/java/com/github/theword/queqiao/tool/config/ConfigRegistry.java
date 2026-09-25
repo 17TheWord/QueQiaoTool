@@ -42,6 +42,8 @@ public final class ConfigRegistry {
      */
     private final Map<String, ConfigSectionNode> sectionMetadata = new LinkedHashMap<>();
 
+    private boolean frozen;
+
     /**
      * 注册一个配置项
      *
@@ -54,6 +56,7 @@ public final class ConfigRegistry {
         }
         lock.writeLock().lock();
         try {
+            requireMutable();
             String path = key.getPath();
 
             if (keysByPath.containsKey(path)) {
@@ -94,6 +97,7 @@ public final class ConfigRegistry {
         }
         lock.writeLock().lock();
         try {
+            requireMutable();
             String path = section.getPath();
             if (keysByPath.containsKey(path)) {
                 throw new ConfigValidationException(path, "该路径已是配置项，不能再注册为区块");
@@ -126,6 +130,30 @@ public final class ConfigRegistry {
         lock.readLock().lock();
         try {
             return keysByPath.size();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * 冻结注册中心。运行时启动完成配置声明后调用；之后不得再注册配置项或区块。
+     */
+    public void freeze() {
+        lock.writeLock().lock();
+        try {
+            frozen = true;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * @return 注册中心是否已冻结
+     */
+    public boolean isFrozen() {
+        lock.readLock().lock();
+        try {
+            return frozen;
         } finally {
             lock.readLock().unlock();
         }
@@ -233,5 +261,11 @@ public final class ConfigRegistry {
     private static String parentPathOf(String path) {
         int index = path.lastIndexOf('.');
         return index < 0 ? ROOT_PATH : path.substring(0, index);
+    }
+
+    private void requireMutable() {
+        if (frozen) {
+            throw new IllegalStateException("ConfigRegistry 已冻结，配置项只能在启动期注册");
+        }
     }
 }

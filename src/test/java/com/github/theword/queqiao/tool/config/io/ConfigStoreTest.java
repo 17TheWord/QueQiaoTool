@@ -55,6 +55,21 @@ class ConfigStoreTest {
     }
 
     @Test
+    @DisplayName("原子写入：大内容完整写入")
+    void writeAtomicallyWritesLargeContentCompletely(@TempDir Path tempDir) throws IOException {
+        Path target = tempDir.resolve("config.yml");
+        StringBuilder contentBuilder = new StringBuilder("value: ");
+        for (int index = 0; index < 2 * 1024 * 1024; index++) {
+            contentBuilder.append('x');
+        }
+        String content = contentBuilder.append('\n').toString();
+
+        ConfigStore.writeAtomically(target, content, LOGGER);
+
+        assertEquals(content, read(target));
+    }
+
+    @Test
     @DisplayName("原子写入：目标目录不存在时自动创建")
     void writeAtomicallyCreatesParentDirectories(@TempDir Path tempDir) throws IOException {
         Path target = tempDir.resolve("a").resolve("b").resolve("config.yml");
