@@ -1,4 +1,4 @@
-package com.github.theword.queqiao.tool.config;
+package com.github.theword.queqiao.tool.config.io;
 
 import org.yaml.snakeyaml.Yaml;
 

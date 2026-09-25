@@ -1,5 +1,7 @@
 package com.github.theword.queqiao.tool.config;
 
+import com.github.theword.queqiao.tool.config.codec.ConfigCodec;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;

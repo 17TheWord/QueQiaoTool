@@ -1,7 +1,5 @@
 package com.github.theword.queqiao.tool.config.io;
 
-import com.github.theword.queqiao.tool.config.ConfigFileState;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.github.theword.queqiao.tool.config;
+package com.github.theword.queqiao.tool.config.io;
 
 /**
  * 配置文件状态

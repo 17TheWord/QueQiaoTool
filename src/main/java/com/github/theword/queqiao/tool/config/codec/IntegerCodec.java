@@ -1,6 +1,5 @@
 package com.github.theword.queqiao.tool.config.codec;
 
-import com.github.theword.queqiao.tool.config.ConfigCodec;
 import com.github.theword.queqiao.tool.config.exception.ConfigValidationException;
 
 /**

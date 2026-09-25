@@ -1,7 +1,5 @@
 package com.github.theword.queqiao.tool.config.io;
 
-import com.github.theword.queqiao.tool.config.ConfigFileReader;
-import com.github.theword.queqiao.tool.config.ConfigFileState;
 import com.github.theword.queqiao.tool.config.ConfigKey;
 import com.github.theword.queqiao.tool.config.ConfigKeys;
 import com.github.theword.queqiao.tool.config.ConfigRegistry;

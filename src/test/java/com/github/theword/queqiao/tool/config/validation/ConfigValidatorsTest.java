@@ -1,6 +1,5 @@
 package com.github.theword.queqiao.tool.config.validation;
 
-import com.github.theword.queqiao.tool.config.ConfigValidator;
 import com.github.theword.queqiao.tool.config.exception.ConfigValidationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

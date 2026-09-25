@@ -3,6 +3,7 @@ package com.github.theword.queqiao.tool.config.io;
 import com.github.theword.queqiao.tool.config.ConfigKey;
 import com.github.theword.queqiao.tool.config.ConfigNode;
 import com.github.theword.queqiao.tool.config.ConfigSectionNode;
+import com.github.theword.queqiao.tool.config.codec.ConfigCodec;
 import org.slf4j.Logger;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -31,7 +32,7 @@ import java.util.Set;
  *     <li>只读：不修改 Runtime，也不修改 Document；</li>
  *     <li>deterministic：顺序完全取自 Schema 的声明顺序，绝不按字母排序，
  *         也不依赖任何 HashMap 迭代顺序；</li>
- *     <li>类型安全：标量表示由 {@link com.github.theword.queqiao.tool.config.ConfigCodec#write(Object)}
+ *     <li>类型安全：标量表示由 {@link ConfigCodec#write(Object)}
  *         决定，字符串的 YAML quoting 统一由 {@link #scalar(Object)} 一处负责；</li>
  *     <li>不引入新的 YAML 依赖：读仍由 snakeyaml 负责，写出的文本必须能被它读回。</li>
  * </ul>
