@@ -208,6 +208,20 @@ public final class ConfigKeys {
                         .build();
     }
 
+    /** 状态快照采集配置 */
+    public static final class Status {
+
+        private Status() {
+        }
+
+        public static final ConfigKey<Integer> REFRESH_INTERVAL_SECONDS =
+                ConfigKey.builder("status.refresh_interval_seconds", IntegerCodec.INSTANCE)
+                        .defaultValue(10)
+                        .validator(ConfigValidators.atLeast(5))
+                        .comment("状态快照后台采集间隔（秒，最小 5 秒；数值越大，状态更新越慢）")
+                        .build();
+    }
+
     // ------------------------------------------------------------------
     // subscribe_event
     // ------------------------------------------------------------------
@@ -280,6 +294,7 @@ public final class ConfigKeys {
                 Rcon.ENABLE,
                 Rcon.PORT,
                 Rcon.PASSWORD,
+                Status.REFRESH_INTERVAL_SECONDS,
                 SubscribeEvent.PLAYER_CHAT,
                 SubscribeEvent.PLAYER_DEATH,
                 SubscribeEvent.PLAYER_JOIN,
@@ -301,6 +316,7 @@ public final class ConfigKeys {
                 ConfigSectionNode.of("websocket_server").comment("WebSocket Server配置项").blankLinesBefore(1),
                 ConfigSectionNode.of("websocket_client").comment("WebSocket Client配置项").blankLinesBefore(1),
                 ConfigSectionNode.of("rcon").comment("Rcon 客户端配置项").blankLinesBefore(1),
+                ConfigSectionNode.of("status").comment("状态采集配置项").blankLinesBefore(1),
                 ConfigSectionNode.of("subscribe_event").comment("订阅事件配置项").blankLinesBefore(1)));
     }
 

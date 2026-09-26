@@ -284,6 +284,8 @@ public final class QueQiaoRuntime {
         messagePrefixJsonElement = initMessagePrefixJsonObject(config.get(ConfigKeys.MESSAGE_PREFIX));
         languageService = new LanguageService(modServer, logger);
         ServerStatusCollector.initPingTarget(logger);
+        ServerStatusCollector.startRefreshScheduler(
+                config.get(ConfigKeys.Status.REFRESH_INTERVAL_SECONDS), logger);
         initWebsocketManager();
         initRconClient();
     }
@@ -296,6 +298,7 @@ public final class QueQiaoRuntime {
             service.reload();
         }
         ServerStatusCollector.initPingTarget(logger);
+        ServerStatusCollector.updateRefreshInterval(config.get(ConfigKeys.Status.REFRESH_INTERVAL_SECONDS));
         WebsocketManager manager = websocketManager;
         if (manager != null) {
             manager.restart(config, commandReturner);
@@ -313,6 +316,8 @@ public final class QueQiaoRuntime {
      * 因此"尚未启动就关闭"与"关闭两次"都是安全的。
      */
     public void shutdown() {
+        ServerStatusCollector.stopRefreshScheduler();
+
         WebsocketManager manager = websocketManager;
         if (manager != null) {
             manager.stop(1000, WebsocketConstantMessage.SHUTDOWN, null);

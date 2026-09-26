@@ -17,11 +17,8 @@ public class GetStatusHandler extends AbstractProtocolHandler<EmptyPayload, Map<
     /**
      * 返回服务器状态快照
      *
-     * <p><b>注意：这是潜在阻塞调用</b>——会执行一次 Minecraft Server List Ping
-     * （socket 超时 3 秒）并采集 CPU/内存。它运行在调用方的连接读线程上，
-     * 因此只会阻塞发起请求的那条连接，不影响其它连接。
-     *
-     * <p>{@link ServerStatusCollector} 内部有短 TTL 缓存，用于把突发请求收敛为一次采集。
+     * <p>Runtime 启动后由后台任务按配置间隔采集完整快照。本处理器只读取最近一次已发布的快照，
+     * 不会在连接处理线程中执行 Minecraft Server List Ping。
      *
      * <p>日志级别为 debug：该接口可能被高频轮询，INFO 级别会造成日志刷屏。
      *

@@ -43,6 +43,21 @@ public final class ConfigValidators {
     }
 
     /**
+     * 最小值校验（含边界），适用于有自然类型上限但不设置业务最大值的配置。
+     *
+     * @param min 最小值（含）
+     * @param <T> 可比较的值类型
+     * @return 校验器
+     */
+    public static <T extends Comparable<T>> ConfigValidator<T> atLeast(T min) {
+        return (path, value) -> {
+            if (value == null || value.compareTo(min) < 0) {
+                throw new ConfigValidationException(path, "值必须大于或等于 " + min + "，实际 " + value);
+            }
+        };
+    }
+
+    /**
      * 必须为正数（{@code > 0}）
      *
      * @param <T> 可比较的数值类型
