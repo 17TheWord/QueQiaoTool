@@ -1,5 +1,6 @@
 package com.github.theword.queqiao.tool.protocol.handler.status;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class ServerStatusSnapshot {

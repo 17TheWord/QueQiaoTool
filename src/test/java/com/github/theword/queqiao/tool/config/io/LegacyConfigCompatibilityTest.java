@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * 旧配置兼容性回归测试
  *
  * <p>用<b>旧版本随包的 {@code config.example.yml}</b>（即用户手上正在用的配置形态）作为输入，
- * 验证全部 23 个配置路径都能被 {@link ConfigKeys} 中的 Schema 正确读取，
+ * 验证旧版 23 个配置路径都能被 {@link ConfigKeys} 中的 Schema 正确读取，
  * 并保持取值、类型与来源语义——<b>不重命名字段、不改变嵌套结构、不改变默认值</b>。
  *
  * <p><b>fixture 来源</b>：旧 {@code src/main/resources/queqiao/config.example.yml} 的副本，
@@ -56,9 +56,9 @@ class LegacyConfigCompatibilityTest {
     }
 
     @Test
-    @DisplayName("声明了 23 个核心配置项，路径与既有 YAML 完全一致")
+    @DisplayName("注册全部核心配置项，并保持旧版 23 个路径兼容")
     void declaresAllLegacyPaths() {
-        assertEquals(23, ConfigKeys.all().size(), "核心配置项数量应为 23");
+        assertEquals(24, ConfigKeys.all().size(), "核心配置项数量应包含新增状态采集配置");
 
         ConfigRegistry registry = new ConfigRegistry();
         ConfigKeys.registerAll(registry);
@@ -68,9 +68,14 @@ class LegacyConfigCompatibilityTest {
     }
 
     @Test
-    @DisplayName("旧配置的 23 个字段全部被识别为 USER（而不是 DEFAULT）")
+    @DisplayName("旧配置字段识别为 USER，新加配置保留 Schema 默认值")
     void allLegacyFieldsAreUserSourced() {
         for (ConfigKey<?> key : ConfigKeys.all()) {
+            if (key.equals(ConfigKeys.Status.REFRESH_INTERVAL_SECONDS)) {
+                assertFalse(runtime.contains(key), "旧配置不包含新增字段：" + key.getPath());
+                assertTrue(runtime.isDefault(key), "新增字段应使用 Schema 默认值：" + key.getPath());
+                continue;
+            }
             assertTrue(runtime.contains(key), "字段应来源于用户配置：" + key.getPath());
             assertFalse(runtime.isDefault(key), "字段来源应为 USER：" + key.getPath());
         }

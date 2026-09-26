@@ -268,7 +268,7 @@ class ConfigCheckerTest {
 
         ConfigCheckResult result = checker.check(registry.snapshot(), ConfigDocument.empty());
 
-        assertEquals(23, result.getIssues(ConfigIssueType.MISSING).size());
+        assertEquals(24, result.getIssues(ConfigIssueType.MISSING).size());
         assertFalse(result.hasErrors());
     }
 }

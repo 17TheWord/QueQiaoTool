@@ -39,24 +39,27 @@ class ConfigSynchronizerTest {
     private final ConfigChecker checker = new ConfigChecker();
     private final ConfigWriter writer = new ConfigWriter();
 
+    /**
+     * 配置项总数（用于测试空文档补齐默认值）
+     */
+    private final Integer configSize = 24;
+
     private static ConfigRegistry newRegistry() {
         ConfigRegistry registry = new ConfigRegistry();
         ConfigKeys.registerAll(registry);
         return registry;
     }
 
-    @SuppressWarnings("unchecked")
     private static ConfigDocument doc(String yaml) {
-        return new ConfigDocument((Map<String, Object>) new Yaml().load(yaml));
+        return new ConfigDocument(new Yaml().load(yaml));
     }
 
-    @SuppressWarnings("unchecked")
     private static Map<String, Object> parse(String yaml) {
-        return (Map<String, Object>) new Yaml().load(yaml);
+        return new Yaml().load(yaml);
     }
 
     private static Map<String, Object> readYaml(Path path) throws IOException {
-        return (Map<String, Object>) new Yaml().load(new String(Files.readAllBytes(path), StandardCharsets.UTF_8));
+        return new Yaml().load(new String(Files.readAllBytes(path), StandardCharsets.UTF_8));
     }
 
     // ------------------------------------------------------------------
@@ -199,9 +202,9 @@ class ConfigSynchronizerTest {
 
         ConfigSyncResult result = synchronizer.synchronize(tree, ConfigDocument.empty());
 
-        assertEquals(23, result.getPlan().getAdditions().size(), "应补齐全部 23 项");
+        assertEquals(configSize, result.getPlan().getAdditions().size(), "应补齐全部 " + configSize + " 项");
         assertTrue(result.getPlan().getPreserved().isEmpty());
-        assertEquals(23, result.getDocument().leafPaths().size());
+        assertEquals(configSize, result.getDocument().leafPaths().size());
     }
 
     @Test
@@ -212,7 +215,7 @@ class ConfigSynchronizerTest {
 
         ConfigSyncResult result = synchronizer.synchronize(tree, document);
 
-        assertEquals(23, result.getPlan().getAdditions().size());
+        assertEquals(configSize, result.getPlan().getAdditions().size());
         assertEquals("bar", result.getDocument().get("addons.custom.foo"), "addons 必须保留");
         assertTrue(result.getPlan().getRemovals().isEmpty());
     }
