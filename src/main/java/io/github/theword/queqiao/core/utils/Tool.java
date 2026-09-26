@@ -21,6 +21,7 @@ public class Tool {
      * @return 是否为注册或登录命令，如果是，返回空字符串
      * @deprecated 0.4.2，请使用 {@link RuntimeUtils#isIgnoredCommand(String)} 代替
      */
+    @Deprecated
     public static String isRegisterOrLoginCommand(String command) {
         if (command.startsWith("/")) command = command.substring(1);
         if (command.startsWith("l ") || command.startsWith("login ") || command.startsWith("register ") || command.startsWith("reg ") || command.startsWith(BaseConstant.COMMAND_HEADER + " "))
@@ -58,7 +59,7 @@ public class Tool {
         if (template == null) {
             return "null";
         }
-        if (args == null || args.length == 0 || template.indexOf("{}") < 0) {
+        if (args == null || args.length == 0 || !template.contains("{}")) {
             return template;
         }
 
