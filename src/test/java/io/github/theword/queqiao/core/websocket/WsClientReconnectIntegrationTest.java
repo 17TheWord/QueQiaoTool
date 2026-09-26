@@ -317,11 +317,34 @@ class WsClientReconnectIntegrationTest {
                     () -> clients.get(0).getReconnectAttempts() >= 1, 15_000L,
                     "至少一个 Client 应已安排重连");
 
+            // 上面那个条件只能说明"已决定重连"：WsClient 在决定重连时就自增计数，
+            // 而"把任务投递给调度器"发生在其后，"线程池真正 start 线程"又更晚。
+            // 因此必须按下面三步分开等待，不能拿"计数已自增"当作"调度线程已存在"的证据——
+            // 否则在慢机器（CI）上会偶发地枚举不到线程而失败。
+
+            // ① 任务确实被提交到"这个"共享调度器（而不是某个 Client 自建的调度器）
+            awaitCondition(
+                    () -> scheduler.getTaskCount() >= 1, 15_000L,
+                    "重连任务应已提交到共享调度器");
+            // ② 调度器确实登记了 worker。注意 ThreadPoolExecutor.addWorker 是
+            //    先在 mainLock 内 workers.add(w)、再在锁外 t.start()，
+            //    所以这一步只保证"线程已登记"，不保证"线程已启动"。
+            awaitCondition(
+                    () -> scheduler.getPoolSize() >= 1, 15_000L,
+                    "共享调度器应创建调度线程");
+            // ③ 线程确实已 start 并可被枚举（第 ② 步之后才执行 t.start()，故必须单独等待）
+            awaitCondition(
+                    () -> !liveThreads(RECONNECT_THREAD_PREFIX).isEmpty(), 15_000L,
+                    "重连调度线程应已启动");
+
             List<Thread> reconnectThreads = liveThreads(RECONNECT_THREAD_PREFIX);
             assertFalse(reconnectThreads.isEmpty(), "应存在共享重连调度线程");
+            // 断言"本调度器"的线程数，而不是全局同名线程数：
+            // 同名线程前缀是生产与测试共用的，其它测试类的调度器可能仍在收尾，
+            // 全局计数会随执行顺序变化，属于偶发失败源。
             assertTrue(
-                    reconnectThreads.size() <= 2,
-                    "重连调度线程数不得超过 corePoolSize=2，实际=" + reconnectThreads.size());
+                    scheduler.getPoolSize() <= 2,
+                    "共享调度器的线程数不得超过 corePoolSize=2，实际=" + scheduler.getPoolSize());
             for (Thread thread : reconnectThreads) {
                 assertTrue(thread.isDaemon(), "重连调度线程应为 daemon：" + thread.getName());
             }

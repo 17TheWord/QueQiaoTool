@@ -368,6 +368,11 @@ public class WsClient extends WebSocketClient {
     /**
      * 获取当前连续失败次数（诊断与测试用）
      *
+     * <p><b>语义边界</b>：该计数在<b>决定重连</b>时自增（{@link #requestReconnect} 内），
+     * 早于"任务被提交到调度器"，更早于"调度线程真正启动"。
+     * 因此它只能回答"是否已决定重连"，<b>不能</b>作为"重连已安排/线程已存在"的证据——
+     * 需要后两者时请等待 {@code scheduler} 的状态或实际观测。
+     *
      * @return 连续失败次数
      */
     public int getReconnectAttempts() {
