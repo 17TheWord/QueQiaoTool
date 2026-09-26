@@ -5,6 +5,7 @@ plugins {
     `maven-publish`
     jacoco
     id("com.vanniktech.maven.publish") version "0.37.0"
+    signing
 }
 
 group = providers.gradleProperty("projectGroup").get()
@@ -91,9 +92,8 @@ mavenPublishing {
         version = providers.gradleProperty("projectVersion").get()
     )
     publishToMavenCentral()
-    if (providers.gradleProperty("signingRequired").map(String::toBoolean).orElse(false).get()) {
-        signAllPublications()
-    }
+
+    signAllPublications()
 
     pom {
         name.set(providers.gradleProperty("name"))
@@ -120,4 +120,11 @@ mavenPublishing {
             )
         }
     }
+}
+
+signing {
+    isRequired = providers.gradleProperty("signingRequired")
+        .map(String::toBoolean)
+        .orElse(false)
+        .get()
 }
