@@ -4,10 +4,11 @@ plugins {
     java
     `maven-publish`
     jacoco
+    id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
-group = property("projectGroup")!!
-version = property("projectVersion")!!
+group = providers.gradleProperty("projectGroup").get()
+version = providers.gradleProperty("projectVersion").get()
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -84,21 +85,38 @@ tasks.jacocoTestReport {
     }
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
-        }
-    }
+mavenPublishing {
+    coordinates(
+        groupId = providers.gradleProperty("projectGroup").get(),
+        artifactId = providers.gradleProperty("artifactId").get(),
+        version = providers.gradleProperty("projectVersion").get()
+    )
+    publishToMavenCentral()
+    signAllPublications()
 
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/17TheWord/QueQiaoTool")
-            credentials {
-                username = System.getenv("GH_ACTOR")
-                password = System.getenv("GH_TOKEN")
+    pom {
+        name.set(providers.gradleProperty("name"))
+        description.set(providers.gradleProperty("description"))
+        url.set(providers.gradleProperty("url"))
+        licenses {
+            license {
+                name.set("The MIT License")
+                url.set("https://opensource.org/license/mit/")
+                distribution.set("repo")
             }
+        }
+        developers {
+            developer {
+                id.set(providers.gradleProperty("developerId"))
+                name.set(providers.gradleProperty("developerName"))
+            }
+        }
+        scm {
+            url.set(providers.gradleProperty("url"))
+            connection.set("scm:git:" + providers.gradleProperty("url").get() + ".git")
+            developerConnection.set(
+                "scm:git:ssh://github.com/" + providers.gradleProperty("githubRepository").get() + ".git"
+            )
         }
     }
 }

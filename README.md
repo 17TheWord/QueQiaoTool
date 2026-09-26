@@ -69,27 +69,19 @@
 
 ## 构建与依赖
 
-- 前往 `Release` 查看最新版本。
-- 项目使用 GitHub Packages ，需配置凭证，参考 [GitHub Packages](https://docs.github.com/zh/packages) 配置。
-- 环境变量
-    - `GH_USERNAME`：GitHub 用户名。
-    - `PACKAGE_READ_ONLY_TOKEN`：GitHub 个人访问令牌。
+- 前往 `Release` 查看版本与构建产物。
+- 新版本计划发布到 Maven Central，坐标为 `io.github.17theword.queqiao:core`；首个 Central 版本发布后可直接从 `mavenCentral()` 获取。
+- 旧版本仍可使用 GitHub Packages 坐标 `com.github.theword.queqiao:queqiao-tool`，对应仓库凭证配置见 [GitHub Packages 文档](https://docs.github.com/zh/packages)。
 
 Gradle (Kotlin DSL)：
 
 ```kotlin
 repositories {
-    maven {
-        url = uri("https://maven.pkg.github.com/17TheWord/QueQiaoTool")
-        credentials {
-            username = System.getenv("GH_USERNAME")
-            password = System.getenv("PACKAGE_READ_ONLY_TOKEN")
-        }
-    }
+    mavenCentral()
 }
 
 dependencies {
-    implementation("com.github.theword.queqiao:queqiao-tool:0.3.7")
+    implementation("io.github.17theword.queqiao:core:<version>")
 }
 ```
 

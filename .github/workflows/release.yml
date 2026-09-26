@@ -1,47 +1,190 @@
-# This workflow will build a package using Maven and then publish it to GitHub packages when a release is created
-# For more information see: https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md#apache-maven-with-a-settings-path
-
 name: Release
+
+# Push a version tag to publish to Maven Central and create/update the GitHub Release.
+#
+# Example:
+#   git tag v0.7.0
+#   git push origin v0.7.0
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
+
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to publish, for example v0.7.0
+        required: true
+        default: v0.7.0
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  publish:
+    name: Publish QueQiao Core
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
-    env:
-      GH_ACTOR: ${{ github.actor }}
-      GH_TOKEN: ${{ github.token }}
 
     steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Java & Gradle
-        uses: ./.github/actions/set-java
-        with:
-          java-version: '17'
-
-      - name: Check if Release exists
-        id: check_release
+      - name: Resolve the release tag
+        id: release
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
         run: |
-          if gh release view v${{ env.VERSION }} -R ${{ github.repository }} >/dev/null 2>&1; then
-            echo "Release v${{ env.VERSION }} already exists. Exiting gracefully."
-            exit 0
+          tag="${INPUT_TAG:-$GITHUB_REF_NAME}"
+
+          if [[ ! $tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::tag '$tag' is not a release tag like v0.7.0 or v0.8.0-rc1"
+            exit 1
           fi
 
-      - name: Run All Checks (Spotless, Checkstyle, Test)
-        run: ./gradlew check
+          version=${tag#v}
+          prerelease=false
 
-      - name: Build and Publish with Gradle
-        run: ./gradlew publish
+          case "$version" in
+            *-*) prerelease=true ;;
+          esac
 
-      - name: Create Release
-        run: gh release create v${{ env.VERSION }} --generate-notes
+          {
+            echo "tag=$tag"
+            echo "version=$version"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Upload to Release
-        run: gh release upload v${{ env.VERSION }} build/libs/queqiao-tool-${{ env.VERSION }}*.jar --clobber
+      # For workflow_dispatch, build the selected tag instead of the default branch HEAD.
+      - name: Checkout release tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
+      - name: Check publishing coordinates
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          value() {
+            grep -E "^$1=" gradle.properties |
+              head -1 |
+              cut -d= -f2- |
+              tr -d '\r'
+          }
+
+          group=$(value projectGroup)
+          repo=$(value githubRepository)
+          artifact=$(value artifactId)
+          url=$(value url)
+
+          owner=$(printf '%s' "${repo%%/*}" | tr '[:upper:]' '[:lower:]')
+          group=$(printf '%s' "$group" | tr '[:upper:]' '[:lower:]')
+
+          case "$group" in
+            io.github.*)
+              namespace=${group#io.github.}
+              ;;
+            *)
+              namespace=
+              ;;
+          esac
+
+          if [ -z "$namespace" ] ||
+             { [ "$namespace" != "$owner" ] && [[ "$namespace" != "$owner."* ]]; }; then
+            echo "::error::GROUP ($group) must be under this GitHub owner's verified namespace (io.github.$owner)."
+            exit 1
+          fi
+
+          if [ "$url" != "https://github.com/$repo" ]; then
+            echo "::error::POM_URL ($url) must point to https://github.com/$repo."
+            exit 1
+          fi
+
+          echo "Publishing $group:$artifact:$RELEASE_VERSION from $url"
+
+      - name: Validate Maven Central credentials
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          GPG_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: |
+          missing=false
+
+          [ -n "$MAVEN_USERNAME" ] || {
+            echo "::error::Missing MAVEN_CENTRAL_USERNAME"
+            missing=true
+          }
+
+          [ -n "$MAVEN_PASSWORD" ] || {
+            echo "::error::Missing MAVEN_CENTRAL_PASSWORD"
+            missing=true
+          }
+
+          [ -n "$GPG_KEY" ] || {
+            echo "::error::Missing MAVEN_GPG_PRIVATE_KEY"
+            missing=true
+          }
+
+          [ -n "$GPG_PASSPHRASE" ] || {
+            echo "::error::Missing MAVEN_GPG_PASSPHRASE"
+            missing=true
+          }
+
+          if [ "$missing" = true ]; then
+            exit 1
+          fi
+
+          echo "Maven Central credentials and GPG signing configuration are present."
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Run checks and stage release jars
+        run: |
+          ./gradlew clean check assemble javadocJar \
+            -PprojectVersion=${{ steps.release.outputs.version }}
+
+      - name: Publish to Maven Central
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: |
+          ./gradlew publishAndReleaseToMavenCentral \
+            --no-configuration-cache \
+            -PprojectVersion=${{ steps.release.outputs.version }}
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.release.outputs.version }}
+          TAG: ${{ steps.release.outputs.tag }}
+          PRERELEASE: ${{ steps.release.outputs.prerelease }}
+        run: |
+          files=(build/libs/*.jar)
+
+          if [ ! -e "${files[0]}" ]; then
+            echo "::error::No release jars found in build/libs."
+            exit 1
+          fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${files[@]}" --clobber
+          else
+            args=()
+
+            if [ "$PRERELEASE" = true ]; then
+              args+=(--prerelease)
+            fi
+
+            gh release create "$TAG" \
+              --generate-notes \
+              "${args[@]}" \
+              --title "QueQiao Core $VERSION" \
+              "${files[@]}"
+          fi
