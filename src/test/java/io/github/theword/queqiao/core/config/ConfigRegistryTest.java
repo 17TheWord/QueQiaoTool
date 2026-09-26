@@ -4,7 +4,6 @@ import io.github.theword.queqiao.core.config.codec.BooleanCodec;
 import io.github.theword.queqiao.core.config.codec.IntegerCodec;
 import io.github.theword.queqiao.core.config.exception.ConfigValidationException;
 import io.github.theword.queqiao.core.config.schema.*;
-import io.github.theword.queqiao.core.config.schema.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
