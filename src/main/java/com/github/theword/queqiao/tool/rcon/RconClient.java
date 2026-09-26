@@ -111,7 +111,16 @@ public class RconClient {
         }
         try {
             return current.command(command);
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
+            connection = null;
+            try {
+                current.close();
+            } catch (Exception closeError) {
+                if (closeError instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+                e.addSuppressed(closeError);
+            }
             throw RconException.commandFailed(e);
         }
     }
