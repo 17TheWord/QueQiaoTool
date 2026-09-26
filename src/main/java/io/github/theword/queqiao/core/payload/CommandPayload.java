@@ -1,0 +1,21 @@
+package io.github.theword.queqiao.core.payload;
+
+
+/**
+ * 命令负载类
+ *
+ * <p>表示一条命令的负载。
+ */
+public class CommandPayload {
+
+    private String command;
+
+    public String getCommand() {
+        return command;
+    }
+
+    public void setCommand(String command) {
+        this.command = command;
+    }
+
+}

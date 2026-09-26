@@ -21,10 +21,10 @@
    );
    ```
 2. 接口实现：
-    - `com.github.theword.queqiao.tool.handle.HandleApiService`： 实现发送广播、title、actionbar、私聊等实际逻辑（调用原生
+    - `io.github.theword.queqiao.core.handle.HandleApiService`： 实现发送广播、title、actionbar、私聊等实际逻辑（调用原生
       API）。
-    - `com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService`： 用于在控制台或指令执行者上下文中返回信息与权限判定。
-    - `com.github.theword.queqiao.tool.command.subCommand`：实现各 `XxxAbstract` 子命令并注册。
+    - `io.github.theword.queqiao.core.handle.HandleCommandReturnMessageService`： 用于在控制台或指令执行者上下文中返回信息与权限判定。
+    - `io.github.theword.queqiao.core.command.subCommand`：实现各 `XxxAbstract` 子命令并注册。
 3. 在服务端关闭前调用：
    ```java
    GlobalContext.shutdown();
