@@ -4,6 +4,12 @@ com.github.theword.queqiao.tool.command.subCommand
 com.github.theword.queqiao.tool.command.subCommand.client
 com.github.theword.queqiao.tool.command.subCommand.server
 com.github.theword.queqiao.tool.config
+com.github.theword.queqiao.tool.config.codec
+com.github.theword.queqiao.tool.config.exception
+com.github.theword.queqiao.tool.config.io
+com.github.theword.queqiao.tool.config.schema
+com.github.theword.queqiao.tool.config.sync
+com.github.theword.queqiao.tool.config.validation
 com.github.theword.queqiao.tool.constant
 com.github.theword.queqiao.tool.event
 com.github.theword.queqiao.tool.event.base
