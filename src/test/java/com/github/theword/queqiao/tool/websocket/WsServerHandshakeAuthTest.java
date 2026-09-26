@@ -1,7 +1,9 @@
 package com.github.theword.queqiao.tool.websocket;
 
 import com.github.theword.queqiao.tool.constant.WebsocketConstantMessage;
+import com.github.theword.queqiao.tool.constant.ProtocolConstants;
 import com.github.theword.queqiao.tool.handle.HandleProtocolMessage;
+import com.github.theword.queqiao.tool.response.Response;
 import com.github.theword.queqiao.tool.support.PlatformStubs;
 import com.google.gson.Gson;
 import org.java_websocket.client.WebSocketClient;
@@ -104,6 +106,39 @@ class WsServerHandshakeAuthTest {
         } finally {
             wrongTokenClient.close();
             correctTokenClient.close();
+            server.stop(1000);
+        }
+    }
+
+    @Test
+    @DisplayName("真实 WebSocket 请求经过 WsServer 分发到 HandleApiService")
+    void websocketRequestReachesHandleApiService() throws Exception {
+        int port = findFreePort();
+        PlatformStubs.RecordingApiService apiService = PlatformStubs.recordingApiService();
+        HandleProtocolMessage dispatcher = PlatformStubs.newDispatcher(
+                LOGGER, GSON, apiService, PlatformStubs.rconExecutorReturning(""));
+        WsServer server = new WsServer(
+                new InetSocketAddress("127.0.0.1", port), LOGGER, dispatcher, SERVER_NAME, ACCESS_TOKEN, true);
+        server.start();
+
+        ProbeClient client = new ProbeClient(port, SERVER_NAME, "Bearer " + ACCESS_TOKEN);
+        try {
+            client.connect();
+            assertTrue(client.awaitOpen(10_000L), "测试客户端应完成 WebSocket 握手");
+
+            client.send(
+                    "{\"api\":\"broadcast\",\"data\":{\"message\":{\"text\":\"from websocket\"}},"
+                            + "\"echo\":\"ws-server-api\"}");
+            assertTrue(client.awaitMessage(10_000L), "服务端应返回协议响应");
+
+            Response response = GSON.fromJson(client.getLastMessage(), Response.class);
+            assertEquals(ProtocolConstants.Status.SUCCESS, response.getCode().intValue());
+            assertEquals(ProtocolConstants.Api.BROADCAST, response.getApi());
+            assertEquals("ws-server-api", response.getEcho());
+            assertEquals(1, apiService.getBroadcasts().size());
+            assertEquals("{\"text\":\"from websocket\"}", apiService.getBroadcasts().get(0));
+        } finally {
+            client.close();
             server.stop(1000);
         }
     }
