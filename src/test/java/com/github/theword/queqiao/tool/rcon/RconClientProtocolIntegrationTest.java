@@ -99,6 +99,64 @@ class RconClientProtocolIntegrationTest {
         }
     }
 
+    @Test
+    @DisplayName("1446 字节的 tellraw 命令可完整发送，超长命令在发送前拒绝")
+    void commandLengthUsesMinecraftRconByteLimit() throws Exception {
+        String prefix = "/tellraw @a {\"text\":\"";
+        String suffix = "\"}";
+        String maxCommand = prefix + "x".repeat(1446 - prefix.length() - suffix.length()) + suffix;
+        assertEquals(1446, maxCommand.getBytes(StandardCharsets.UTF_8).length);
+        try (FakeRconServer server = new FakeRconServer(PASSWORD, "ok", false)) {
+            RconClient client = new RconClient(LOGGER, server.getPort(), PASSWORD);
+            try {
+                client.connect();
+                assertEquals("ok", client.sendCommand(maxCommand));
+                assertTrue(server.awaitCommand(), "服务端应收到最大长度命令");
+                assertEquals(maxCommand, server.getLastCommand(), "命令应按原字节内容完整传输");
+
+                String tooLongCommand = maxCommand + "x";
+                RconException error = assertThrows(RconException.class, () -> client.sendCommand(tooLongCommand));
+                assertEquals(RconException.Kind.INVALID_COMMAND, error.getKind());
+                assertTrue(client.isConnected(), "本地长度校验不应破坏现有连接");
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("服务端不响应时读超时映射为 COMMAND_FAILED 并清理连接")
+    void responseTimeoutInvalidatesConnection() throws Exception {
+        try (FakeRconServer server = new FakeRconServer(PASSWORD, "unused", FakeRconServer.CommandMode.STALL)) {
+            RconClient client = new RconClient(LOGGER, server.getPort(), PASSWORD);
+            try {
+                client.connect();
+                RconException error = assertThrows(RconException.class, () -> client.sendCommand("list"));
+                assertEquals(RconException.Kind.COMMAND_FAILED, error.getKind());
+                assertTrue(server.awaitCommand(), "服务端应先收到命令，然后保持不响应");
+                assertFalse(client.isConnected(), "读超时后客户端应清理连接");
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("收到畸形响应包时映射为 COMMAND_FAILED 并清理连接")
+    void malformedResponseInvalidatesConnection() throws Exception {
+        try (FakeRconServer server = new FakeRconServer(PASSWORD, "unused", FakeRconServer.CommandMode.MALFORMED)) {
+            RconClient client = new RconClient(LOGGER, server.getPort(), PASSWORD);
+            try {
+                client.connect();
+                RconException error = assertThrows(RconException.class, () -> client.sendCommand("list"));
+                assertEquals(RconException.Kind.COMMAND_FAILED, error.getKind());
+                assertFalse(client.isConnected(), "畸形响应后客户端应清理连接");
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
     /** Minimal RCON peer for testing the production client's real TCP protocol path. */
     private static final class FakeRconServer implements AutoCloseable {
         private static final int MAX_PACKET_LENGTH = 16 * 1024;
@@ -110,11 +168,12 @@ class RconClientProtocolIntegrationTest {
         private final ServerSocket serverSocket;
         private final String expectedPassword;
         private final String commandResponse;
-        private final boolean disconnectOnCommand;
+        private final CommandMode commandMode;
         private final CountDownLatch authenticationRequest = new CountDownLatch(1);
         private final CountDownLatch authenticated = new CountDownLatch(1);
         private final CountDownLatch authenticationRejected = new CountDownLatch(1);
         private final CountDownLatch commandReceived = new CountDownLatch(1);
+        private final CountDownLatch responseReleased = new CountDownLatch(1);
         private final AtomicReference<Socket> activeSocket = new AtomicReference<>();
         private final AtomicReference<String> authenticationPayload = new AtomicReference<>();
         private final AtomicReference<String> lastCommand = new AtomicReference<>();
@@ -126,10 +185,16 @@ class RconClientProtocolIntegrationTest {
 
         private FakeRconServer(String expectedPassword, String commandResponse, boolean disconnectOnCommand)
                 throws IOException {
+            this(expectedPassword, commandResponse,
+                    disconnectOnCommand ? CommandMode.DISCONNECT : CommandMode.RESPOND);
+        }
+
+        private FakeRconServer(String expectedPassword, String commandResponse, CommandMode commandMode)
+                throws IOException {
             this.serverSocket = new ServerSocket(0);
             this.expectedPassword = expectedPassword;
             this.commandResponse = commandResponse;
-            this.disconnectOnCommand = disconnectOnCommand;
+            this.commandMode = commandMode;
             this.serverThread = new Thread(this::serve, "RconClientProtocolIntegrationTest-Server");
             this.serverThread.setDaemon(true);
             this.serverThread.start();
@@ -182,7 +247,7 @@ class RconClientProtocolIntegrationTest {
         private void serve() {
             try (Socket socket = serverSocket.accept()) {
                 activeSocket.set(socket);
-                socket.setSoTimeout((int) TimeUnit.SECONDS.toMillis(WAIT_SECONDS));
+                socket.setSoTimeout((int) TimeUnit.SECONDS.toMillis(20));
                 InputStream input = socket.getInputStream();
                 OutputStream output = socket.getOutputStream();
 
@@ -205,7 +270,21 @@ class RconClientProtocolIntegrationTest {
                 lastCommand.set(command.payload);
                 lastCommandRequestId.set(command.requestId);
                 commandReceived.countDown();
-                if (command.type != TYPE_EXEC_COMMAND || disconnectOnCommand) {
+                if (command.type != TYPE_EXEC_COMMAND || commandMode == CommandMode.DISCONNECT) {
+                    return;
+                }
+
+                if (commandMode == CommandMode.STALL) {
+                    try {
+                        responseReleased.await();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new IOException("test response wait interrupted", e);
+                    }
+                }
+                if (commandMode == CommandMode.MALFORMED) {
+                    writeIntLittleEndian(output, 1);
+                    output.flush();
                     return;
                 }
 
@@ -283,6 +362,7 @@ class RconClientProtocolIntegrationTest {
 
         @Override
         public void close() throws Exception {
+            responseReleased.countDown();
             Socket socket = activeSocket.getAndSet(null);
             if (socket != null) {
                 socket.close();
@@ -302,6 +382,13 @@ class RconClientProtocolIntegrationTest {
                 this.type = type;
                 this.payload = payload;
             }
+        }
+
+        private enum CommandMode {
+            RESPOND,
+            DISCONNECT,
+            STALL,
+            MALFORMED
         }
     }
 }
