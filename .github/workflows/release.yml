@@ -167,7 +167,7 @@ jobs:
 
       - name: Run checks and stage release jars
         run: |
-          ./gradlew clean check assemble javadocJar \
+          ./gradlew clean check assemble \
             -PprojectVersion=${{ steps.release.outputs.version }}
 
       - name: Publish to Maven Central
