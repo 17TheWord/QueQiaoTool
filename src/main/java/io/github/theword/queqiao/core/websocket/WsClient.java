@@ -2,7 +2,7 @@ package io.github.theword.queqiao.core.websocket;
 
 import io.github.theword.queqiao.core.constant.WebsocketConstantMessage;
 import io.github.theword.queqiao.core.handle.HandleProtocolMessage;
-import io.github.theword.queqiao.core.utils.Tool;
+import io.github.theword.queqiao.core.utils.RuntimeUtils;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
@@ -45,6 +45,11 @@ public class WsClient extends WebSocketClient {
     private final Logger logger;
     private final boolean enabled;
     private final HandleProtocolMessage handleProtocolMessage;
+
+    /**
+     * Runtime 作用域辅助能力（由 WebsocketManager 传递，本类只使用）
+     */
+    private final RuntimeUtils utils;
 
     /**
      * 重连调度器（由 WebsocketManager 提供，本类不负责其生命周期）
@@ -101,6 +106,7 @@ public class WsClient extends WebSocketClient {
      * @param serverName         服务器名称
      * @param accessToken        访问令牌（为空表示不鉴权）
      * @param enabled            是否启用协议消息处理
+     * @param utils              Runtime 作用域辅助能力（由 WebsocketManager 传递）
      */
     public WsClient(
                     URI uri,
@@ -110,13 +116,15 @@ public class WsClient extends WebSocketClient {
                     HandleProtocolMessage handleProtocolMessage,
                     String serverName,
                     String accessToken,
-                    boolean enabled) {
+                    boolean enabled,
+                    RuntimeUtils utils) {
         super(uri);
         this.logger = logger;
         this.reconnectScheduler = reconnectScheduler;
         this.reconnectPolicy = reconnectPolicy;
         this.handleProtocolMessage = handleProtocolMessage;
         this.enabled = enabled;
+        this.utils = utils;
         try {
             this.addHeader("x-self-name", URLEncoder.encode(serverName, StandardCharsets.UTF_8.toString()));
         } catch (UnsupportedEncodingException e) {
@@ -210,7 +218,7 @@ public class WsClient extends WebSocketClient {
      */
     private void requestReconnect(ReconnectReason reason) {
         if (this.stopped) {
-            Tool.debugLog("WebSocket {} 已停止，跳过重连请求（reason={}）", getURI(), reason);
+            utils.debugLog("WebSocket {} 已停止，跳过重连请求（reason={}）", getURI(), reason);
             return;
         }
 
@@ -232,7 +240,7 @@ public class WsClient extends WebSocketClient {
                 delaySeconds = 0L;
             } else {
                 if (!this.reconnectPolicy.isAutoReconnectEnabled()) {
-                    Tool.debugLog("WebSocket {} 未启用自动重连，跳过（reason={}）", getURI(), reason);
+                    utils.debugLog("WebSocket {} 未启用自动重连，跳过（reason={}）", getURI(), reason);
                     return;
                 }
                 if (!this.reconnectPolicy.canAttempt(this.reconnectAttempts)) {
@@ -262,7 +270,7 @@ public class WsClient extends WebSocketClient {
      */
     private void scheduleReconnectTask(long generation, long delaySeconds, ReconnectReason reason) {
         if (this.reconnectScheduler.isShutdown()) {
-            Tool.debugLog("WebSocket {} 的重连调度器已关闭，跳过重连（reason={}）", getURI(), reason);
+            utils.debugLog("WebSocket {} 的重连调度器已关闭，跳过重连（reason={}）", getURI(), reason);
             return;
         }
         try {
@@ -277,7 +285,7 @@ public class WsClient extends WebSocketClient {
                 }
             }
         } catch (RejectedExecutionException e) {
-            Tool.debugLog("WebSocket {} 的重连任务被拒绝（调度器已关闭）：{}", getURI(), e.getMessage());
+            utils.debugLog("WebSocket {} 的重连任务被拒绝（调度器已关闭）：{}", getURI(), e.getMessage());
         }
     }
 
@@ -293,7 +301,7 @@ public class WsClient extends WebSocketClient {
                 return;
             }
             if (generation != this.reconnectGeneration) {
-                Tool.debugLog(
+                utils.debugLog(
                         "WebSocket {} 的重连任务已过期（generation {} != {}），跳过", getURI(), generation, this.reconnectGeneration);
                 return;
             }
@@ -303,7 +311,7 @@ public class WsClient extends WebSocketClient {
         // 非阻塞互斥：generation 只能拦"过期任务"，拦不住"两个当前有效任务同时执行"。
         // 绝不能用 synchronized 跨越 super.reconnect() —— 它内部会阻塞在无超时的 closeBlocking()。
         if (!this.reconnectInProgress.compareAndSet(false, true)) {
-            Tool.debugLog("WebSocket {} 已有重连正在执行，跳过本次（reason={}）", getURI(), reason);
+            utils.debugLog("WebSocket {} 已有重连正在执行，跳过本次（reason={}）", getURI(), reason);
             return;
         }
 

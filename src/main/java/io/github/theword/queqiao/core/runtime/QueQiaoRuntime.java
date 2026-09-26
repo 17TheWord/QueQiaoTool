@@ -24,7 +24,7 @@ import io.github.theword.queqiao.core.localize.LanguageService;
 import io.github.theword.queqiao.core.protocol.handler.status.ServerStatusCollector;
 import io.github.theword.queqiao.core.rcon.RconClient;
 import io.github.theword.queqiao.core.utils.GsonUtils;
-import io.github.theword.queqiao.core.utils.Tool;
+import io.github.theword.queqiao.core.utils.RuntimeUtils;
 import io.github.theword.queqiao.core.utils.WebsocketManager;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -33,22 +33,29 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.helpers.NOPLogger;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 public final class QueQiaoRuntime {
 
-    /**
-     * 空对象使用的日志实现：不输出任何内容，但非 null
-     */
-    private static final Logger NOP_LOGGER = NOPLogger.NOP_LOGGER;
-
     // ------------------------------------------------------------------
     // 构造后不再变化的字段：用 final 保证安全发布
     // ------------------------------------------------------------------
+
+    /**
+     * Runtime 作用域辅助能力
+     *
+     * <p>随 Runtime 生命周期创建一次、之后不再替换，因此直接以 {@code public final}
+     * 暴露为固定入口，调用形式为 {@code runtime.utils.debugLog(...)}。
+     *
+     * <p>注意：本字段是 Runtime 上<b>唯一</b>的 {@code public final} 字段。
+     * Config / WebsocketManager / RconClient 等存在 reload 或替换语义的对象
+     * 继续维持原有的 private + getter 形式。
+     */
+    public final RuntimeUtils utils;
 
     private final Gson gson;
     private final HandleApiService handleApiService;
@@ -66,6 +73,16 @@ public final class QueQiaoRuntime {
      * <p>该对象构造后即不可变，可安全地在多个连接/线程间共享。
      */
     private final HandleProtocolMessage handleProtocolMessage;
+
+    /**
+     * 服务器状态采集器
+     *
+     * <p>Runtime 实例级持有：快照缓存、探测目标、刷新线程池与任务全部属于本实例，
+     * 因此同一 JVM 中的多个 Runtime 之间不存在状态共享。
+     *
+     * <p>生命周期由 Runtime 管理（start 启动、reload 刷新目标与间隔、shutdown 停止）。
+     */
+    private final ServerStatusCollector serverStatusCollector;
 
     // ------------------------------------------------------------------
     // 会随 start / reload / shutdown 变化的字段
@@ -99,9 +116,9 @@ public final class QueQiaoRuntime {
      *
      * <p>非 final：为兼容既有的 {@link #setLogger(Logger)} 公开接口。
      *
-     * <p>注意：{@link HandleProtocolMessage} 等协作者在构造时即捕获 logger，
-     * 因此运行期替换 logger 只会影响之后才去读 {@code GlobalContext.getLogger()} 的路径
-     * （如 {@code Tool.debugLog}），不会改变已构造对象的日志输出。
+     * <p>注意：{@link HandleProtocolMessage}、{@link RuntimeUtils} 等协作者在构造时即捕获 logger，
+     * 因此运行期替换 logger 只会影响之后才通过 {@link #getLogger()} 读取的路径，
+     * 不会改变已构造对象的日志输出。
      */
     private volatile Logger logger;
 
@@ -135,36 +152,15 @@ public final class QueQiaoRuntime {
         ConfigKeys.registerAll(this.configRegistry);
         this.config = new Config(this.configRegistry);
         this.configDocument = ConfigDocument.empty();
-        // 平台 API 实现与 RCON 执行器由协议层注入，协议层因此不再读 GlobalContext。
+        // Runtime 作用域辅助能力：只依赖 Config 与 Logger，不反向持有 Runtime
+        this.utils = new RuntimeUtils(this.config, this.logger);
+        // 状态采集器为实例级：先于协议层创建，再注入给协议分发链
+        this.serverStatusCollector = new ServerStatusCollector(serverType, serverVersion, logger);
+        // 平台 API 实现与 RCON 执行器由协议层注入，协议层因此不再依赖静态全局状态。
         // 这里传入 this::sendRconCommand 是安全的：该 lambda 只在收到请求时才会被调用，
         // 此时对象早已构造完成（构造期间不会被发布）。
-        this.handleProtocolMessage = new HandleProtocolMessage(logger, this.gson, handleApiService, this::sendRconCommand);
-    }
-
-    /**
-     * 构造"最小可用运行时"（空对象）
-     *
-     * <p>用于尚未 {@code init} 或已 {@code shutdown} 的状态。
-     *
-     * <p>此前该状态返回一个<b>所有字段均为 null</b> 的实例，导致
-     * {@code GlobalContext.shutdown()} / {@code sendEvent()} 等方法直接抛
-     * {@link NullPointerException}——空对象名不副实。
-     *
-     * <p>现在保证：{@link #getLogger()} 返回不输出内容的 NOP 日志；
-     * {@link #getConfig()} 返回<b>不触碰文件系统</b>的默认配置；{@link #getGson()} 可用。
-     * WebSocket / Rcon / 语言服务仍为 null，相关入口已做空值防护。
-     *
-     * @return 最小可用运行时
-     */
-    public static QueQiaoRuntime empty() {
-        return new QueQiaoRuntime(
-                false,
-                null,
-                null,
-                null,
-                null,
-                NOP_LOGGER
-        );
+        this.handleProtocolMessage = new HandleProtocolMessage(
+                logger, this.gson, handleApiService, this::sendRconCommand, this.utils, this.serverStatusCollector);
     }
 
     public static QueQiaoRuntime create(boolean modServer, String serverVersion, String serverType, HandleApiService handleApiService, HandleCommandReturnMessageService handleCommandReturnMessageService) {
@@ -173,6 +169,9 @@ public final class QueQiaoRuntime {
 
     /**
      * 创建运行时并在配置加载前注册扩展配置。
+     *
+     * <p><b>构造不变量</b>：平台实现是 API 边界的必填依赖，此处立即校验并指明参数名。
+     * 若不在此拦截，会拖到"第一条协议请求"或"第一条命令"执行时才抛 NPE，定位成本很高。
      *
      * @param configurer 可选的启动期 Schema 注册回调
      * @return 尚未启动的运行时
@@ -184,6 +183,11 @@ public final class QueQiaoRuntime {
             HandleApiService handleApiService,
             HandleCommandReturnMessageService handleCommandReturnMessageService,
             Consumer<ConfigRegistry> configurer) {
+        Objects.requireNonNull(
+                handleApiService, "handleApiService 不能为 null：平台必须提供 HandleApiService 实现");
+        Objects.requireNonNull(
+                handleCommandReturnMessageService,
+                "handleCommandReturnMessageService 不能为 null：平台必须提供 HandleCommandReturnMessageService 实现");
         Logger runtimeLogger = LoggerFactory.getLogger(BaseConstant.MODULE_NAME);
         QueQiaoRuntime runtime = new QueQiaoRuntime(
                 modServer,
@@ -269,7 +273,35 @@ public final class QueQiaoRuntime {
         return configRegistry;
     }
 
+    /**
+     * 启动运行时
+     *
+     * <p><b>失败回滚</b>：本方法对自己创建的资源负责。启动过程中任何一步抛异常时，
+     * 都会先调用 {@link #shutdown()} 清理已经启动的资源，再抛出<b>原始异常</b>。
+     * 因此各平台实现不必重复编写 try/catch + rollback，也不会出现"start() 抛异常
+     * 却留下半启动 Runtime"的状态。
+     *
+     * <p>典型接线：
+     * <pre>
+     * QueQiaoRuntime runtime = QueQiaoRuntime.create(...);
+     * runtime.start();          // 失败则抛出，且 Runtime 已完成自清理
+     * this.runtime = runtime;   // 只有 start() 成功后才发布
+     * </pre>
+     */
     public void start() {
+        try {
+            doStart();
+        } catch (Throwable startupError) {
+            try {
+                shutdown();
+            } catch (Throwable cleanupError) {
+                logger.error("Runtime 启动失败后的清理也失败", cleanupError);
+            }
+            throw startupError;
+        }
+    }
+
+    private void doStart() {
         logger.info(BaseConstant.LAUNCHING);
 
         // 核心与 Addon 在启动期完成注册；加载配置前冻结 Schema。
@@ -282,10 +314,10 @@ public final class QueQiaoRuntime {
         logger.info(BaseConstant.INITIALIZED);
 
         messagePrefixJsonElement = initMessagePrefixJsonObject(config.get(ConfigKeys.MESSAGE_PREFIX));
-        languageService = new LanguageService(modServer, logger);
-        ServerStatusCollector.initPingTarget(logger);
-        ServerStatusCollector.startRefreshScheduler(
-                config.get(ConfigKeys.Status.REFRESH_INTERVAL_SECONDS), logger);
+        languageService = new LanguageService(modServer, logger, config);
+        serverStatusCollector.initPingTarget();
+        serverStatusCollector.startRefreshScheduler(
+                config.get(ConfigKeys.Status.REFRESH_INTERVAL_SECONDS));
         initWebsocketManager();
         initRconClient();
     }
@@ -297,8 +329,8 @@ public final class QueQiaoRuntime {
         if (service != null) {
             service.reload();
         }
-        ServerStatusCollector.initPingTarget(logger);
-        ServerStatusCollector.updateRefreshInterval(config.get(ConfigKeys.Status.REFRESH_INTERVAL_SECONDS));
+        serverStatusCollector.initPingTarget();
+        serverStatusCollector.updateRefreshInterval(config.get(ConfigKeys.Status.REFRESH_INTERVAL_SECONDS));
         WebsocketManager manager = websocketManager;
         if (manager != null) {
             manager.restart(config, commandReturner);
@@ -316,7 +348,7 @@ public final class QueQiaoRuntime {
      * 因此"尚未启动就关闭"与"关闭两次"都是安全的。
      */
     public void shutdown() {
-        ServerStatusCollector.stopRefreshScheduler();
+        serverStatusCollector.stopRefreshScheduler();
 
         WebsocketManager manager = websocketManager;
         if (manager != null) {
@@ -350,7 +382,7 @@ public final class QueQiaoRuntime {
     public void sendEvent(BaseEvent baseEvent) {
         WebsocketManager manager = websocketManager;
         if (manager == null) {
-            Tool.debugLog("运行时尚未启动或已关闭，事件未分发");
+            utils.debugLog("运行时尚未启动或已关闭，事件未分发");
             return;
         }
         // 事件对象的构造不再读全局状态；服务器上下文在发布前统一填充
@@ -359,7 +391,7 @@ public final class QueQiaoRuntime {
     }
 
     private void initWebsocketManager() {
-        websocketManager = new WebsocketManager(logger, gson, handleCommandReturnMessageService, handleProtocolMessage, config);
+        websocketManager = new WebsocketManager(logger, gson, handleCommandReturnMessageService, handleProtocolMessage, config, utils);
         websocketManager.start(null);
     }
 
@@ -496,11 +528,28 @@ public final class QueQiaoRuntime {
         return logger;
     }
 
+    /**
+     * 替换日志实现（仅为兼容保留的公开接口）
+     *
+     * <p>只影响之后才通过 {@link #getLogger()} 读取的路径。
+     * 已经构造的协作者（{@link HandleProtocolMessage}、{@link RuntimeUtils}、
+     * {@link ServerStatusCollector}、{@link LanguageService} 等）在构造时即捕获 logger，
+     * 不会被本次替换影响。
+     *
+     * @param logger 新的日志实现
+     */
     public void setLogger(Logger logger) {
         this.logger = logger;
     }
     public WebsocketManager getWebsocketManager() {
         return websocketManager;
+    }
+
+    /**
+     * @return 本 Runtime 独占的状态采集器（实例级，不与其他 Runtime 共享）
+     */
+    public ServerStatusCollector getServerStatusCollector() {
+        return serverStatusCollector;
     }
 
     public HandleApiService getHandleApiService() {

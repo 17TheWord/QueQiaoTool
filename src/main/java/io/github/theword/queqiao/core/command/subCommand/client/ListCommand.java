@@ -1,17 +1,41 @@
 package io.github.theword.queqiao.core.command.subCommand.client;
 
-import io.github.theword.queqiao.core.GlobalContext;
 import io.github.theword.queqiao.core.command.SubCommand;
 import io.github.theword.queqiao.core.config.ConfigKeys;
 import io.github.theword.queqiao.core.config.Config;
 import io.github.theword.queqiao.core.handle.HandleCommandReturnMessageService;
 import io.github.theword.queqiao.core.utils.Tool;
+import io.github.theword.queqiao.core.utils.WebsocketManager;
 import io.github.theword.queqiao.core.websocket.WsClient;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class ListCommand extends SubCommand {
+
+    /**
+     * 配置运行时状态（与 Runtime 共用同一实例，reload 后自动生效）
+     */
+    private final Config config;
+
+    /**
+     * WebSocket 管理器（Runtime 启动后注入）
+     */
+    private final WebsocketManager websocketManager;
+
+    public ListCommand(
+            HandleCommandReturnMessageService returnMessageService,
+            Logger logger,
+            Config config,
+            WebsocketManager websocketManager) {
+        super(returnMessageService, logger);
+        this.config = Objects.requireNonNull(config, "config");
+        this.websocketManager = Objects.requireNonNull(
+                websocketManager, "websocketManager 不能为 null：命令树须在 Runtime.start() 之后构建");
+    }
+
     /**
      * 获取命令名称
      *
@@ -50,9 +74,6 @@ public class ListCommand extends SubCommand {
      */
     @Override
     protected void onExecute(Object commandReturner, List<String> args) {
-        HandleCommandReturnMessageService returnMessageService = GlobalContext.getHandleCommandReturnMessageService();
-        Config config = GlobalContext.getConfig();
-
         if (!config.get(ConfigKeys.WebSocketClient.ENABLE)) {
             List<String> urlList = new ArrayList<>(config.get(ConfigKeys.WebSocketClient.URL_LIST));
             returnMessageService.sendReturnMessage(
@@ -66,7 +87,7 @@ public class ListCommand extends SubCommand {
             return;
         }
 
-        List<WsClient> wsClientList = GlobalContext.getWebsocketManager().getWsClientList();
+        List<WsClient> wsClientList = websocketManager.getWsClientList();
 
         returnMessageService.sendReturnMessage(
                 commandReturner, Tool.format("Websocket Client 列表，共 {} 个 Client", wsClientList.size()));

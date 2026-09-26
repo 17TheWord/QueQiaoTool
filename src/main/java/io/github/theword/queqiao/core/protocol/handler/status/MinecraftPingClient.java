@@ -75,7 +75,7 @@ final class MinecraftPingClient {
             String json = decodeUtf8(jsonBytes);
             Map<String, Object> pingData;
             try {
-                // 直接用全局 Gson 单例，不经 GlobalContext——本类无需依赖全局上下文
+                // 直接用全局 Gson 单例，不经任何静态全局上下文——本类无需依赖全局上下文
                 JsonElement root = new JsonParser().parse(json);
                 if (root == null || !root.isJsonObject()) {
                     throw MinecraftPingException.jsonParseFailed(null);

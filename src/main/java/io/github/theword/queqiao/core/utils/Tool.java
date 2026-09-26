@@ -1,15 +1,16 @@
 package io.github.theword.queqiao.core.utils;
 
-import io.github.theword.queqiao.core.GlobalContext;
-import io.github.theword.queqiao.core.config.ConfigKeys;
-import io.github.theword.queqiao.core.config.Config;
 import io.github.theword.queqiao.core.constant.BaseConstant;
-import com.google.gson.JsonObject;
 
 /**
- * 工具类
+ * 纯工具类
  *
- * <p>持有全局静态对象与公共工具方法，例如日志、配置、WebSocket 管理等。
+ * <p><b>无状态</b>：本类只提供不依赖任何 Runtime 上下文的纯函数，
+ * 不得访问 Config / Logger / Runtime，也不得持有 Runtime 引用
+ * （否则会重新变成隐式的全局上下文）。
+ *
+ * <p>需要 Runtime 上下文的辅助能力请使用
+ * {@link io.github.theword.queqiao.core.utils.RuntimeUtils}。
  */
 public class Tool {
 
@@ -18,58 +19,13 @@ public class Tool {
      *
      * @param command 命令
      * @return 是否为注册或登录命令，如果是，返回空字符串
-     * @deprecated 0.4.2，请使用 {@link #isIgnoredCommand(String)} 代替
+     * @deprecated 0.4.2，请使用 {@link RuntimeUtils#isIgnoredCommand(String)} 代替
      */
     public static String isRegisterOrLoginCommand(String command) {
         if (command.startsWith("/")) command = command.substring(1);
         if (command.startsWith("l ") || command.startsWith("login ") || command.startsWith("register ") || command.startsWith("reg ") || command.startsWith(BaseConstant.COMMAND_HEADER + " "))
             return "";
         return command;
-    }
-
-    /**
-     * 判断是否为需要忽略的命令
-     *
-     * @param command 命令
-     * @return 如果是，返回空字符串，否则返回原命令
-     * @since 0.4.2
-     */
-    public static String isIgnoredCommand(String command) {
-        if (command == null) return "";
-
-        command = command.trim();
-        if (command.isEmpty()) return "";
-
-        if (command.startsWith("/")) command = command.substring(1);
-
-        String commandHeader = command.split(" ", 2)[0].toLowerCase();
-        if (ConfigKeys.effectiveIgnoredCommands(GlobalContext.getConfig()).contains(commandHeader)) return "";
-        return command;
-    }
-
-    /**
-     * DEBUG模式 用于输出更多内容
-     *
-     * @param message 消息
-     */
-    public static void debugLog(String message) {
-        if (!isDebugEnabled()) {
-            return;
-        }
-        GlobalContext.getLogger().info("[DEBUG] " + message);
-    }
-
-    /**
-     * DEBUG模式 用于输出更多内容
-     *
-     * @param format 格式
-     * @param args   参数
-     */
-    public static void debugLog(String format, Object... args) {
-        if (!isDebugEnabled()) {
-            return;
-        }
-        GlobalContext.getLogger().info("[DEBUG] " + format, args);
     }
 
     /**
@@ -120,43 +76,5 @@ public class Tool {
         }
         builder.append(template, cursor, template.length());
         return builder.toString();
-    }
-
-    /**
-     * 判断是否可以输出调试日志
-     *
-     * <p>对 {@code GlobalContext} 尚未初始化的情况做空值防护：
-     * 此前直接调用 {@code GlobalContext.getConfig().isDebug()}，
-     * 在运行时空对象状态下会抛出 {@link NullPointerException}。
-     *
-     * <p>对外暴露是为了让调用方在构造昂贵的日志参数（如脱敏后的请求体）之前先判断，
-     * 避免"日志关闭却仍付出构造代价"。
-     *
-     * @return true 表示配置已加载、日志实现可用且开启了 debug
-     */
-    public static boolean isDebugEnabled() {
-        Config config = GlobalContext.getConfig();
-        if (config == null || !config.get(ConfigKeys.DEBUG)) {
-            return false;
-        }
-        return GlobalContext.getLogger() != null;
-    }
-
-    /**
-     * 获取发送消息的前缀字符
-     *
-     * <p>可通过配置文件自定义
-     *
-     * <p>默认为：[鹊桥]
-     *
-     * @return 前缀
-     * @deprecated 0.4.2，请使用 {@link GlobalContext#getMessagePrefixJsonObject()} 代替
-     */
-    public static JsonObject getPrefixComponent() {
-        JsonObject prefixJsonElement = new JsonObject();
-        prefixJsonElement.addProperty("text", GlobalContext.getConfig().get(ConfigKeys.MESSAGE_PREFIX));
-        prefixJsonElement.addProperty("color", "yellow");
-        prefixJsonElement.addProperty("bold", false);
-        return prefixJsonElement;
     }
 }

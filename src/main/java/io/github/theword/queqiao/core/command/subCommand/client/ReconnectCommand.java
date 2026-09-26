@@ -1,18 +1,31 @@
 package io.github.theword.queqiao.core.command.subCommand.client;
 
-import io.github.theword.queqiao.core.GlobalContext;
 import io.github.theword.queqiao.core.command.SubCommand;
 import io.github.theword.queqiao.core.constant.CommandConstant;
 import io.github.theword.queqiao.core.handle.HandleCommandReturnMessageService;
 import io.github.theword.queqiao.core.utils.Tool;
+import io.github.theword.queqiao.core.utils.WebsocketManager;
 import io.github.theword.queqiao.core.websocket.WsClient;
+import org.slf4j.Logger;
 
 import java.util.List;
+import java.util.Objects;
 
 public class ReconnectCommand extends SubCommand {
 
-    public ReconnectCommand() {
-        addChild(new ReconnectAllCommand());
+    /**
+     * WebSocket 管理器（Runtime 启动后注入）
+     */
+    private final WebsocketManager websocketManager;
+
+    public ReconnectCommand(
+            HandleCommandReturnMessageService returnMessageService,
+            Logger logger,
+            WebsocketManager websocketManager) {
+        super(returnMessageService, logger);
+        this.websocketManager = Objects.requireNonNull(
+                websocketManager, "websocketManager 不能为 null：命令树须在 Runtime.start() 之后构建");
+        addChild(new ReconnectAllCommand(returnMessageService, logger));
     }
 
     /**
@@ -70,15 +83,18 @@ public class ReconnectCommand extends SubCommand {
      * 因此结束提示为"已安排重连"而非"已重新连接"；真正的结果由
      * {@code WsClient} 在 {@code onOpen} / {@code onClose} 中记录到日志。
      *
+     * <p><b>API 变更</b>：本方法此前是 {@code public static}，依赖全局上下文获取
+     * 命令返回消息实现与 Manager。改为实例方法后依赖由构造器注入，
+     * 平台侧不能再以 {@code ReconnectCommand.reconnect(...)} 静态调用。
+     *
      * @param commandReturner 命令执行者
      * @param all             是否强制重连全部客户端
      */
-    public static void reconnect(Object commandReturner, boolean all) {
-        HandleCommandReturnMessageService returnMessageService = GlobalContext.getHandleCommandReturnMessageService();
+    public void reconnect(Object commandReturner, boolean all) {
         returnMessageService.sendReturnMessage(
                 commandReturner, all ? CommandConstant.RECONNECT_ALL_CLIENT : CommandConstant.RECONNECT_NOT_OPEN_CLIENT);
 
-        List<WsClient> wsClientList = GlobalContext.getWebsocketManager().getWsClientList();
+        List<WsClient> wsClientList = websocketManager.getWsClientList();
 
         int alreadyOpenCount = 0;
         for (WsClient wsClient : wsClientList) {

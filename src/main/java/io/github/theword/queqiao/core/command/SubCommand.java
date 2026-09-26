@@ -1,18 +1,24 @@
 package io.github.theword.queqiao.core.command;
 
-import io.github.theword.queqiao.core.GlobalContext;
 import io.github.theword.queqiao.core.constant.CommandConstant;
+import io.github.theword.queqiao.core.handle.HandleCommandReturnMessageService;
 import io.github.theword.queqiao.core.utils.Tool;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 子命令抽象类
  *
  * <p>采用树形结构管理命令层级关系
  * <p>所有命令均需继承此类
+ *
+ * <p><b>依赖注入</b>：命令返回消息实现与日志实现均由构造器显式注入
+ * （由 Runtime 或平台侧持有 Runtime 的对象负责组装），
+ * 不再从任何静态全局上下文获取。
  *
  * @since 0.5.0
  */
@@ -27,6 +33,27 @@ public abstract class SubCommand {
      * 子命令列表
      */
     protected final List<SubCommand> children = new ArrayList<>();
+
+    /**
+     * 命令返回消息实现
+     */
+    protected final HandleCommandReturnMessageService returnMessageService;
+
+    /**
+     * 日志实现
+     */
+    protected final Logger logger;
+
+    /**
+     * 构造子命令
+     *
+     * @param returnMessageService 命令返回消息实现，不得为 null
+     * @param logger               日志实现，不得为 null
+     */
+    protected SubCommand(HandleCommandReturnMessageService returnMessageService, Logger logger) {
+        this.returnMessageService = Objects.requireNonNull(returnMessageService, "returnMessageService");
+        this.logger = Objects.requireNonNull(logger, "logger");
+    }
 
     /**
      * 添加子命令
@@ -149,17 +176,17 @@ public abstract class SubCommand {
      */
     public int execute(Object commandReturner, List<String> args) {
         try {
-            if (!GlobalContext.getHandleCommandReturnMessageService().hasPermission(commandReturner, getPermissionNode())) {
-                GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "您没有权限执行此命令。");
+            if (!returnMessageService.hasPermission(commandReturner, getPermissionNode())) {
+                returnMessageService.sendReturnMessage(commandReturner, "您没有权限执行此命令。");
                 return CommandConstant.FAIL_SIGNAL;
             }
-            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "============ 鹊桥 ===========");
+            returnMessageService.sendReturnMessage(commandReturner, "============ 鹊桥 ===========");
             onExecute(commandReturner, args);
-            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "============================");
+            returnMessageService.sendReturnMessage(commandReturner, "============================");
             return CommandConstant.SUCCESS_SIGNAL;
         } catch (Exception e) {
-            GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, "命令执行出错: " + e.getMessage());
-            GlobalContext.getLogger().error("命令执行出错", e);
+            returnMessageService.sendReturnMessage(commandReturner, "命令执行出错: " + e.getMessage());
+            logger.error("命令执行出错", e);
             return CommandConstant.FAIL_SIGNAL;
         }
     }
@@ -181,7 +208,7 @@ public abstract class SubCommand {
      */
     public void sendCommandTree(Object commandReturner, SubCommand command) {
         String msg = Tool.format("{} - {}", command.getUsage(), command.getDescription());
-        GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, msg);
+        returnMessageService.sendReturnMessage(commandReturner, msg);
 
         for (SubCommand child : command.getChildren()) {
             sendCommandTree(commandReturner, child);

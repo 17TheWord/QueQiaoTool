@@ -1,6 +1,6 @@
 package io.github.theword.queqiao.core.localize;
 
-import io.github.theword.queqiao.core.GlobalContext;
+import io.github.theword.queqiao.core.config.Config;
 import io.github.theword.queqiao.core.config.ConfigKeys;
 import io.github.theword.queqiao.core.constant.BaseConstant;
 import com.google.gson.JsonElement;
@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -40,6 +41,15 @@ public class LanguageService {
     private final Logger logger;
 
     /**
+     * 配置运行时状态
+     *
+     * <p><b>只持有 Config 引用，不复制配置值</b>：{@code Config.load()} 原地更新同一实例，
+     * 因此 {@link #reload()} 每次都能读到当前配置。若在构造阶段把
+     * {@code enable_translation} 复制成布尔字段，reload 后就会读到过期值。
+     */
+    private final Config config;
+
+    /**
      * 启用状态和翻译映射一起发布，避免读线程看到彼此不匹配的状态。
      */
     private volatile TranslationState state = TranslationState.disabled();
@@ -48,11 +58,13 @@ public class LanguageService {
      * 构造并初始化翻译服务。
      *
      * @param isModServer 是否为模组服务端环境
-     * @param logger      外部传入的日志记录器
+     * @param logger      外部传入的日志记录器，不得为 null
+     * @param config      配置运行时状态（与 Runtime 共用同一实例），不得为 null
      */
-    public LanguageService(boolean isModServer, Logger logger) {
+    public LanguageService(boolean isModServer, Logger logger, Config config) {
         this.isModServer = isModServer;
-        this.logger = logger;
+        this.logger = Objects.requireNonNull(logger, "logger");
+        this.config = Objects.requireNonNull(config, "config");
         reload();
     }
 
@@ -72,7 +84,7 @@ public class LanguageService {
      * 不会观察到清空和填充之间的中间状态。并发 reload/disable 由实例锁串行化。
      */
     public synchronized void reload() {
-        if (!GlobalContext.getConfig().get(ConfigKeys.ENABLE_TRANSLATION)) {
+        if (!config.get(ConfigKeys.ENABLE_TRANSLATION)) {
             publish(TranslationState.disabled());
             logger.info("翻译功能已在配置中禁用。");
             return;

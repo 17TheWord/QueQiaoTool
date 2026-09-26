@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  *     <li>共享实例上不存在隐式锁导致的异常或串扰</li>
  * </ul>
  *
- * <p><b>用例选取说明</b>：这里使用的协议路径均不触碰 {@code GlobalContext}，
+ * <p><b>用例选取说明</b>：这里使用的协议路径均不触碰任何全局状态，
  * 使测试不依赖全局状态、可在任意顺序下运行：
  * <ul>
  *     <li>未注册的 api → 处理器表未命中 → 404</li>
@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * </ul>
  *
  * <p>注："未知 api → 404" 这一分支在 WS-B4 之前<b>无法测试</b>——
- * {@code ProtocolRouter.route} 当时直接调用 {@code GlobalContext.getLogger()}，
+ * {@code ProtocolRouter.route} 当时直接读取静态全局日志门面，
  * 未初始化全局上下文时会 NPE。WS-B4 把 Logger 改为构造器注入后该分支才可覆盖。
  */
 class HandleProtocolMessageConcurrencyTest {

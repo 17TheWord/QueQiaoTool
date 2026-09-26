@@ -5,15 +5,17 @@ import io.github.theword.queqiao.core.constant.ProtocolConstants;
 import io.github.theword.queqiao.core.payload.BasePayload;
 import io.github.theword.queqiao.core.protocol.ProtocolRouter;
 import io.github.theword.queqiao.core.protocol.RconCommandExecutor;
+import io.github.theword.queqiao.core.protocol.handler.status.ServerStatusCollector;
 import io.github.theword.queqiao.core.response.Response;
 import io.github.theword.queqiao.core.utils.LogSanitizer;
-import io.github.theword.queqiao.core.utils.Tool;
+import io.github.theword.queqiao.core.utils.RuntimeUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * 处理协议消息
@@ -46,10 +48,25 @@ public class HandleProtocolMessage {
     private final Logger logger;
     private final ProtocolRouter protocolRouter;
 
-    public HandleProtocolMessage(Logger logger, Gson gson, HandleApiService handleApiService, RconCommandExecutor rconCommandExecutor) {
+    /**
+     * Runtime 作用域辅助能力（由 QueQiaoRuntime 注入）
+     *
+     * <p>本类的 debug 日志门控与输出都通过它完成，因此不再读取任何全局状态。
+     */
+    private final RuntimeUtils utils;
+
+    public HandleProtocolMessage(
+            Logger logger,
+            Gson gson,
+            HandleApiService handleApiService,
+            RconCommandExecutor rconCommandExecutor,
+            RuntimeUtils utils,
+            ServerStatusCollector serverStatusCollector) {
         this.logger = logger;
         this.gson = gson;
-        this.protocolRouter = new ProtocolRouter(logger, handleApiService, rconCommandExecutor);
+        // 与 WebsocketManager 一致：注入依赖为 null 属接线缺陷，在此快速失败
+        this.utils = Objects.requireNonNull(utils, "utils");
+        this.protocolRouter = new ProtocolRouter(logger, handleApiService, rconCommandExecutor, serverStatusCollector);
     }
 
     /**
@@ -94,8 +111,8 @@ public class HandleProtocolMessage {
 
     private Response handle(String rawJsonMessage, String address, MessageSource source) {
         // 脱敏与截断只在开启 debug 时执行，避免每条消息都多解析一次 JSON
-        if (Tool.isDebugEnabled()) {
-            Tool.debugLog(
+        if (utils.isDebugEnabled()) {
+            utils.debugLog(
                     "收到来自 {} 的 {} 消息（原始长度 {}）：{}",
                     address, source, lengthOf(rawJsonMessage), LogSanitizer.sanitize(rawJsonMessage));
         }

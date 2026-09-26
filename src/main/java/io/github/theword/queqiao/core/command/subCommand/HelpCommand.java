@@ -1,10 +1,16 @@
 package io.github.theword.queqiao.core.command.subCommand;
 
 import io.github.theword.queqiao.core.command.SubCommand;
+import io.github.theword.queqiao.core.handle.HandleCommandReturnMessageService;
+import org.slf4j.Logger;
 
 import java.util.List;
 
 public class HelpCommand extends SubCommand {
+
+    public HelpCommand(HandleCommandReturnMessageService returnMessageService, Logger logger) {
+        super(returnMessageService, logger);
+    }
 
     /**
      * 获取命令名称
@@ -41,4 +47,3 @@ public class HelpCommand extends SubCommand {
         sendCommandTree(commandReturner, root);
     }
 }
-

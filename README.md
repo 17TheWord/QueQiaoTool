@@ -10,16 +10,20 @@
 
 ## 快速开始
 
-1. 在服务端启动完成后阶段调用：
+1. 在服务端启动完成后阶段创建并启动 Runtime：
    ```java
-   GlobalContext.init(
-       /* isModServer */ true,
+   QueQiaoRuntime runtime = QueQiaoRuntime.create(
+       /* modServer */ true,
        /* serverVersion */ "1.20.1",
        /* serverType */ "fabric",
-       /* handleApiImpl */ new YourHandleApiImpl(),
-       /* handleCommandReturnMessageImpl */ new YourCmdReturnImpl()
+       /* handleApiService */ new YourHandleApiImpl(),
+       /* handleCommandReturnMessageService */ new YourCmdReturnImpl()
    );
+   runtime.start();
+   // 只有 start() 成功后再保存引用：启动失败时 Runtime 已自行清理已启动的资源
+   this.runtime = runtime;
    ```
+   类型为 `io.github.theword.queqiao.core.runtime.QueQiaoRuntime`。
 2. 接口实现：
     - `io.github.theword.queqiao.core.handle.HandleApiService`： 实现发送广播、title、actionbar、私聊等实际逻辑（调用原生
       API）。
@@ -27,10 +31,16 @@
     - `io.github.theword.queqiao.core.command.subCommand`：实现各 `XxxAbstract` 子命令并注册。
 3. 在服务端关闭前调用：
    ```java
-   GlobalContext.shutdown();
+   runtime.shutdown();
    ```
 4. 外部应用通过 WebSocket 发送 JSON 请求（含 `api`、`data`、可选 `echo`）。
 5. 订阅所需事件：收到的事件是服务端主动推送。
+
+> **迁移提示**：`GlobalContext` 已移除。原本通过它访问的能力改为从 Runtime 实例获取，
+> 例如 `runtime.sendEvent(...)`、`runtime.getConfig()`、`runtime.getLogger()`；
+> 命令层所需的依赖请从该 Runtime 显式取出后注入（`Config` / `Logger` /
+> `WebsocketManager` / `HandleCommandReturnMessageService`），
+> 且命令树须在 `runtime.start()` 之后构建。
 
 ## 接口说明
 

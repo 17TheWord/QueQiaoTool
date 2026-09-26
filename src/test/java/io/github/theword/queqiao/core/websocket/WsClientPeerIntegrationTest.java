@@ -161,7 +161,8 @@ class WsClientPeerIntegrationTest {
                 ScheduledThreadPoolExecutor scheduler,
                 HandleProtocolMessage dispatcher,
                 int expectedConnections) {
-            super(uri, LOGGER, scheduler, new ReconnectPolicy(1, 5), dispatcher, SERVER_NAME, "", true);
+            super(uri, LOGGER, scheduler, new ReconnectPolicy(1, 5), dispatcher, SERVER_NAME, "", true,
+                    PlatformStubs.newRuntimeUtils(LOGGER));
             this.additionalConnections = new CountDownLatch(Math.max(0, expectedConnections - 1));
         }
 

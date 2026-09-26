@@ -1,20 +1,50 @@
 package io.github.theword.queqiao.core.command;
 
 
-import io.github.theword.queqiao.core.GlobalContext;
+import io.github.theword.queqiao.core.config.Config;
+import io.github.theword.queqiao.core.handle.HandleCommandReturnMessageService;
+import io.github.theword.queqiao.core.utils.WebsocketManager;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+/**
+ * 命令执行助手
+ *
+ * <p>把命令树真正需要的窄依赖显式传入，而不是从静态全局上下文获取。
+ */
 public class CommandExecutorHelper {
 
     private final RootCommand rootCommand;
 
-    public CommandExecutorHelper() {
-        this.rootCommand = new RootCommand();
+    /**
+     * 供 tab 补全做权限过滤使用
+     */
+    private final HandleCommandReturnMessageService returnMessageService;
+
+    /**
+     * 构造命令执行助手
+     *
+     * @param returnMessageService 命令返回消息实现，不得为 null
+     * @param logger               日志实现，不得为 null
+     * @param config               配置运行时状态，不得为 null
+     * @param websocketManager     WebSocket 管理器（须在 Runtime.start() 之后获取），不得为 null
+     * @param reloadAction         触发 Runtime 重载的动作，不得为 null
+     */
+    public CommandExecutorHelper(
+            HandleCommandReturnMessageService returnMessageService,
+            Logger logger,
+            Config config,
+            WebsocketManager websocketManager,
+            Consumer<Object> reloadAction) {
+        this.returnMessageService = Objects.requireNonNull(returnMessageService, "returnMessageService");
+        this.rootCommand = new RootCommand(returnMessageService, logger, config, websocketManager, reloadAction);
     }
 
     public RootCommand getRootCommand() {
@@ -101,6 +131,6 @@ public class CommandExecutorHelper {
         String lastArg = args[args.length - 1].toLowerCase();
 
         // 返回匹配前缀的子命令名称，并过滤无权限的命令
-        return current.getChildren().stream().filter(child -> GlobalContext.getHandleCommandReturnMessageService().hasPermission(sender, child.getPermissionNode())).map(SubCommand::getName).filter(name -> name.toLowerCase().startsWith(lastArg)).collect(Collectors.toList());
+        return current.getChildren().stream().filter(child -> returnMessageService.hasPermission(sender, child.getPermissionNode())).map(SubCommand::getName).filter(name -> name.toLowerCase().startsWith(lastArg)).collect(Collectors.toList());
     }
 }

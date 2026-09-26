@@ -1,6 +1,5 @@
 package io.github.theword.queqiao.core.protocol.handler.status;
 
-import io.github.theword.queqiao.core.GlobalContext;
 import io.github.theword.queqiao.core.constant.BaseConstant;
 import io.github.theword.queqiao.core.exception.status.MinecraftPingException;
 import org.slf4j.Logger;
@@ -17,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -28,7 +28,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 服务器状态采集工具。
+ * 服务器状态采集器
+ *
+ * <p><b>Runtime 实例级</b>：本类由 {@code QueQiaoRuntime} 持有并管理生命周期，
+ * 所有可变状态（快照缓存、探测目标、刷新线程池与任务、指标采集器、日志实现）
+ * 都是<b>实例字段</b>，不再存在 JVM 级静态状态。
+ * 因此同一个 JVM 中并存的两个 Runtime 各自拥有独立的采集器，互不干扰。
+ *
+ * <p>采集算法（Ping 与缓存策略）保持不变，本次只把静态生命周期改为实例生命周期。
  */
 public final class ServerStatusCollector {
     private static final int DEFAULT_SERVER_PORT = 25565;
@@ -54,23 +61,46 @@ public final class ServerStatusCollector {
             Paths.get(BaseConstant.MODULE_NAME, REGEX_CONFIG_FILE)
     };
 
+    /**
+     * 无状态的 Ping 客户端，可安全地在所有实例间共享
+     */
     private static final MinecraftPingClient PING_CLIENT = new MinecraftPingClient();
-    private static volatile SystemMetricsCollector metrics = new SystemMetricsCollector(null);
 
-    /** 未启动 Runtime 时的兼容缓存有效期。 */
+    /** 刷新调度器缺席时（尚未启动或已停止）的同步回退缓存有效期。 */
     private static final long SNAPSHOT_CACHE_TTL_MILLIS = 2000L;
-    private static final Object LIFECYCLE_LOCK = new Object();
-    private static final AtomicLong TARGET_VERSION = new AtomicLong();
 
-    private static volatile SnapshotCache snapshotCache;
-    private static volatile PingTarget pingTarget = PingTarget.unavailable(DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT);
-    private static volatile ScheduledThreadPoolExecutor refreshExecutor;
-    private static volatile ScheduledFuture<?> refreshTask;
-    private static volatile int refreshIntervalSeconds = DEFAULT_REFRESH_INTERVAL_SECONDS;
-    private static volatile Logger statusLogger;
-    private static volatile SnapshotWaiter snapshotWaiter = new SnapshotWaiter(pingTarget);
+    private final String serverType;
+    private final String serverVersion;
+    private final Logger logger;
 
-    private ServerStatusCollector() {
+    /** 串行化本实例对采集目标、缓存与线程池的变更。 */
+    private final Object lifecycleLock = new Object();
+
+    /** 探测目标版本号计数器，每次目标变更递增，用于丢弃过期采集结果。 */
+    private final AtomicLong targetVersion = new AtomicLong();
+
+    private volatile SystemMetricsCollector metrics;
+    private volatile SnapshotCache snapshotCache;
+    private volatile PingTarget pingTarget;
+    private volatile ScheduledThreadPoolExecutor refreshExecutor;
+    private volatile ScheduledFuture<?> refreshTask;
+    private volatile int refreshIntervalSeconds = DEFAULT_REFRESH_INTERVAL_SECONDS;
+    private volatile SnapshotWaiter snapshotWaiter;
+
+    /**
+     * 构造状态采集器
+     *
+     * @param serverType    服务端类型，允许为 null（未指定）
+     * @param serverVersion 服务端版本，允许为 null（未指定）
+     * @param logger        日志实现，不得为 null
+     */
+    public ServerStatusCollector(String serverType, String serverVersion, Logger logger) {
+        this.serverType = serverType;
+        this.serverVersion = serverVersion;
+        this.logger = Objects.requireNonNull(logger, "logger");
+        this.metrics = new SystemMetricsCollector(null);
+        this.pingTarget = unavailableTarget(DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT);
+        this.snapshotWaiter = new SnapshotWaiter(this.pingTarget);
     }
 
     private static final class PingTarget {
@@ -86,10 +116,6 @@ public final class ServerStatusCollector {
             this.version = version;
         }
 
-        private static PingTarget unavailable(String host, int port) {
-            return new PingTarget(host, port, false, TARGET_VERSION.incrementAndGet());
-        }
-
         private boolean sameEndpoint(String otherHost, int otherPort, boolean otherAvailable) {
             return port == otherPort && available == otherAvailable && host.equals(otherHost);
         }
@@ -98,9 +124,8 @@ public final class ServerStatusCollector {
     /**
      * 启动状态快照定时采集。Runtime 启动完成后调用；重复调用只重设现有任务。
      */
-    public static void startRefreshScheduler(int intervalSeconds, Logger logger) {
-        synchronized (LIFECYCLE_LOCK) {
-            statusLogger = logger;
+    public void startRefreshScheduler(int intervalSeconds) {
+        synchronized (lifecycleLock) {
             refreshIntervalSeconds = Math.max(MIN_REFRESH_INTERVAL_SECONDS, intervalSeconds);
             if (refreshExecutor == null || refreshExecutor.isShutdown()) {
                 ThreadFactory threadFactory = runnable -> {
@@ -119,8 +144,8 @@ public final class ServerStatusCollector {
     }
 
     /** 更新间隔；未变化时不打断当前采集周期。 */
-    public static void updateRefreshInterval(int intervalSeconds) {
-        synchronized (LIFECYCLE_LOCK) {
+    public void updateRefreshInterval(int intervalSeconds) {
+        synchronized (lifecycleLock) {
             int normalizedInterval = Math.max(MIN_REFRESH_INTERVAL_SECONDS, intervalSeconds);
             if (refreshIntervalSeconds == normalizedInterval) {
                 return;
@@ -133,9 +158,9 @@ public final class ServerStatusCollector {
         }
     }
 
-    /** 关闭 Runtime 持有的状态采集任务与线程。 */
-    public static void stopRefreshScheduler() {
-        synchronized (LIFECYCLE_LOCK) {
+    /** 关闭本实例持有的状态采集任务与线程。 */
+    public void stopRefreshScheduler() {
+        synchronized (lifecycleLock) {
             SnapshotWaiter waiter = snapshotWaiter;
             waiter.result.completeExceptionally(new IllegalStateException("状态采集器已停止"));
             ScheduledFuture<?> task = refreshTask;
@@ -149,13 +174,12 @@ public final class ServerStatusCollector {
                 executor.shutdownNow();
             }
             snapshotCache = null;
-            statusLogger = null;
             metrics = new SystemMetricsCollector(null);
             snapshotWaiter = new SnapshotWaiter(pingTarget);
         }
     }
 
-    private static void scheduleRefreshLocked(long initialDelaySeconds) {
+    private void scheduleRefreshLocked(long initialDelaySeconds) {
         ScheduledFuture<?> current = refreshTask;
         if (current != null) {
             current.cancel(false);
@@ -163,20 +187,23 @@ public final class ServerStatusCollector {
         ScheduledThreadPoolExecutor executor = refreshExecutor;
         if (executor != null && !executor.isShutdown()) {
             refreshTask = executor.scheduleWithFixedDelay(
-                    ServerStatusCollector::refreshAndPublish,
+                    this::refreshAndPublish,
                     initialDelaySeconds,
                     refreshIntervalSeconds,
                     TimeUnit.SECONDS);
         }
     }
 
-    public static void initPingTarget(Logger logger) {
+    /**
+     * 重新解析工作目录下的 {@code server.properties} 并刷新探测目标。
+     */
+    public void initPingTarget() {
         Path workingDirectory = Paths.get("").toAbsolutePath().normalize();
-        Path serverPropertiesPath = resolveServerPropertiesPath(workingDirectory, logger);
-        initPingTarget(serverPropertiesPath, logger);
+        Path serverPropertiesPath = resolveServerPropertiesPath(workingDirectory);
+        initPingTarget(serverPropertiesPath);
     }
 
-    static Path resolveServerPropertiesPath(Path workingDirectory, Logger logger) {
+    private Path resolveServerPropertiesPath(Path workingDirectory) {
         Path absoluteWorkingDirectory = workingDirectory.toAbsolutePath().normalize();
         for (Path relativeRegexPath : REGEX_CONFIG_CANDIDATES) {
             Path regexConfigPath = absoluteWorkingDirectory.resolve(relativeRegexPath).normalize();
@@ -184,12 +211,12 @@ public final class ServerStatusCollector {
                 continue;
             }
 
-            String logPath = readLogPath(regexConfigPath, logger);
+            String logPath = readLogPath(regexConfigPath);
             if (logPath == null || logPath.trim().isEmpty()) {
                 continue;
             }
 
-            Path serverRoot = inferServerRoot(regexConfigPath, logPath, absoluteWorkingDirectory, logger);
+            Path serverRoot = inferServerRoot(regexConfigPath, logPath, absoluteWorkingDirectory);
             if (serverRoot == null) {
                 continue;
             }
@@ -200,7 +227,7 @@ public final class ServerStatusCollector {
         return absoluteWorkingDirectory.resolve(SERVER_PROPERTIES_FILE).normalize();
     }
 
-    private static String readLogPath(Path regexConfigPath, Logger logger) {
+    private String readLogPath(Path regexConfigPath) {
         try (InputStream inputStream = Files.newInputStream(regexConfigPath)) {
             Yaml yaml = new Yaml();
             Object yamlObject = yaml.load(inputStream);
@@ -227,7 +254,7 @@ public final class ServerStatusCollector {
         }
     }
 
-    private static Path inferServerRoot(Path regexConfigPath, String logPath, Path workingDirectory, Logger logger) {
+    private Path inferServerRoot(Path regexConfigPath, String logPath, Path workingDirectory) {
         final Path logPathObject;
         try {
             logPathObject = Paths.get(logPath);
@@ -302,7 +329,7 @@ public final class ServerStatusCollector {
         return logDirectory;
     }
 
-    static void initPingTarget(Path serverPropertiesPath, Logger logger) {
+    private void initPingTarget(Path serverPropertiesPath) {
         String host = DEFAULT_SERVER_HOST;
         int port = DEFAULT_SERVER_PORT;
         Path normalizedPath = serverPropertiesPath.toAbsolutePath().normalize();
@@ -321,7 +348,7 @@ public final class ServerStatusCollector {
             if (!configuredHost.isEmpty()) {
                 host = configuredHost;
             }
-            port = parsePort(configuredPort, logger);
+            port = parsePort(configuredPort);
         } catch (IOException e) {
             logger.warn("读取 server.properties 失败，状态接口将使用默认地址 {}:{}，错误：{}", host, port, e.getMessage());
             setPingTarget(host, port, false);
@@ -331,14 +358,14 @@ public final class ServerStatusCollector {
         setPingTarget(host, port, true);
     }
 
-    private static void setPingTarget(String host, int port, boolean available) {
-        synchronized (LIFECYCLE_LOCK) {
+    private void setPingTarget(String host, int port, boolean available) {
+        synchronized (lifecycleLock) {
             PingTarget current = pingTarget;
             if (current.sameEndpoint(host, port, available)) {
                 return;
             }
 
-            PingTarget replacement = new PingTarget(host, port, available, TARGET_VERSION.incrementAndGet());
+            PingTarget replacement = new PingTarget(host, port, available, targetVersion.incrementAndGet());
             pingTarget = replacement;
             snapshotCache = null;
             snapshotWaiter.result.completeExceptionally(
@@ -351,7 +378,11 @@ public final class ServerStatusCollector {
         }
     }
 
-    private static int parsePort(String portText, Logger logger) {
+    private PingTarget unavailableTarget(String host, int port) {
+        return new PingTarget(host, port, false, targetVersion.incrementAndGet());
+    }
+
+    private int parsePort(String portText) {
         try {
             int parsedPort = Integer.parseInt(portText);
             if (parsedPort <= 0 || parsedPort > 65535) {
@@ -368,17 +399,17 @@ public final class ServerStatusCollector {
     /**
      * 返回最近一次定时采集的完整状态快照。
      *
-     * <p>Runtime 正常运行时，此方法不执行网络 Ping 或系统指标采集。只有首次采集尚未完成时，
-     * 调用方才等待共享的首轮结果，等待有明确上限。Runtime 未启动时保留同步回退，便于兼容
-     * 直接使用该静态门面的既有调用。
+     * <p>定时采集在运行时，此方法不执行网络 Ping 或系统指标采集，只读取已发布的快照；
+     * 只有首次采集尚未完成时，调用方才等待共享的首轮结果，等待有明确上限。
+     * 采集器尚未启动（未调用 {@link #startRefreshScheduler(int)}）时保留同步采集回退。
      *
      * @return 状态快照 Map
      */
-    public static Map<String, Object> collectStatusSnapshot() {
+    public Map<String, Object> collectStatusSnapshot() {
         return getOrCollectSnapshot().toMap();
     }
 
-    private static ServerStatusSnapshot getOrCollectSnapshot() {
+    private ServerStatusSnapshot getOrCollectSnapshot() {
         ScheduledThreadPoolExecutor executor = refreshExecutor;
         if (executor != null && !executor.isShutdown()) {
             for (int attempt = 0; attempt < 3; attempt++) {
@@ -423,13 +454,13 @@ public final class ServerStatusCollector {
         return fresh.snapshot;
     }
 
-    private static void refreshAndPublish() {
+    private void refreshAndPublish() {
         ScheduledThreadPoolExecutor executor = refreshExecutor;
         PingTarget target = pingTarget;
         SnapshotWaiter waiter = snapshotWaiter;
         try {
             SnapshotCache fresh = collectSnapshot(target);
-            synchronized (LIFECYCLE_LOCK) {
+            synchronized (lifecycleLock) {
                 if (executor != null && executor == refreshExecutor && !executor.isShutdown()
                         && target == pingTarget) {
                     snapshotCache = fresh;
@@ -439,25 +470,22 @@ public final class ServerStatusCollector {
                 }
             }
         } catch (RuntimeException e) {
-            Logger logger = statusLogger;
-            if (logger != null) {
-                logger.error("采集服务器状态快照失败，保留当前缓存", e);
-            }
+            logger.error("采集服务器状态快照失败，保留当前缓存", e);
             if (waiter.target == target) {
                 waiter.result.completeExceptionally(e);
             }
         }
     }
 
-    private static SnapshotCache collectSnapshot(PingTarget target) {
+    private SnapshotCache collectSnapshot(PingTarget target) {
         ServerStatusSnapshot snapshot = createSnapshot(target, collectServerListPing(target));
         return new SnapshotCache(snapshot, System.nanoTime(), target.version);
     }
 
-    private static ServerStatusSnapshot createSnapshot(PingTarget target, ServerListPingResult pingResult) {
+    private ServerStatusSnapshot createSnapshot(PingTarget target, ServerListPingResult pingResult) {
         return new ServerStatusSnapshot(
-                GlobalContext.getServerType(),
-                GlobalContext.getServerVersion(),
+                serverType,
+                serverVersion,
                 pingResult,
                 metrics.collectCpuInformation(),
                 metrics.collectMemoryInformation());
@@ -496,7 +524,7 @@ public final class ServerStatusCollector {
         }
     }
 
-    private static ServerListPingResult collectServerListPing(PingTarget currentTarget) {
+    private ServerListPingResult collectServerListPing(PingTarget currentTarget) {
         if (!currentTarget.available) {
             return ServerListPingResult.of(false, currentTarget.host, currentTarget.port, PING_REASON_NOT_CONFIGURED, null, null);
         }
@@ -507,10 +535,7 @@ public final class ServerStatusCollector {
         } catch (MinecraftPingException e) {
             String reason = resolvePingFailureReason(e);
             String error = resolvePingErrorMessage(e);
-            Logger logger = statusLogger != null ? statusLogger : GlobalContext.getLogger();
-            if (logger != null) {
-                logger.warn("Minecraft Server List Ping failed, reason={}, host={}, port={}, error={}", reason, currentTarget.host, currentTarget.port, error);
-            }
+            logger.warn("Minecraft Server List Ping failed, reason={}, host={}, port={}, error={}", reason, currentTarget.host, currentTarget.port, error);
             return ServerListPingResult.of(true, currentTarget.host, currentTarget.port, reason, error, null);
         }
     }

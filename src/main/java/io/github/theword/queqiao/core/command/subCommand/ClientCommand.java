@@ -3,13 +3,22 @@ package io.github.theword.queqiao.core.command.subCommand;
 import io.github.theword.queqiao.core.command.SubCommand;
 import io.github.theword.queqiao.core.command.subCommand.client.ListCommand;
 import io.github.theword.queqiao.core.command.subCommand.client.ReconnectCommand;
+import io.github.theword.queqiao.core.config.Config;
+import io.github.theword.queqiao.core.handle.HandleCommandReturnMessageService;
+import io.github.theword.queqiao.core.utils.WebsocketManager;
+import org.slf4j.Logger;
 
 public class ClientCommand extends SubCommand {
 
-    public ClientCommand() {
+    public ClientCommand(
+            HandleCommandReturnMessageService returnMessageService,
+            Logger logger,
+            Config config,
+            WebsocketManager websocketManager) {
+        super(returnMessageService, logger);
         // 注册子命令
-        addChild(new ListCommand());
-        addChild(new ReconnectCommand());
+        addChild(new ListCommand(returnMessageService, logger, config, websocketManager));
+        addChild(new ReconnectCommand(returnMessageService, logger, websocketManager));
     }
 
     /**
@@ -46,4 +55,3 @@ public class ClientCommand extends SubCommand {
         sendCommandTree(commandReturner, this);
     }
 }
-
