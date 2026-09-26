@@ -1,6 +1,5 @@
 package io.github.theword.queqiao.core.command;
 
-import io.github.theword.queqiao.core.GlobalContext;
 import io.github.theword.queqiao.core.command.subCommand.client.ListCommand;
 import io.github.theword.queqiao.core.command.subCommand.client.ReconnectCommand;
 import io.github.theword.queqiao.core.command.subCommand.server.InfoCommand;
@@ -9,6 +8,7 @@ import io.github.theword.queqiao.core.config.io.ConfigStore;
 import io.github.theword.queqiao.core.handle.HandleApiService;
 import io.github.theword.queqiao.core.handle.HandleCommandReturnMessageService;
 import io.github.theword.queqiao.core.response.PrivateMessageResponse;
+import io.github.theword.queqiao.core.runtime.QueQiaoRuntime;
 import com.google.gson.JsonElement;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -43,7 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p><b>测试方式</b>：写一份配置夹具到 {@code plugins/queqiao/config.yml}（结束时还原原文件），
  * 其中服务端端口使用测试时选定的空闲端口、客户端 URL 指向一个无人监听的端口，
- * 然后 {@code GlobalContext.init(...)} —— 即可得到"活的" Manager 与真实监听的服务端。
+ * 然后创建并启动 {@code QueQiaoRuntime} —— 即可得到"活的" Manager 与真实监听的服务端。
+ * 命令对象所需的依赖（命令返回服务、Logger、Config、Manager）全部从该 Runtime 显式取得。
  *
  * <p><b>已知代价</b>：本类会写工作目录下的配置文件并绑定端口（属评审记录的测试隔离欠债）；
  * 端口用"绑定 0 号端口取空闲端口再释放"获取，存在极小竞态窗口。
@@ -80,9 +81,26 @@ class CommandLayerTest {
 
     private final RecordingReturnMessageService RETURN_MESSAGES = new RecordingReturnMessageService();
 
+    /**
+     * 当前用例的 Runtime（由 {@link #startRuntime()} 创建并启动）
+     */
+    private QueQiaoRuntime runtime;
+
+    /**
+     * 创建并启动 Runtime；命令树所需的 Manager 只有在 start() 之后才存在
+     */
+    private void startRuntime() {
+        runtime = QueQiaoRuntime.create(false, "1.20.1", "test", NOOP_API_SERVICE, RETURN_MESSAGES);
+        runtime.start();
+    }
+
     @AfterEach
     void tearDown() {
-        GlobalContext.shutdown();
+        QueQiaoRuntime current = runtime;
+        runtime = null;
+        if (current != null) {
+            current.shutdown();
+        }
     }
 
     // ------------------------------------------------------------------
@@ -96,7 +114,7 @@ class CommandLayerTest {
         int deadPort = findFreePort();
 
         try (ConfigFixture ignored = new ConfigFixture(serverPort, deadPort)) {
-            GlobalContext.init(false, "1.20.1", "test", NOOP_API_SERVICE, RETURN_MESSAGES);
+            startRuntime();
 
             ProbeClient first = new ProbeClient(serverPort);
             ProbeClient second = new ProbeClient(serverPort);
@@ -106,12 +124,13 @@ class CommandLayerTest {
                 assertTrue(first.awaitOpen(10_000L), "第一个客户端应完成握手");
                 assertTrue(second.awaitOpen(10_000L), "第二个客户端应完成握手");
                 awaitCondition(
-                        () -> GlobalContext.getWebsocketManager().getWsServer().getConnections().size() == 2,
+                        () -> runtime.getWebsocketManager().getWsServer().getConnections().size() == 2,
                         10_000L,
                         "服务端应登记 2 个连接");
 
                 RETURN_MESSAGES.clear();
-                new InfoCommand().execute("sender", Collections.emptyList());
+                new InfoCommand(RETURN_MESSAGES, LOGGER, runtime.getConfig(), runtime.getWebsocketManager())
+                        .execute("sender", Collections.emptyList());
                 List<String> messages = RETURN_MESSAGES.snapshot();
 
                 assertTrue(containsAny(messages, "已有 2 个连接"), "应报告 2 个连接，实际=" + messages);
@@ -136,10 +155,11 @@ class CommandLayerTest {
         int deadPort = findFreePort();
 
         try (ConfigFixture ignored = new ConfigFixture(serverPort, deadPort)) {
-            GlobalContext.init(false, "1.20.1", "test", NOOP_API_SERVICE, RETURN_MESSAGES);
+            startRuntime();
 
             RETURN_MESSAGES.clear();
-            new ListCommand().execute("sender", Collections.emptyList());
+            new ListCommand(RETURN_MESSAGES, LOGGER, runtime.getConfig(), runtime.getWebsocketManager())
+                    .execute("sender", Collections.emptyList());
             List<String> messages = RETURN_MESSAGES.snapshot();
 
             assertTrue(containsAny(messages, "共 2 个 Client"), "应报告 2 个 Client，实际=" + messages);
@@ -162,10 +182,11 @@ class CommandLayerTest {
         int deadPort = findFreePort();
 
         try (ConfigFixture ignored = new ConfigFixture(serverPort, deadPort)) {
-            GlobalContext.init(false, "1.20.1", "test", NOOP_API_SERVICE, RETURN_MESSAGES);
+            startRuntime();
 
             RETURN_MESSAGES.clear();
-            ReconnectCommand.reconnect("sender", false);
+            new ReconnectCommand(RETURN_MESSAGES, LOGGER, runtime.getWebsocketManager())
+                    .reconnect("sender", false);
             List<String> messages = RETURN_MESSAGES.snapshot();
 
             assertTrue(

@@ -1,19 +1,42 @@
 package io.github.theword.queqiao.core.command.subCommand.server;
 
-import io.github.theword.queqiao.core.GlobalContext;
 import io.github.theword.queqiao.core.command.SubCommand;
 import io.github.theword.queqiao.core.config.ConfigKeys;
 import io.github.theword.queqiao.core.config.Config;
 import io.github.theword.queqiao.core.handle.HandleCommandReturnMessageService;
 import io.github.theword.queqiao.core.utils.Tool;
+import io.github.theword.queqiao.core.utils.WebsocketManager;
 import io.github.theword.queqiao.core.websocket.WsServer;
 import org.java_websocket.WebSocket;
+import org.slf4j.Logger;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class InfoCommand extends SubCommand {
+
+    /**
+     * 配置运行时状态（与 Runtime 共用同一实例，reload 后自动生效）
+     */
+    private final Config config;
+
+    /**
+     * WebSocket 管理器（Runtime 启动后注入）
+     */
+    private final WebsocketManager websocketManager;
+
+    public InfoCommand(
+            HandleCommandReturnMessageService returnMessageService,
+            Logger logger,
+            Config config,
+            WebsocketManager websocketManager) {
+        super(returnMessageService, logger);
+        this.config = Objects.requireNonNull(config, "config");
+        this.websocketManager = Objects.requireNonNull(
+                websocketManager, "websocketManager 不能为 null：命令树须在 Runtime.start() 之后构建");
+    }
 
     /**
      * 获取命令名称
@@ -47,9 +70,6 @@ public class InfoCommand extends SubCommand {
      */
     @Override
     protected void onExecute(Object commandReturner, List<String> args) {
-        HandleCommandReturnMessageService returnMessageService = GlobalContext.getHandleCommandReturnMessageService();
-
-        Config config = GlobalContext.getConfig();
         if (!config.get(ConfigKeys.WebSocket.ENABLE)) {
             returnMessageService.sendReturnMessage(
                     commandReturner, "Websocket Server 配置项未启用，如需开启，请在 config.yml 中启用 WebsocketServer 配置项");
@@ -58,7 +78,7 @@ public class InfoCommand extends SubCommand {
             return;
         }
 
-        WsServer wsServer = GlobalContext.getWebsocketManager().getWsServer();
+        WsServer wsServer = websocketManager.getWsServer();
         if (wsServer == null) {
             returnMessageService.sendReturnMessage(commandReturner, "Websocket Server 为 null，查询失败");
             return;

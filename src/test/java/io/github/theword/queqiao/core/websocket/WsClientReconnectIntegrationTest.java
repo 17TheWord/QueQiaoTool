@@ -119,7 +119,8 @@ class WsClientReconnectIntegrationTest {
         private final CountDownLatch openedLatch = new CountDownLatch(1);
 
         private LatchedWsClient(URI uri, Logger logger, ScheduledThreadPoolExecutor scheduler, ReconnectPolicy policy, HandleProtocolMessage handleProtocolMessage, String serverName, String accessToken, boolean enabled) {
-            super(uri, logger, scheduler, policy, handleProtocolMessage, serverName, accessToken, enabled);
+            super(uri, logger, scheduler, policy, handleProtocolMessage, serverName, accessToken, enabled,
+                    PlatformStubs.newRuntimeUtils(logger));
         }
 
         @Override
@@ -143,7 +144,8 @@ class WsClientReconnectIntegrationTest {
     private static final class ThrowingWsClient extends WsClient {
 
         private ThrowingWsClient(URI uri, Logger logger, ScheduledThreadPoolExecutor scheduler, ReconnectPolicy policy) {
-            super(uri, logger, scheduler, policy, HANDLE_PROTOCOL_MESSAGE, "Server", "", true);
+            super(uri, logger, scheduler, policy, HANDLE_PROTOCOL_MESSAGE, "Server", "", true,
+                    PlatformStubs.newRuntimeUtils(logger));
         }
 
         @Override

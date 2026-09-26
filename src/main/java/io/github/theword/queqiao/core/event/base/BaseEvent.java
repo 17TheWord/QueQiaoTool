@@ -10,7 +10,7 @@ import com.google.gson.annotations.SerializedName;
  * <p>所有事件的基类
  *
  * <p><b>不依赖全局状态</b>：服务器上下文（服务器名 / 版本 / 类型）不再在字段初始化器中
- * 从 {@code GlobalContext} 读取，而是由发布方通过
+ * 从任何静态全局状态读取，而是由发布方通过
  * {@link #fillServerContext(String, String, String)} 在序列化前填充。
  * 这样事件的<b>构造</b>是纯粹的数据组装，可在无全局上下文的环境下独立构造与测试。
  *
@@ -81,7 +81,7 @@ public class BaseEvent {
     /**
      * 填充服务器上下文
      *
-     * <p>由发布方在序列化前调用。平台应通过 {@code GlobalContext.sendEvent(...)} 发布事件，
+     * <p>由发布方在序列化前调用。平台应通过 {@code QueQiaoRuntime.sendEvent(...)} 发布事件，
      * 该路径会自动完成填充；若绕过发布路径直接序列化事件，
      * 这三个字段将保持为 {@code null}。
      *

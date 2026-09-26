@@ -2,13 +2,22 @@ package io.github.theword.queqiao.core.command.subCommand;
 
 import io.github.theword.queqiao.core.command.SubCommand;
 import io.github.theword.queqiao.core.command.subCommand.server.InfoCommand;
+import io.github.theword.queqiao.core.config.Config;
+import io.github.theword.queqiao.core.handle.HandleCommandReturnMessageService;
+import io.github.theword.queqiao.core.utils.WebsocketManager;
+import org.slf4j.Logger;
 
 import java.util.List;
 
 public class ServerCommand extends SubCommand {
 
-    public ServerCommand() {
-        addChild(new InfoCommand());
+    public ServerCommand(
+            HandleCommandReturnMessageService returnMessageService,
+            Logger logger,
+            Config config,
+            WebsocketManager websocketManager) {
+        super(returnMessageService, logger);
+        addChild(new InfoCommand(returnMessageService, logger, config, websocketManager));
     }
 
     /**

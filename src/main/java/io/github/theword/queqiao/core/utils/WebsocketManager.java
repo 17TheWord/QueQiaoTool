@@ -84,10 +84,18 @@ public class WebsocketManager {
      * <p>由 {@code QueQiaoRuntime} 注入；reload 时通过 {@link #restart(Config, Object)} 整体替换。
      * 标记 {@code volatile}：reload 线程写入，WebSocket 读写线程与游戏线程读取。
      *
-     * <p><b>本类不读 {@code GlobalContext}</b>——配置由外部注入，
+     * <p>配置与 Runtime 作用域辅助能力均由外部注入，
      * 因此可以脱离全局上下文独立构造与测试。
      */
     private volatile Config config;
+
+    /**
+     * Runtime 作用域辅助能力，由 QueQiaoRuntime 注入
+     *
+     * <p>本类与 {@link WsClient} 的 debug 日志统一通过它输出，
+     * 不再依赖任何静态全局状态。
+     */
+    private final RuntimeUtils utils;
 
     /**
      * 共享重连调度器：本 Manager 独占持有，Client 只使用不销毁
@@ -112,15 +120,18 @@ public class WebsocketManager {
      * @param handleCommandReturnMessageService 命令返回消息实现
      * @param handleProtocolMessage           协议分发入口（由 QueQiaoRuntime 创建并注入）
      * @param config                          配置快照（由 QueQiaoRuntime 注入）
+     * @param utils                           Runtime 作用域辅助能力（由 QueQiaoRuntime 注入）
      */
     public WebsocketManager(
                     Logger logger,
                     Gson gson,
                     HandleCommandReturnMessageService handleCommandReturnMessageService,
                     HandleProtocolMessage handleProtocolMessage,
-                    Config config) {
+                    Config config,
+                    RuntimeUtils utils) {
         this.logger = logger;
         this.gson = gson;
+        this.utils = Objects.requireNonNull(utils, "utils");
         // 内部不变量：这些依赖由 QueQiaoRuntime 注入，为 null 属接线缺陷。
         // 快速失败，避免在 stop() 中途（客户端已全部停止、调度器尚未关闭）才抛 NPE。
         this.handleCommandReturnMessageService =
@@ -220,7 +231,8 @@ public class WebsocketManager {
                     this.handleProtocolMessage,
                     this.config.get(ConfigKeys.SERVER_NAME),
                     this.config.get(ConfigKeys.ACCESS_TOKEN),
-                    this.config.get(ConfigKeys.ENABLE)
+                    this.config.get(ConfigKeys.ENABLE),
+                    this.utils
             );
             // 先纳入管理列表：保证 connect() 同步抛异常时该实例仍能被回收，Manager 始终拥有 Client 生命周期
             this.wsClientList.add(wsClient);
@@ -252,7 +264,7 @@ public class WebsocketManager {
         try {
             wsClient.stopWithoutReconnect(CLOSE_CODE_NORMAL, WebsocketConstantMessage.CLOSE_BY_RELOAD);
         } catch (RuntimeException e) {
-            Tool.debugLog("清理启动失败的 WebSocket 客户端时出现异常：{}", e.getMessage());
+            utils.debugLog("清理启动失败的 WebSocket 客户端时出现异常：{}", e.getMessage());
         }
     }
 
@@ -357,7 +369,7 @@ public class WebsocketManager {
                 this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, reason);
             } catch (InterruptedException e) {
                 this.handleCommandReturnMessageService.sendReturnMessage(commandReturner, WebsocketConstantMessage.Server.ERROR_ON_STOPPING);
-                Tool.debugLog(e.getMessage());
+                utils.debugLog(e.getMessage());
             }
             wsServer = null;
         }
@@ -381,7 +393,7 @@ public class WebsocketManager {
     public void start(Object commandReturner) {
         synchronized (lifecycleLock) {
             if (destroyed) {
-                Tool.debugLog("WebsocketManager 已销毁，忽略启动请求");
+                utils.debugLog("WebsocketManager 已销毁，忽略启动请求");
                 return;
             }
             if (started) {
@@ -389,7 +401,7 @@ public class WebsocketManager {
                 if (wsServer == null && this.config.get(ConfigKeys.WebSocket.ENABLE)) {
                     startServer(commandReturner);
                 } else {
-                    Tool.debugLog("WebsocketManager 已启动，忽略重复启动");
+                    utils.debugLog("WebsocketManager 已启动，忽略重复启动");
                 }
                 return;
             }
@@ -415,7 +427,7 @@ public class WebsocketManager {
     public void stop(int code, String reason, Object commandReturner) {
         synchronized (lifecycleLock) {
             if (destroyed) {
-                Tool.debugLog("WebsocketManager 已销毁，忽略重复停止");
+                utils.debugLog("WebsocketManager 已销毁，忽略重复停止");
                 return;
             }
             destroyed = true;
@@ -438,7 +450,7 @@ public class WebsocketManager {
     public void restart(Config newConfig, Object commandReturner) {
         synchronized (lifecycleLock) {
             if (destroyed) {
-                Tool.debugLog("WebsocketManager 已销毁，忽略重载请求");
+                utils.debugLog("WebsocketManager 已销毁，忽略重载请求");
                 return;
             }
             this.config = Objects.requireNonNull(newConfig, "newConfig");
@@ -456,7 +468,7 @@ public class WebsocketManager {
             return;
         }
         this.reconnectScheduler.shutdownNow();
-        Tool.debugLog("WebsocketManager 共享重连调度器已关闭");
+        utils.debugLog("WebsocketManager 共享重连调度器已关闭");
     }
 
     /**
@@ -510,9 +522,9 @@ public class WebsocketManager {
         try {
             if (wsClient.isOpen()) {
                 wsClient.send(json);
-                Tool.debugLog("WebSocket Client {} send message {}", wsClient.getURI(), json);
+                utils.debugLog("WebSocket Client {} send message {}", wsClient.getURI(), json);
             } else {
-                Tool.debugLog("WebSocket Client {} is not connected, skip message {}", wsClient.getURI(), json);
+                utils.debugLog("WebSocket Client {} is not connected, skip message {}", wsClient.getURI(), json);
             }
         } catch (RuntimeException e) {
             logger.warn("WebSocket Client send failed, uri={}, error={}", wsClient.getURI(), e.getMessage());
@@ -522,7 +534,7 @@ public class WebsocketManager {
     private void broadcastServerEvent(WsServer server, String json) {
         try {
             server.broadcast(json);
-            Tool.debugLog("WebSocket Server broadcast message: {}", json);
+            utils.debugLog("WebSocket Server broadcast message: {}", json);
         } catch (RuntimeException e) {
             logger.warn("WebSocket Server broadcast failed, error={}", e.getMessage());
         }

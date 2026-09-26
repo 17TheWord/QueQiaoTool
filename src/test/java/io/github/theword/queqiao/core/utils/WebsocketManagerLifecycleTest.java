@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * WebsocketManager 生命周期与启动健壮性测试
  *
  * <p>WS-F 之后 {@code WebsocketManager} 通过构造器接收 {@code Config}，
- * 因此可以用<b>内存构造的配置</b>直接实例化，无需写配置文件、无需 {@code GlobalContext}。
+ * 因此可以用<b>内存构造的配置</b>直接实例化，无需写配置文件、无需任何全局上下文。
  * 这也让此前只能靠代码审查的两个验收项得以自动化：
  * <ul>
  *     <li><b>WS-A #14</b>：{@code start()} 幂等</li>
@@ -88,7 +88,13 @@ class WebsocketManagerLifecycleTest {
     }
 
     private static WebsocketManager newManager(Config config) {
-        return new WebsocketManager(LOGGER, GSON, new NoopReturnMessageService(), HANDLE_PROTOCOL_MESSAGE, config);
+        return new WebsocketManager(
+                LOGGER,
+                GSON,
+                new NoopReturnMessageService(),
+                HANDLE_PROTOCOL_MESSAGE,
+                config,
+                PlatformStubs.newRuntimeUtils(LOGGER));
     }
 
     private static int findFreePort() throws IOException {

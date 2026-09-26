@@ -12,6 +12,7 @@ import io.github.theword.queqiao.core.protocol.handler.SendCommandHandler;
 import io.github.theword.queqiao.core.protocol.handler.SendPrivateMessageHandler;
 import io.github.theword.queqiao.core.protocol.handler.SendRconCommandHandler;
 import io.github.theword.queqiao.core.protocol.handler.SendTitleHandler;
+import io.github.theword.queqiao.core.protocol.handler.status.ServerStatusCollector;
 import io.github.theword.queqiao.core.response.Response;
 import org.slf4j.Logger;
 
@@ -27,8 +28,8 @@ import java.util.Objects;
  * <p><b>线程安全</b>：处理器表只在构造阶段写入（{@code register} 为 private 且仅构造器调用），
  * 之后只读，因此本类构造后即不可变、可被多连接并发使用，且<b>不含任何锁</b>。
  *
- * <p><b>不依赖全局状态</b>：日志实现、平台 API 实现与 RCON 执行器均由构造器注入，
- * 不再访问 {@code GlobalContext}——使协议层可脱离全局上下文独立测试
+ * <p><b>不依赖全局状态</b>：日志实现、平台 API 实现、RCON 执行器与状态采集器均由构造器注入，
+ * 不再访问任何静态全局状态——使协议层可脱离全局上下文独立测试
  * （包括此前无法验证的"成功路径"）。
  *
  * @since 0.6.11
@@ -52,8 +53,13 @@ public class ProtocolRouter {
      * @param logger               日志实现，不得为 null
      * @param handleApiService     平台 API 实现，允许为 null（未初始化状态）
      * @param rconCommandExecutor  RCON 命令执行器，不得为 null
+     * @param serverStatusCollector 状态采集器（Runtime 实例级），不得为 null
      */
-    public ProtocolRouter(Logger logger, HandleApiService handleApiService, RconCommandExecutor rconCommandExecutor) {
+    public ProtocolRouter(
+            Logger logger,
+            HandleApiService handleApiService,
+            RconCommandExecutor rconCommandExecutor,
+            ServerStatusCollector serverStatusCollector) {
         this.logger = Objects.requireNonNull(logger, "logger");
         this.handleApiService = handleApiService;
         this.rconCommandExecutor = Objects.requireNonNull(rconCommandExecutor, "rconCommandExecutor");
@@ -66,7 +72,7 @@ public class ProtocolRouter {
         register(ProtocolConstants.Api.SEND_PRIVATE_MSG, new SendPrivateMessageHandler(logger, handleApiService));
         register(ProtocolConstants.Api.SEND_COMMAND, new SendCommandHandler(logger, handleApiService));
         register(ProtocolConstants.Api.SEND_RCON_COMMAND, new SendRconCommandHandler(logger, handleApiService, rconCommandExecutor));
-        register(ProtocolConstants.Api.GET_STATUS, new GetStatusHandler(logger, handleApiService));
+        register(ProtocolConstants.Api.GET_STATUS, new GetStatusHandler(logger, handleApiService, serverStatusCollector));
     }
 
     /**

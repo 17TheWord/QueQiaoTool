@@ -93,7 +93,7 @@ public final class ConfigKeys {
      * 生效的忽略命令集合 = 强制项 ∪ 用户配置
      *
      * <p>这是既有行为的等价实现：此前 {@code Config.loadIgnoredCommands} 会把用户列表与
-     * 内置强制项合并。规则集中在这里，消费方（如 {@code Tool}）直接使用本方法。
+     * 内置强制项合并。规则集中在这里，消费方（如 {@code RuntimeUtils}）直接使用本方法。
      *
      * @param runtime 运行时值存储
      * @return 生效集合
