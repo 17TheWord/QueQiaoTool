@@ -15,6 +15,7 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p><b>已知代价</b>：本类会写工作目录下的配置文件并绑定端口（属评审记录的测试隔离欠债）；
  * 端口用"绑定 0 号端口取空闲端口再释放"获取，存在极小竞态窗口。
  */
+@Isolated
 class CommandLayerTest {
 
     static {
@@ -76,7 +78,7 @@ class CommandLayerTest {
         }
     };
 
-    private static final RecordingReturnMessageService RETURN_MESSAGES = new RecordingReturnMessageService();
+    private final RecordingReturnMessageService RETURN_MESSAGES = new RecordingReturnMessageService();
 
     @AfterEach
     void tearDown() {
