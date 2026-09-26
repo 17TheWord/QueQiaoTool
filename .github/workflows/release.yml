@@ -1,6 +1,7 @@
 name: Release
 
-# Push a version tag to publish to Maven Central and create the GitHub Release.
+# Push a version tag to publish to Maven Central, publish Javadoc,
+# and create the GitHub Release.
 #
 # Example:
 #   git tag v0.7.0
@@ -18,9 +19,9 @@ on:
         required: true
         default: v0.7.0
 
-# Prevent the same release tag from being published concurrently.
-# A later run waits instead of cancelling the active release.
 concurrency:
+  # Prevent the same release tag from being published concurrently.
+  # A later run waits instead of cancelling the active release.
   group: release-${{ github.event.inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
@@ -179,6 +180,19 @@ jobs:
           ./gradlew publishAndReleaseToMavenCentral \
             --no-configuration-cache \
             -PprojectVersion=${{ steps.release.outputs.version }}
+
+      - name: Generate Javadoc
+        run: |
+          ./gradlew javadoc \
+            -PprojectVersion=${{ steps.release.outputs.version }}
+
+      - name: Publish Javadoc
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/docs/javadoc
+          publish_branch: pages
+          keep_files: false
 
       - name: Create GitHub Release
         env:

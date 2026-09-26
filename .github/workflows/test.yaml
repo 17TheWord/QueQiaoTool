@@ -4,27 +4,33 @@ on:
   push:
     branches:
       - main
+
   pull_request:
-    types: [ opened, synchronize ]
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 jobs:
   test:
+    name: Test
     runs-on: ubuntu-26.04
+
     permissions:
       contents: read
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Java & Gradle
         uses: ./.github/actions/set-java
         with:
-          java-version: '17'
+          java-version: '21'
 
       - name: Run Check
         run: ./gradlew check
-      
+
       - name: Run Compile
         run: ./gradlew compileJava
 
