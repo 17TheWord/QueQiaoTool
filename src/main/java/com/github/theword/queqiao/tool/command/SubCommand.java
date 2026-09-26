@@ -2,6 +2,7 @@ package com.github.theword.queqiao.tool.command;
 
 import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.constant.CommandConstant;
+import com.github.theword.queqiao.tool.utils.Tool;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -179,7 +180,7 @@ public abstract class SubCommand {
      * @param command         当前命令节点
      */
     public void sendCommandTree(Object commandReturner, SubCommand command) {
-        String msg = String.format("%s - %s", command.getUsage(), command.getDescription());
+        String msg = Tool.format("{} - {}", command.getUsage(), command.getDescription());
         GlobalContext.getHandleCommandReturnMessageService().sendReturnMessage(commandReturner, msg);
 
         for (SubCommand child : command.getChildren()) {

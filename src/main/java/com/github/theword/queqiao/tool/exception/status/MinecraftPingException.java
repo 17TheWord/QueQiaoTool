@@ -37,6 +37,10 @@ public class MinecraftPingException extends StatusException {
         return new MinecraftPingException("VarInt 过长");
     }
 
+    public static MinecraftPingException varIntOverflow() {
+        return new MinecraftPingException("VarInt 超出 32 位范围");
+    }
+
     public static MinecraftPingException connectionClosedWhileReadingResponse() {
         return new MinecraftPingException("读取状态响应时连接提前关闭");
     }

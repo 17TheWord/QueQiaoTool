@@ -18,6 +18,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 服务器状态采集工具。
@@ -37,6 +45,9 @@ public final class ServerStatusCollector {
     private static final String PING_REASON_TIMEOUT = "timeout";
     private static final String PING_REASON_OFFLINE = "offline";
     private static final String PING_REASON_ERROR = "error";
+    private static final int MIN_REFRESH_INTERVAL_SECONDS = 5;
+    private static final int DEFAULT_REFRESH_INTERVAL_SECONDS = 10;
+    private static final long INITIAL_SNAPSHOT_WAIT_MILLIS = 7000L;
 
     private static final Path[] REGEX_CONFIG_CANDIDATES = new Path[]{
             Paths.get(CONFIG_DIRECTORY, BaseConstant.MODULE_NAME, REGEX_CONFIG_FILE),
@@ -44,9 +55,20 @@ public final class ServerStatusCollector {
     };
 
     private static final MinecraftPingClient PING_CLIENT = new MinecraftPingClient();
-    private static final SystemMetricsCollector METRICS = new SystemMetricsCollector();
+    private static volatile SystemMetricsCollector metrics = new SystemMetricsCollector(null);
 
+    /** 未启动 Runtime 时的兼容缓存有效期。 */
+    private static final long SNAPSHOT_CACHE_TTL_MILLIS = 2000L;
+    private static final Object LIFECYCLE_LOCK = new Object();
+    private static final AtomicLong TARGET_VERSION = new AtomicLong();
+
+    private static volatile SnapshotCache snapshotCache;
     private static volatile PingTarget pingTarget = PingTarget.unavailable(DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT);
+    private static volatile ScheduledThreadPoolExecutor refreshExecutor;
+    private static volatile ScheduledFuture<?> refreshTask;
+    private static volatile int refreshIntervalSeconds = DEFAULT_REFRESH_INTERVAL_SECONDS;
+    private static volatile Logger statusLogger;
+    private static volatile SnapshotWaiter snapshotWaiter = new SnapshotWaiter(pingTarget);
 
     private ServerStatusCollector() {
     }
@@ -55,15 +77,96 @@ public final class ServerStatusCollector {
         private final String host;
         private final int port;
         private final boolean available;
+        private final long version;
 
-        private PingTarget(String host, int port, boolean available) {
+        private PingTarget(String host, int port, boolean available, long version) {
             this.host = host;
             this.port = port;
             this.available = available;
+            this.version = version;
         }
 
         private static PingTarget unavailable(String host, int port) {
-            return new PingTarget(host, port, false);
+            return new PingTarget(host, port, false, TARGET_VERSION.incrementAndGet());
+        }
+
+        private boolean sameEndpoint(String otherHost, int otherPort, boolean otherAvailable) {
+            return port == otherPort && available == otherAvailable && host.equals(otherHost);
+        }
+    }
+
+    /**
+     * 启动状态快照定时采集。Runtime 启动完成后调用；重复调用只重设现有任务。
+     */
+    public static void startRefreshScheduler(int intervalSeconds, Logger logger) {
+        synchronized (LIFECYCLE_LOCK) {
+            statusLogger = logger;
+            refreshIntervalSeconds = Math.max(MIN_REFRESH_INTERVAL_SECONDS, intervalSeconds);
+            if (refreshExecutor == null || refreshExecutor.isShutdown()) {
+                ThreadFactory threadFactory = runnable -> {
+                    Thread thread = new Thread(runnable, "QueQiao-Status-Collector");
+                    thread.setDaemon(true);
+                    return thread;
+                };
+                refreshExecutor = new ScheduledThreadPoolExecutor(1, threadFactory);
+                refreshExecutor.setRemoveOnCancelPolicy(true);
+                metrics = new SystemMetricsCollector(logger);
+                snapshotCache = null;
+                snapshotWaiter = new SnapshotWaiter(pingTarget);
+            }
+            scheduleRefreshLocked(0L);
+        }
+    }
+
+    /** 更新间隔；未变化时不打断当前采集周期。 */
+    public static void updateRefreshInterval(int intervalSeconds) {
+        synchronized (LIFECYCLE_LOCK) {
+            int normalizedInterval = Math.max(MIN_REFRESH_INTERVAL_SECONDS, intervalSeconds);
+            if (refreshIntervalSeconds == normalizedInterval) {
+                return;
+            }
+            refreshIntervalSeconds = normalizedInterval;
+            if (refreshExecutor != null && !refreshExecutor.isShutdown()) {
+                long initialDelay = snapshotCache == null ? 0L : normalizedInterval;
+                scheduleRefreshLocked(initialDelay);
+            }
+        }
+    }
+
+    /** 关闭 Runtime 持有的状态采集任务与线程。 */
+    public static void stopRefreshScheduler() {
+        synchronized (LIFECYCLE_LOCK) {
+            SnapshotWaiter waiter = snapshotWaiter;
+            waiter.result.completeExceptionally(new IllegalStateException("状态采集器已停止"));
+            ScheduledFuture<?> task = refreshTask;
+            refreshTask = null;
+            if (task != null) {
+                task.cancel(true);
+            }
+            ScheduledThreadPoolExecutor executor = refreshExecutor;
+            refreshExecutor = null;
+            if (executor != null) {
+                executor.shutdownNow();
+            }
+            snapshotCache = null;
+            statusLogger = null;
+            metrics = new SystemMetricsCollector(null);
+            snapshotWaiter = new SnapshotWaiter(pingTarget);
+        }
+    }
+
+    private static void scheduleRefreshLocked(long initialDelaySeconds) {
+        ScheduledFuture<?> current = refreshTask;
+        if (current != null) {
+            current.cancel(false);
+        }
+        ScheduledThreadPoolExecutor executor = refreshExecutor;
+        if (executor != null && !executor.isShutdown()) {
+            refreshTask = executor.scheduleWithFixedDelay(
+                    ServerStatusCollector::refreshAndPublish,
+                    initialDelaySeconds,
+                    refreshIntervalSeconds,
+                    TimeUnit.SECONDS);
         }
     }
 
@@ -229,7 +332,23 @@ public final class ServerStatusCollector {
     }
 
     private static void setPingTarget(String host, int port, boolean available) {
-        pingTarget = new PingTarget(host, port, available);
+        synchronized (LIFECYCLE_LOCK) {
+            PingTarget current = pingTarget;
+            if (current.sameEndpoint(host, port, available)) {
+                return;
+            }
+
+            PingTarget replacement = new PingTarget(host, port, available, TARGET_VERSION.incrementAndGet());
+            pingTarget = replacement;
+            snapshotCache = null;
+            snapshotWaiter.result.completeExceptionally(
+                    new java.util.concurrent.CancellationException("Ping target changed"));
+            snapshotWaiter = new SnapshotWaiter(replacement);
+            // 目标变化后立即刷新，不等待原来的周期；旧刷新结果会因 target version 不匹配而被丢弃。
+            if (refreshExecutor != null && !refreshExecutor.isShutdown()) {
+                scheduleRefreshLocked(0L);
+            }
+        }
     }
 
     private static int parsePort(String portText, Logger logger) {
@@ -246,19 +365,138 @@ public final class ServerStatusCollector {
         }
     }
 
+    /**
+     * 返回最近一次定时采集的完整状态快照。
+     *
+     * <p>Runtime 正常运行时，此方法不执行网络 Ping 或系统指标采集。只有首次采集尚未完成时，
+     * 调用方才等待共享的首轮结果，等待有明确上限。Runtime 未启动时保留同步回退，便于兼容
+     * 直接使用该静态门面的既有调用。
+     *
+     * @return 状态快照 Map
+     */
     public static Map<String, Object> collectStatusSnapshot() {
-        ServerStatusSnapshot snapshot = new ServerStatusSnapshot(
-                GlobalContext.getServerType(),
-                GlobalContext.getServerVersion(),
-                collectServerListPing(),
-                METRICS.collectCpuInformation(),
-                METRICS.collectMemoryInformation()
-        );
-        return snapshot.toMap();
+        return getOrCollectSnapshot().toMap();
     }
 
-    private static ServerListPingResult collectServerListPing() {
-        PingTarget currentTarget = pingTarget;
+    private static ServerStatusSnapshot getOrCollectSnapshot() {
+        ScheduledThreadPoolExecutor executor = refreshExecutor;
+        if (executor != null && !executor.isShutdown()) {
+            for (int attempt = 0; attempt < 3; attempt++) {
+                PingTarget target = pingTarget;
+                SnapshotCache cached = snapshotCache;
+                if (cached != null && cached.targetVersion == target.version) {
+                    return cached.snapshot;
+                }
+
+                SnapshotWaiter waiter = snapshotWaiter;
+                if (waiter.target.version != target.version) {
+                    continue;
+                }
+                try {
+                    SnapshotCache firstSnapshot = waiter.result.get(
+                            INITIAL_SNAPSHOT_WAIT_MILLIS, TimeUnit.MILLISECONDS);
+                    if (firstSnapshot.targetVersion == pingTarget.version) {
+                        return firstSnapshot.snapshot;
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return createSnapshot(pingTarget, timeoutPingResult(pingTarget));
+                } catch (ExecutionException | TimeoutException e) {
+                    return createSnapshot(pingTarget, timeoutPingResult(pingTarget));
+                }
+            }
+            PingTarget target = pingTarget;
+            return createSnapshot(target, timeoutPingResult(target));
+        }
+
+        PingTarget target = pingTarget;
+        SnapshotCache cached = snapshotCache;
+        if (cached != null && cached.targetVersion == target.version
+                && !cached.isExpired(System.nanoTime())) {
+            return cached.snapshot;
+        }
+
+        SnapshotCache fresh = collectSnapshot(target);
+        if (target == pingTarget) {
+            snapshotCache = fresh;
+        }
+        return fresh.snapshot;
+    }
+
+    private static void refreshAndPublish() {
+        ScheduledThreadPoolExecutor executor = refreshExecutor;
+        PingTarget target = pingTarget;
+        SnapshotWaiter waiter = snapshotWaiter;
+        try {
+            SnapshotCache fresh = collectSnapshot(target);
+            synchronized (LIFECYCLE_LOCK) {
+                if (executor != null && executor == refreshExecutor && !executor.isShutdown()
+                        && target == pingTarget) {
+                    snapshotCache = fresh;
+                    if (waiter == snapshotWaiter && waiter.target == target) {
+                        waiter.result.complete(fresh);
+                    }
+                }
+            }
+        } catch (RuntimeException e) {
+            Logger logger = statusLogger;
+            if (logger != null) {
+                logger.error("采集服务器状态快照失败，保留当前缓存", e);
+            }
+            if (waiter.target == target) {
+                waiter.result.completeExceptionally(e);
+            }
+        }
+    }
+
+    private static SnapshotCache collectSnapshot(PingTarget target) {
+        ServerStatusSnapshot snapshot = createSnapshot(target, collectServerListPing(target));
+        return new SnapshotCache(snapshot, System.nanoTime(), target.version);
+    }
+
+    private static ServerStatusSnapshot createSnapshot(PingTarget target, ServerListPingResult pingResult) {
+        return new ServerStatusSnapshot(
+                GlobalContext.getServerType(),
+                GlobalContext.getServerVersion(),
+                pingResult,
+                metrics.collectCpuInformation(),
+                metrics.collectMemoryInformation());
+    }
+
+    private static ServerListPingResult timeoutPingResult(PingTarget target) {
+        return ServerListPingResult.of(
+                target.available, target.host, target.port, PING_REASON_TIMEOUT,
+                "等待状态采集超时", null);
+    }
+
+    /** 快照、单调时间和探测目标版本一起发布，读取时三者保持一致。 */
+    private static final class SnapshotCache {
+
+        private final ServerStatusSnapshot snapshot;
+        private final long createdAtNanos;
+        private final long targetVersion;
+
+        private SnapshotCache(ServerStatusSnapshot snapshot, long createdAtNanos, long targetVersion) {
+            this.snapshot = snapshot;
+            this.createdAtNanos = createdAtNanos;
+            this.targetVersion = targetVersion;
+        }
+
+        private boolean isExpired(long nowNanos) {
+            return nowNanos - createdAtNanos >= TimeUnit.MILLISECONDS.toNanos(SNAPSHOT_CACHE_TTL_MILLIS);
+        }
+    }
+
+    private static final class SnapshotWaiter {
+        private final PingTarget target;
+        private final CompletableFuture<SnapshotCache> result = new CompletableFuture<>();
+
+        private SnapshotWaiter(PingTarget target) {
+            this.target = target;
+        }
+    }
+
+    private static ServerListPingResult collectServerListPing(PingTarget currentTarget) {
         if (!currentTarget.available) {
             return ServerListPingResult.of(false, currentTarget.host, currentTarget.port, PING_REASON_NOT_CONFIGURED, null, null);
         }
@@ -269,7 +507,7 @@ public final class ServerStatusCollector {
         } catch (MinecraftPingException e) {
             String reason = resolvePingFailureReason(e);
             String error = resolvePingErrorMessage(e);
-            Logger logger = GlobalContext.getLogger();
+            Logger logger = statusLogger != null ? statusLogger : GlobalContext.getLogger();
             if (logger != null) {
                 logger.warn("Minecraft Server List Ping failed, reason={}, host={}, port={}, error={}", reason, currentTarget.host, currentTarget.port, error);
             }

@@ -1,10 +1,13 @@
 package com.github.theword.queqiao.tool.protocol.handler.status;
 
-import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.exception.status.MinecraftPingException;
+import com.github.theword.queqiao.tool.utils.GsonUtils;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,11 +15,17 @@ import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 final class MinecraftPingClient {
     private static final int SOCKET_TIMEOUT_MILLIS = 3000;
+    private static final int MAX_RESPONSE_PACKET_LENGTH = 1024 * 1024;
     private static final int HANDSHAKE_PROTOCOL_VERSION = -1;
     private static final int PACKET_ID_HANDSHAKE = 0x00;
     private static final int PACKET_ID_STATUS_REQUEST = 0x00;
@@ -36,7 +45,7 @@ final class MinecraftPingClient {
     MinecraftPingResponse fetchStatus(String host, int port) throws MinecraftPingException {
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(host, port), SOCKET_TIMEOUT_MILLIS);
-            socket.setSoTimeout(SOCKET_TIMEOUT_MILLIS);
+            long responseDeadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(SOCKET_TIMEOUT_MILLIS);
 
             InputStream inputStream = socket.getInputStream();
             OutputStream outputStream = socket.getOutputStream();
@@ -44,26 +53,34 @@ final class MinecraftPingClient {
             sendHandshakePacket(outputStream, host, port);
             sendStatusRequestPacket(outputStream);
 
-            int responsePacketLength = readVarInt(inputStream);
-            if (responsePacketLength <= 0) {
+            int responsePacketLength = readVarInt(inputStream, socket, responseDeadlineNanos);
+            if (responsePacketLength <= 0 || responsePacketLength > MAX_RESPONSE_PACKET_LENGTH) {
                 throw MinecraftPingException.invalidPacketLength(responsePacketLength);
             }
 
-            int packetId = readVarInt(inputStream);
+            byte[] responsePacket = readFully(inputStream, socket, responseDeadlineNanos, responsePacketLength);
+            ByteArrayInputStream packetInput = new ByteArrayInputStream(responsePacket);
+
+            int packetId = readVarInt(packetInput);
             if (packetId != PACKET_ID_STATUS_RESPONSE) {
                 throw MinecraftPingException.invalidPacketId(packetId);
             }
 
-            int jsonLength = readVarInt(inputStream);
-            if (jsonLength <= 0) {
+            int jsonLength = readVarInt(packetInput);
+            if (jsonLength <= 0 || jsonLength != packetInput.available()) {
                 throw MinecraftPingException.invalidJsonLength(jsonLength);
             }
 
-            byte[] jsonBytes = readFully(inputStream, jsonLength);
-            String json = new String(jsonBytes, StandardCharsets.UTF_8);
+            byte[] jsonBytes = readFully(packetInput, jsonLength);
+            String json = decodeUtf8(jsonBytes);
             Map<String, Object> pingData;
             try {
-                pingData = GlobalContext.getGson().fromJson(json, MAP_TYPE);
+                // 直接用全局 Gson 单例，不经 GlobalContext——本类无需依赖全局上下文
+                JsonElement root = new JsonParser().parse(json);
+                if (root == null || !root.isJsonObject()) {
+                    throw MinecraftPingException.jsonParseFailed(null);
+                }
+                pingData = GsonUtils.getGson().fromJson(root, MAP_TYPE);
             } catch (JsonParseException | IllegalStateException e) {
                 throw MinecraftPingException.jsonParseFailed(e);
             }
@@ -124,22 +141,66 @@ final class MinecraftPingClient {
     }
 
     private int readVarInt(InputStream inputStream) throws IOException, MinecraftPingException {
-        int numRead = 0;
         int result = 0;
-        int read;
-        do {
-            read = inputStream.read();
+        for (int numRead = 0; numRead < MAX_VAR_INT_BYTES; numRead++) {
+            int read = inputStream.read();
             if (read == INPUT_STREAM_EOF) {
                 throw MinecraftPingException.connectionClosedWhileReadingVarInt();
             }
+            if (numRead == MAX_VAR_INT_BYTES - 1 && (read & 0xF0) != 0) {
+                throw MinecraftPingException.varIntOverflow();
+            }
             int value = read & VAR_INT_SEGMENT_BITS;
             result |= value << (VAR_INT_BITS_PER_BYTE * numRead);
-            numRead++;
-            if (numRead > MAX_VAR_INT_BYTES) {
-                throw MinecraftPingException.varIntTooLong();
+            if ((read & VAR_INT_CONTINUE_BIT) == 0) {
+                return result;
             }
-        } while ((read & VAR_INT_CONTINUE_BIT) != 0);
-        return result;
+        }
+        throw MinecraftPingException.varIntTooLong();
+    }
+
+    private int readVarInt(InputStream inputStream, Socket socket, long deadlineNanos)
+            throws IOException, MinecraftPingException {
+        int result = 0;
+        for (int numRead = 0; numRead < MAX_VAR_INT_BYTES; numRead++) {
+            setRemainingReadTimeout(socket, deadlineNanos);
+            int read = inputStream.read();
+            if (read == INPUT_STREAM_EOF) {
+                throw MinecraftPingException.connectionClosedWhileReadingVarInt();
+            }
+            if (numRead == MAX_VAR_INT_BYTES - 1 && (read & 0xF0) != 0) {
+                throw MinecraftPingException.varIntOverflow();
+            }
+            result |= (read & VAR_INT_SEGMENT_BITS) << (VAR_INT_BITS_PER_BYTE * numRead);
+            if ((read & VAR_INT_CONTINUE_BIT) == 0) {
+                return result;
+            }
+        }
+        throw MinecraftPingException.varIntTooLong();
+    }
+
+    private byte[] readFully(InputStream inputStream, Socket socket, long deadlineNanos, int length)
+            throws IOException, MinecraftPingException {
+        byte[] data = new byte[length];
+        int offset = 0;
+        while (offset < length) {
+            setRemainingReadTimeout(socket, deadlineNanos);
+            int readCount = inputStream.read(data, offset, length - offset);
+            if (readCount == INPUT_STREAM_EOF) {
+                throw MinecraftPingException.connectionClosedWhileReadingResponse();
+            }
+            if (readCount == 0) {
+                setRemainingReadTimeout(socket, deadlineNanos);
+                int singleByte = inputStream.read();
+                if (singleByte == INPUT_STREAM_EOF) {
+                    throw MinecraftPingException.connectionClosedWhileReadingResponse();
+                }
+                data[offset++] = (byte) singleByte;
+                continue;
+            }
+            offset += readCount;
+        }
+        return data;
     }
 
     private byte[] readFully(InputStream inputStream, int length) throws IOException, MinecraftPingException {
@@ -150,8 +211,32 @@ final class MinecraftPingClient {
             if (readCount == INPUT_STREAM_EOF) {
                 throw MinecraftPingException.connectionClosedWhileReadingResponse();
             }
+            if (readCount == 0) {
+                continue;
+            }
             offset += readCount;
         }
         return data;
+    }
+
+    private void setRemainingReadTimeout(Socket socket, long deadlineNanos) throws IOException {
+        long remainingNanos = deadlineNanos - System.nanoTime();
+        if (remainingNanos <= 0L) {
+            throw new SocketTimeoutException("Minecraft Ping 响应读取超时");
+        }
+        long remainingMillis = (remainingNanos + 999_999L) / 1_000_000L;
+        socket.setSoTimeout((int) Math.max(1L, Math.min(Integer.MAX_VALUE, remainingMillis)));
+    }
+
+    private String decodeUtf8(byte[] jsonBytes) throws MinecraftPingException {
+        try {
+            return StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(jsonBytes))
+                    .toString();
+        } catch (CharacterCodingException e) {
+            throw MinecraftPingException.jsonParseFailed(e);
+        }
     }
 }

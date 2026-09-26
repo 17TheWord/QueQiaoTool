@@ -1,7 +1,5 @@
 package com.github.theword.queqiao.tool.event;
 
-import com.github.theword.queqiao.tool.GlobalContext;
-import com.github.theword.queqiao.tool.config.Config;
 import com.github.theword.queqiao.tool.event.model.PlayerModel;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -50,8 +48,6 @@ class PlayerQuitEventTest {
 
     @Test
     void testPlayerQuitEventWithFakeData() {
-        Config config = Config.loadConfig(false, logger);
-        GlobalContext.setConfig(config);
 
         PlayerModel player = createFakePlayerModel();
         PlayerQuitEvent event = new PlayerQuitEvent(player);
@@ -64,7 +60,12 @@ class PlayerQuitEventTest {
         assertEquals("notice", event.getPostType());
         assertEquals("player_quit", event.getSubType());
         assertTrue(event.getTimestamp() > 0);
-        assertNotNull(event.getServerName());
+        // WS-F：服务器上下文由发布时填充，构造不再依赖全局状态
+        assertNull(event.getServerName(), "构造后尚未填充");
+        event.fillServerContext("TestServer", "1.20.1", "spigot");
+        assertEquals("TestServer", event.getServerName());
+        assertEquals("1.20.1", event.getServerVersion());
+        assertEquals("spigot", event.getServerType());
     }
 }
 

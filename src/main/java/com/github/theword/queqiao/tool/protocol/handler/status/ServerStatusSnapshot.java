@@ -1,6 +1,5 @@
 package com.github.theword.queqiao.tool.protocol.handler.status;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -24,8 +23,8 @@ public final class ServerStatusSnapshot {
         this.serverType = serverType;
         this.serverVersion = serverVersion;
         this.serverListPing = serverListPing;
-        this.cpuInformation = Collections.unmodifiableMap(new LinkedHashMap<>(cpuInformation));
-        this.memoryInformation = Collections.unmodifiableMap(new LinkedHashMap<>(memoryInformation));
+        this.cpuInformation = StatusValueCopies.immutableMap(cpuInformation);
+        this.memoryInformation = StatusValueCopies.immutableMap(memoryInformation);
     }
 
     public Map<String, Object> toMap() {
@@ -34,8 +33,8 @@ public final class ServerStatusSnapshot {
         data.put(FIELD_SERVER_TYPE, serverType);
         data.put(FIELD_SERVER_VERSION, serverVersion);
         data.put(FIELD_SERVER_LIST_PING, serverListPing.toMap());
-        data.put(FIELD_CPU_INFORMATION, cpuInformation);
-        data.put(FIELD_MEMORY_INFORMATION, memoryInformation);
+        data.put(FIELD_CPU_INFORMATION, StatusValueCopies.mutableMap(cpuInformation));
+        data.put(FIELD_MEMORY_INFORMATION, StatusValueCopies.mutableMap(memoryInformation));
         return data;
     }
 }

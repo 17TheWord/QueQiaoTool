@@ -36,4 +36,19 @@ public class ProtocolException extends QueQiaoException {
     public static ProtocolException internalError(String message) {
         return new ProtocolException(ProtocolConstants.Status.INTERNAL_ERROR, message);
     }
+
+    public static ProtocolException internalError(String message, Object data) {
+        return new ProtocolException(ProtocolConstants.Status.INTERNAL_ERROR, message, data);
+    }
+
+    /**
+     * 服务暂不可用（如 Rcon 未启用 / 未连接）
+     *
+     * @param message 错误信息
+     * @param data    附加数据
+     * @return 状态码为 503 的异常
+     */
+    public static ProtocolException serviceUnavailable(String message, Object data) {
+        return new ProtocolException(ProtocolConstants.Status.SERVICE_UNAVAILABLE, message, data);
+    }
 }

@@ -1,0 +1,69 @@
+enable: true # 是否启用插件/模组
+
+debug: false # DEBUG，开启后会打印所有日志
+
+server_name: "Server" # 服务器名称，当有多个服务器时，请使用不同的命名
+
+# 访问令牌，用于连接时进行验证
+# 安全提示：若把下方 websocket_server.host 改为非回环地址（如 0.0.0.0）而此处留空，
+# 则任何能访问该端口的人都可发送消息、并执行 Rcon 命令（等价于在服务器上执行任意命令）。
+# 对外暴露前请务必设置该令牌。
+# 注意：浏览器无法在 WebSocket 握手中设置自定义请求头，只能通过 URL query 传递该令牌；
+# 而 URL 会进入反向代理日志与监控系统，因此能用请求头的客户端请优先使用请求头。
+access_token: "" # 用于连接时进行验证
+
+# 消息前缀
+# 消息前面添加的前缀（不包含Title、ActionBar）
+# 设置为空时，不会在消息前面添加前缀
+# 支持符合MC消息组件的自定义 Json 前缀，例如他 "{\"text\": \"[鹊桥]\", \"color\": \"green\", \"bold\": true}"
+# 默认风格为 yellow
+message_prefix: "[鹊桥]"
+
+# 是否启用消息翻译功能
+# 该功能可将成就、死亡事件中的翻译键（Key）及其参数（Args）转换为本地化文本。
+# 启用步骤：
+# 1. 在当前 config.yml 同级目录下手动创建 translate 文件夹。
+# 2. 将对应的 JSON 语言文件（如 vanilla.json 或 模组翻译文件）放入 translate 文件夹中。
+# 注意：该功能需要配合本地翻译库文件使用，否则将保持原始翻译键显示。
+enable_translation: false
+
+# WebSocket Server配置项
+websocket_server:
+  enable: true          # 是否启用
+  host: "127.0.0.1"     # WebSocket Server 地址；默认仅本机可访问。改为 0.0.0.0 等非回环地址前，请先设置 access_token
+  port: 8080            # WebSocket Server 端口（取值范围 1~65535，越界将回退默认值）
+
+# WebSocket Client配置项
+websocket_client:
+  enable: false                 # 是否启用
+  reconnect_interval: 5         # 重连间隔（秒）（取值范围 1~3600；为 0 会导致立即重连风暴，将回退默认值）
+  reconnect_max_times: 5        # 最大重连次数（取值范围 0~1000；0 表示禁用自动重连）
+  url_list:
+    - "ws://127.0.0.1:8080/minecraft/ws"
+
+# Rcon 客户端配置项
+rcon:
+  enable: false                # 是否启用
+  port: 25575                  # Rcon 端口（取值范围 1~65535，越界将回退默认值）
+  password: ""                # Rcon 密码
+
+# 订阅事件配置项
+subscribe_event:
+  player_chat: true         # 玩家聊天事件监听
+  player_death: true        # 玩家死亡事件监听
+  player_join: true         # 玩家登录事件监听
+  player_quit: true         # 玩家退出事件监听
+  player_command: true      # 玩家命令事件监听
+  player_advancement: true  # 玩家成就事件监听
+
+# 忽略的命令列表
+# 例如：["tp"]，则所有以 /tp 起始的命令对应的事件均不会被广播
+ignored_commands: []
+
+# 扩展命名空间
+# 供 QueQiao 的 Addon（如 AI / NPC / LLM 等）存放自己的配置。
+# Core 只校验它本身是 Map，其内部结构完全由各 Addon 自行约定：
+# Core 不校验、不删除、不告警。
+# addons:
+#   example_addon:
+#     some_option: true

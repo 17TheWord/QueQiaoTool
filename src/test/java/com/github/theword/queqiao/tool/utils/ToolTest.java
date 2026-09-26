@@ -2,19 +2,31 @@ package com.github.theword.queqiao.tool.utils;
 
 import com.github.theword.queqiao.tool.GlobalContext;
 import com.github.theword.queqiao.tool.config.Config;
+import com.github.theword.queqiao.tool.config.ConfigKeys;
+import com.github.theword.queqiao.tool.config.schema.ConfigRegistry;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.*;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+/**
+ * {@link Tool} 单元测试
+ *
+ * <p><b>测试隔离</b>：这里注入一份<b>不触碰文件系统</b>的默认配置
+ * （由 {@link ConfigKeys} 的 Schema 直接构造），因此不读写工作目录下的
+ * {@code plugins/queqiao/config.yml}。
+ */
 class ToolTest {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     @Test
+    @DisplayName("忽略命令判定：默认忽略注册与登录命令")
     void testisIgnoredCommand() {
-        GlobalContext.setConfig(Config.loadConfig(false, logger));
+        // 默认值只来自 ConfigKeys 的 Schema（Phase 7 §40）
+        ConfigRegistry registry = new ConfigRegistry();
+        ConfigKeys.registerAll(registry);
+        GlobalContext.setConfig(new Config(registry));
+
         assertEquals("", Tool.isIgnoredCommand("/login test"));
         assertEquals("", Tool.isIgnoredCommand("login test"));
         assertEquals("", Tool.isIgnoredCommand("/register test"));
@@ -26,6 +38,4 @@ class ToolTest {
         assertEquals("other test", Tool.isIgnoredCommand("other test"));
         assertEquals("other test", Tool.isIgnoredCommand("/other test"));
     }
-
 }
-
