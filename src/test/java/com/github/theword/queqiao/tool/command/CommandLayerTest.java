@@ -5,6 +5,7 @@ import com.github.theword.queqiao.tool.command.subCommand.client.ListCommand;
 import com.github.theword.queqiao.tool.command.subCommand.client.ReconnectCommand;
 import com.github.theword.queqiao.tool.command.subCommand.server.InfoCommand;
 import com.github.theword.queqiao.tool.constant.CommandConstant;
+import com.github.theword.queqiao.tool.config.io.ConfigStore;
 import com.github.theword.queqiao.tool.handle.HandleApiService;
 import com.github.theword.queqiao.tool.handle.HandleCommandReturnMessageService;
 import com.github.theword.queqiao.tool.response.PrivateMessageResponse;
@@ -23,7 +24,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -273,8 +273,8 @@ class CommandLayerTest {
      */
     private static final class ConfigFixture implements AutoCloseable {
 
-        private static final Path CONFIG_PATH = Paths.get("plugins", "queqiao", "config.yml");
-        private static final Path BACKUP_PATH = Paths.get("plugins", "queqiao", "config.yml.bak");
+        private static final Path CONFIG_PATH = ConfigStore.resolveConfigPath(false);
+        private static final Path BACKUP_PATH = CONFIG_PATH.resolveSibling(CONFIG_PATH.getFileName() + ".bak");
 
         private final byte[] previousContent;
 
