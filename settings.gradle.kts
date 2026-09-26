@@ -1,1 +1,1 @@
-rootProject.name = "queqiao-tool"
+rootProject.name = "queqiao-core"

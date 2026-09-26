@@ -1,0 +1,104 @@
+name: Create Release Tag
+
+# Read the version from gradle.properties, create the corresponding
+# release tag, and push it to GitHub.
+#
+# Example:
+#   projectVersion=0.7.0
+#   -> v0.7.0
+#
+# The pushed tag automatically triggers the Release workflow.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create-tag:
+    name: Create Release Tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Read and validate project version
+        id: version
+        run: |
+          value() {
+            grep -E "^$1=" gradle.properties |
+              head -1 |
+              cut -d= -f2- |
+              tr -d '\r'
+          }
+
+          version=$(value projectVersion)
+
+          if [ -z "$version" ]; then
+            echo "::error::projectVersion is missing from gradle.properties."
+            exit 1
+          fi
+
+          if [[ ! $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Invalid projectVersion '$version'."
+            echo "::error::Expected something like 0.7.0, 0.7.0-beta.1, or 0.7.0-rc.1."
+            exit 1
+          fi
+
+          if [[ "$version" == *-SNAPSHOT ]]; then
+            echo "::error::SNAPSHOT versions cannot be released: $version"
+            exit 1
+          fi
+
+          tag="v$version"
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+          echo "Release version: $version"
+          echo "Release tag: $tag"
+
+      - name: Check release tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error::Git tag '$TAG' already exists."
+            echo "::error::Update projectVersion in gradle.properties before creating another release."
+            exit 1
+          fi
+
+          echo "Git tag '$TAG' does not exist."
+
+      - name: Check GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::GitHub Release '$TAG' already exists."
+            exit 1
+          fi
+
+          echo "GitHub Release '$TAG' does not exist."
+
+      - name: Create and push release tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git tag \
+            --annotate "$TAG" \
+            --message "Release $VERSION"
+
+          git push origin "$TAG"
+
+          echo "Created and pushed release tag '$TAG'."

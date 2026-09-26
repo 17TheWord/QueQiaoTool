@@ -1,0 +1,19 @@
+package io.github.theword.queqiao.core.protocol.handler.status;
+
+import java.util.Map;
+
+public final class MinecraftPingResponse {
+    private final Map<String, Object> rawData;
+
+    private MinecraftPingResponse(Map<String, Object> rawData) {
+        this.rawData = StatusValueCopies.immutableMap(rawData);
+    }
+
+    public static MinecraftPingResponse fromRawData(Map<String, Object> rawData) {
+        return new MinecraftPingResponse(rawData);
+    }
+
+    public Map<String, Object> toMap() {
+        return StatusValueCopies.mutableMap(rawData);
+    }
+}
