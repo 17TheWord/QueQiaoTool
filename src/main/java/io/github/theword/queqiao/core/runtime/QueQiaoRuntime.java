@@ -37,9 +37,30 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public final class QueQiaoRuntime {
+
+    // ------------------------------------------------------------------
+    // 生命周期状态
+    // ------------------------------------------------------------------
+
+    /**
+     * 生命周期状态
+     *
+     * <p>迁移单向：{@code NEW → STARTING → RUNNING → STOPPING → STOPPED}；
+     * 启动失败时 {@code STARTING → FAILED}。<b>不支持重新启动</b>。
+     */
+    private final AtomicReference<RuntimeState> state = new AtomicReference<>(RuntimeState.NEW);
+
+    /**
+     * 串行化 {@code start()} / {@code reload()} / {@code shutdown()} 的生命周期锁
+     *
+     * <p>目的不是保护业务数据，而是保证这三个操作不会并发改变 Runtime 生命周期。
+     * 它<b>不</b>替代 Config / WebSocket / RCON 各自的同步机制。
+     */
+    private final Object lifecycleLock = new Object();
 
     // ------------------------------------------------------------------
     // 构造后不再变化的字段：用 final 保证安全发布
@@ -276,29 +297,51 @@ public final class QueQiaoRuntime {
     /**
      * 启动运行时
      *
+     * <p><b>只能启动一次</b>：仅 {@link RuntimeState#NEW} 状态可以调用本方法，
+     * 其余状态一律抛出 {@link IllegalStateException}。需要"重启"时应创建新的 Runtime 实例。
+     *
      * <p><b>失败回滚</b>：本方法对自己创建的资源负责。启动过程中任何一步抛异常时，
-     * 都会先调用 {@link #shutdown()} 清理已经启动的资源，再抛出<b>原始异常</b>。
-     * 因此各平台实现不必重复编写 try/catch + rollback，也不会出现"start() 抛异常
-     * 却留下半启动 Runtime"的状态。
+     * 都会先调用 {@link #shutdownResources()} 清理已创建的资源，把状态置为
+     * {@link RuntimeState#FAILED}，再抛出<b>原始异常</b>（不包装、不替换）。
+     * 因此各平台实现不必重复编写 try/catch + rollback，也不会出现
+     * "start() 抛异常却留下半启动 Runtime"的状态。
      *
      * <p>典型接线：
      * <pre>
      * QueQiaoRuntime runtime = QueQiaoRuntime.create(...);
-     * runtime.start();          // 失败则抛出，且 Runtime 已完成自清理
+     * runtime.start();          // 失败则抛出，且 Runtime 已完成自清理（状态 FAILED）
      * this.runtime = runtime;   // 只有 start() 成功后才发布
      * </pre>
      */
     public void start() {
-        try {
-            doStart();
-        } catch (Throwable startupError) {
-            try {
-                shutdown();
-            } catch (Throwable cleanupError) {
-                logger.error("Runtime 启动失败后的清理也失败", cleanupError);
+        synchronized (lifecycleLock) {
+            if (state.get() != RuntimeState.NEW) {
+                throw new IllegalStateException("QueQiaoRuntime 当前状态不允许启动: " + state.get());
             }
-            throw startupError;
+            state.set(RuntimeState.STARTING);
+
+            try {
+                doStart();
+                state.set(RuntimeState.RUNNING);
+            } catch (Throwable startupError) {
+                // 启动失败：走独立的资源清理路径（不调用 public shutdown()，
+                // 因为那会把状态推进到 STOPPED，而调用方需要知道"曾经启动失败"）。
+                try {
+                    shutdownResources();
+                } catch (Throwable cleanupError) {
+                    logger.error("Runtime 启动失败后的清理也失败", cleanupError);
+                }
+                state.set(RuntimeState.FAILED);
+                throw startupError;
+            }
         }
+    }
+
+    /**
+     * @return 当前生命周期状态
+     */
+    public RuntimeState getState() {
+        return state.get();
     }
 
     private void doStart() {
@@ -322,32 +365,87 @@ public final class QueQiaoRuntime {
         initRconClient();
     }
 
+    /**
+     * 重载配置
+     *
+     * <p>只允许对 {@link RuntimeState#RUNNING} 的 Runtime 调用：reload 的语义是
+     * "运行中 Runtime 的配置重载"，不是初始化 API。{@code NEW} / {@code STARTING} /
+     * {@code STOPPED} / {@code FAILED} 状态一律抛出 {@link IllegalStateException}。
+     *
+     * <p>注意：命令层在 Runtime 关闭后仍可能持有旧的命令树；此时触发 reload 会抛出
+     * 上述异常，并由 {@code SubCommand.execute} 捕获后回显"命令执行出错"。
+     *
+     * @param commandReturner 命令执行者，可为 null
+     */
     public void reload(Object commandReturner) {
-        loadConfig();
-        messagePrefixJsonElement = initMessagePrefixJsonObject(config.get(ConfigKeys.MESSAGE_PREFIX));
-        LanguageService service = languageService;
-        if (service != null) {
-            service.reload();
-        }
-        serverStatusCollector.initPingTarget();
-        serverStatusCollector.updateRefreshInterval(config.get(ConfigKeys.Status.REFRESH_INTERVAL_SECONDS));
-        WebsocketManager manager = websocketManager;
-        if (manager != null) {
-            manager.restart(config, commandReturner);
-        }
-        restartRconClient();
-        if (handleCommandReturnMessageService != null) {
-            handleCommandReturnMessageService.sendReturnMessage(commandReturner, CommandConstant.RELOAD_CONFIG);
+        synchronized (lifecycleLock) {
+            if (state.get() != RuntimeState.RUNNING) {
+                throw new IllegalStateException("QueQiaoRuntime 当前状态不允许 reload: " + state.get());
+            }
+
+            loadConfig();
+            messagePrefixJsonElement = initMessagePrefixJsonObject(config.get(ConfigKeys.MESSAGE_PREFIX));
+            LanguageService service = languageService;
+            if (service != null) {
+                service.reload();
+            }
+            serverStatusCollector.initPingTarget();
+            serverStatusCollector.updateRefreshInterval(config.get(ConfigKeys.Status.REFRESH_INTERVAL_SECONDS));
+            WebsocketManager manager = websocketManager;
+            if (manager != null) {
+                manager.restart(config, commandReturner);
+            }
+            restartRconClient();
+            if (handleCommandReturnMessageService != null) {
+                handleCommandReturnMessageService.sendReturnMessage(commandReturner, CommandConstant.RELOAD_CONFIG);
+            }
         }
     }
 
     /**
      * 关闭运行时
      *
-     * <p><b>幂等</b>：重复调用不会抛异常。各协作者在关闭后被置空，
-     * 因此"尚未启动就关闭"与"关闭两次"都是安全的。
+     * <p><b>幂等</b>，且按状态区分语义：
+     * <ul>
+     *     <li>{@link RuntimeState#NEW}：no-op，状态保持 {@code NEW}——从未启动就没有
+     *         Runtime-owned 资源，因此"先 shutdown 再 start"仍然可行；</li>
+     *     <li>{@link RuntimeState#RUNNING}：{@code RUNNING → STOPPING → STOPPED}，
+     *         期间清理全部 Runtime-owned 资源；</li>
+     *     <li>{@link RuntimeState#FAILED}：no-op，状态保持 {@code FAILED}——启动失败时
+     *         资源已完成清理，且调用方需要知道该 Runtime 曾经启动失败；</li>
+     *     <li>{@link RuntimeState#STOPPED} / {@link RuntimeState#STOPPING}：no-op。</li>
+     * </ul>
+     *
+     * <p>与 {@link #start()} 共享生命周期锁，因此不会观察到 {@code STARTING} 并强行中断启动。
      */
     public void shutdown() {
+        synchronized (lifecycleLock) {
+            RuntimeState current = state.get();
+            if (current != RuntimeState.RUNNING) {
+                // NEW / FAILED / STOPPED / STOPPING 均为 no-op（STARTING 因共享同一把锁而不可达）
+                return;
+            }
+
+            state.set(RuntimeState.STOPPING);
+            try {
+                shutdownResources();
+            } finally {
+                // 无论清理是否抛异常都必须落到终止状态，否则后续 shutdown() 会被
+                // STOPPING 卡成永久 no-op，破坏幂等语义
+                state.set(RuntimeState.STOPPED);
+            }
+            logger.info("鹊桥已关闭");
+        }
+    }
+
+    /**
+     * 清理全部 Runtime-owned 资源
+     *
+     * <p>关闭顺序保持既有约定：状态采集器 → WebSocket → RCON → 语言服务；
+     * 每一项自身都幂等，因此本方法可被"启动失败回滚"与"正常关闭"复用，
+     * 而不会把生命周期状态变化与资源清理实现耦合在一起。
+     */
+    private void shutdownResources() {
         serverStatusCollector.stopRefreshScheduler();
 
         WebsocketManager manager = websocketManager;
@@ -368,8 +466,6 @@ public final class QueQiaoRuntime {
         if (service != null) {
             service.disable();
         }
-
-        logger.info("鹊桥已关闭");
     }
 
     /**

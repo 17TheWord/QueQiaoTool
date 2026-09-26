@@ -101,6 +101,7 @@ class QueQiaoRuntimeIsolationTest {
             assertTrue(a.utils.isDebugEnabled(), "A 的 debug 应已开启");
             assertFalse(b.utils.isDebugEnabled(), "B 的 debug 不应被 A 影响");
         } finally {
+            // 两个 Runtime 都未 start（状态 NEW），因此 shutdown() 是 no-op；本用例没有启动任何资源
             a.shutdown();
             b.shutdown();
         }
@@ -137,6 +138,8 @@ class QueQiaoRuntimeIsolationTest {
                     collectorB.collectStatusSnapshot().containsKey("timestamp"),
                     "B 的采集器应独立可用");
         } finally {
+            // Runtime 未 start（状态 NEW），shutdown() 是 no-op；
+            // 本用例为了隔离采集器而绕过 Runtime.start() 直接驱动它，故调度器必须在此前显式 stop
             a.shutdown();
             b.shutdown();
         }

@@ -6,6 +6,7 @@ import io.github.theword.queqiao.core.config.codec.StringCodec;
 import io.github.theword.queqiao.core.event.PlayerChatEvent;
 import io.github.theword.queqiao.core.handle.HandleApiService;
 import io.github.theword.queqiao.core.handle.HandleCommandReturnMessageService;
+import io.github.theword.queqiao.core.protocol.handler.status.ServerStatusCollector;
 import io.github.theword.queqiao.core.response.PrivateMessageResponse;
 import io.github.theword.queqiao.core.utils.WebsocketManager;
 import com.google.gson.JsonElement;
@@ -27,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -169,12 +172,19 @@ class QueQiaoRuntimeLifecycleTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("未启动时 shutdown 不抛异常，且可重复调用")
-    void shutdownBeforeStartIsSafe() {
-        QueQiaoRuntime created = newRuntime();
+    @DisplayName("NEW 状态 shutdown 为 no-op：状态保持 NEW，之后仍可正常启动")
+    void shutdownBeforeStartIsNoOpAndKeepsNewState() throws Exception {
+        try (DisabledConfigFixture ignored = new DisabledConfigFixture()) {
+            QueQiaoRuntime created = newRuntime();
 
-        created.shutdown();
-        created.shutdown();
+            created.shutdown();
+            created.shutdown();
+            assertEquals(RuntimeState.NEW, created.getState(), "未启动时 shutdown 不应改变状态");
+
+            // no-op 的语义保证：shutdown 之后仍然可以启动
+            created.start();
+            assertEquals(RuntimeState.RUNNING, created.getState(), "shutdown(no-op) 之后应能正常启动");
+        }
     }
 
     @Test
@@ -199,23 +209,101 @@ class QueQiaoRuntimeLifecycleTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("start 后可得到 WebsocketManager，shutdown 释放其共享调度器且幂等")
+    @DisplayName("start 后可得到 WebsocketManager，shutdown 释放全部资源且幂等")
     void shutdownReleasesStartedResourcesAndIsIdempotent() throws Exception {
+        try (DisabledConfigFixture ignored = new DisabledConfigFixture()) {
+            QueQiaoRuntime created = newRuntime();
+            assertEquals(RuntimeState.NEW, created.getState(), "初始状态应为 NEW");
+
+            created.start();
+            assertEquals(RuntimeState.RUNNING, created.getState(), "启动成功后状态应为 RUNNING");
+
+            WebsocketManager manager = created.getWebsocketManager();
+            assertNotNull(manager, "start 后应存在 WebsocketManager");
+            ScheduledThreadPoolExecutor reconnectScheduler = readReconnectScheduler(manager);
+            assertFalse(reconnectScheduler.isShutdown(), "start 后共享重连调度器应可用");
+
+            ScheduledThreadPoolExecutor statusExecutor =
+                    readRefreshExecutor(created.getServerStatusCollector());
+            assertNotNull(statusExecutor, "start 后采集调度器应已创建");
+            assertFalse(statusExecutor.isShutdown(), "start 后采集调度器应可用");
+
+            created.shutdown();
+            assertEquals(RuntimeState.STOPPED, created.getState(), "关闭后状态应为 STOPPED");
+            assertTrue(reconnectScheduler.isShutdown(), "shutdown 应释放共享重连调度器");
+            assertTrue(statusExecutor.isShutdown(), "shutdown 应关闭采集调度器（否则线程泄漏）");
+            assertNull(created.getWebsocketManager(), "shutdown 应清空 WebsocketManager");
+
+            // 幂等：重复 shutdown 不得抛异常，状态保持 STOPPED
+            created.shutdown();
+            assertEquals(RuntimeState.STOPPED, created.getState(), "重复 shutdown 后状态应保持 STOPPED");
+            assertTrue(reconnectScheduler.isShutdown(), "重复 shutdown 后调度器仍应处于已关闭状态");
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 生命周期状态机
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("重复 start 被拒，且不重建 WebSocket / 采集器资源")
+    void repeatedStartIsRejectedAndKeepsSameResources() throws Exception {
         try (DisabledConfigFixture ignored = new DisabledConfigFixture()) {
             QueQiaoRuntime created = newRuntime();
             created.start();
 
-            WebsocketManager manager = created.getWebsocketManager();
-            assertNotNull(manager, "start 后应存在 WebsocketManager");
-            ScheduledThreadPoolExecutor scheduler = readReconnectScheduler(manager);
-            assertFalse(scheduler.isShutdown(), "start 后共享调度器应可用");
+            WebsocketManager firstManager = created.getWebsocketManager();
+            ScheduledThreadPoolExecutor firstStatusExecutor =
+                    readRefreshExecutor(created.getServerStatusCollector());
+            assertNotNull(firstManager, "首次启动后应存在 WebsocketManager");
+            assertNotNull(firstStatusExecutor, "首次启动后应存在采集调度器");
 
-            created.shutdown();
-            assertTrue(scheduler.isShutdown(), "shutdown 应释放共享调度器");
+            assertThrows(IllegalStateException.class, created::start);
 
-            // 幂等：重复 shutdown 不得抛异常
+            // 状态保持 RUNNING，且资源仍是同一实例（identity），没有被关闭后重建
+            assertEquals(RuntimeState.RUNNING, created.getState(), "重复 start 被拒后状态应保持 RUNNING");
+            assertSame(firstManager, created.getWebsocketManager(), "重复 start 不应替换 WebsocketManager");
+            assertSame(
+                    firstStatusExecutor,
+                    readRefreshExecutor(created.getServerStatusCollector()),
+                    "重复 start 不应重建采集调度器");
+            assertFalse(firstStatusExecutor.isShutdown(), "重复 start 不应关闭原采集调度器");
+        }
+    }
+
+    @Test
+    @DisplayName("STOPPED 状态不允许再次 start")
+    void stoppedRuntimeRejectsRestart() throws Exception {
+        try (DisabledConfigFixture ignored = new DisabledConfigFixture()) {
+            QueQiaoRuntime created = newRuntime();
+            created.start();
             created.shutdown();
-            assertTrue(scheduler.isShutdown(), "重复 shutdown 后调度器仍应处于已关闭状态");
+            assertEquals(RuntimeState.STOPPED, created.getState(), "关闭后状态应为 STOPPED");
+
+            assertThrows(IllegalStateException.class, created::start);
+            assertEquals(RuntimeState.STOPPED, created.getState(), "被拒后状态应保持 STOPPED");
+        }
+    }
+
+    @Test
+    @DisplayName("reload 只允许 RUNNING 状态")
+    void reloadRequiresRunningState() throws Exception {
+        try (DisabledConfigFixture ignored = new DisabledConfigFixture()) {
+            QueQiaoRuntime created = newRuntime();
+
+            // NEW
+            assertThrows(IllegalStateException.class, () -> created.reload(null));
+            assertEquals(RuntimeState.NEW, created.getState(), "被拒的 reload 不应改变状态");
+
+            // RUNNING
+            created.start();
+            created.reload(null);
+            assertEquals(RuntimeState.RUNNING, created.getState(), "reload 不应改变状态");
+
+            // STOPPED
+            created.shutdown();
+            assertThrows(IllegalStateException.class, () -> created.reload(null));
+            assertEquals(RuntimeState.STOPPED, created.getState(), "被拒的 reload 不应改变状态");
         }
     }
 
@@ -226,6 +314,18 @@ class QueQiaoRuntimeLifecycleTest {
         Field field = WebsocketManager.class.getDeclaredField("reconnectScheduler");
         field.setAccessible(true);
         return (ScheduledThreadPoolExecutor) field.get(manager);
+    }
+
+    /**
+     * 通过反射读取采集器的私有调度器
+     *
+     * <p>断言对象是"该实例自己持有的 executor"，而不是线程名——后者在 JVM 内全局可见，
+     * 会被其它用例正在退出的线程污染，导致断言不稳定。
+     */
+    private static ScheduledThreadPoolExecutor readRefreshExecutor(ServerStatusCollector collector) throws Exception {
+        Field field = ServerStatusCollector.class.getDeclaredField("refreshExecutor");
+        field.setAccessible(true);
+        return (ScheduledThreadPoolExecutor) field.get(collector);
     }
 
     /**
