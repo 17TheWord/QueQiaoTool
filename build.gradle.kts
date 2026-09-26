@@ -91,7 +91,9 @@ mavenPublishing {
         version = providers.gradleProperty("projectVersion").get()
     )
     publishToMavenCentral()
-    signAllPublications()
+    if (providers.gradleProperty("signingRequired").map(String::toBoolean).orElse(false).get()) {
+        signAllPublications()
+    }
 
     pom {
         name.set(providers.gradleProperty("name"))
