@@ -1,57 +1,60 @@
 package com.github.theword.queqiao.tool;
 
-import com.github.theword.queqiao.tool.utils.GsonUtils;
-import com.google.gson.Gson;
+import com.github.theword.queqiao.tool.runtime.QueQiaoRuntime;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GlobalContextTest {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final QueQiaoRuntime runtime = QueQiaoRuntime.empty();
 
-    private final Gson gson = GsonUtils.getGson();
+    @Test
+    @DisplayName("实际 Runtime 将普通文本前缀转换为黄色文本组件")
+    void plainTextPrefixBecomesYellowComponent() {
+        JsonElement result = runtime.initMessagePrefixJsonObject("[鹊桥]");
 
-    public JsonObject initMessagePrefixJsonObjectDemo(String messagePrefixText) {
-        if (messagePrefixText == null || messagePrefixText.isEmpty()) {
-            messagePrefixText = "[鹊桥]";
-        }
-        try {
-            JsonElement element = gson.fromJson(messagePrefixText, JsonElement.class);
-            if (element.isJsonObject()) {
-                logger.info("消息前缀 {} 符合mc消息组件格式，将采用自定义风格的消息前缀", messagePrefixText);
-                return element.getAsJsonObject();
-            }
-            logger.info("消息前缀 {} 不是合法的 JSON 对象，将使用默认风格的自定义文本前缀", messagePrefixText);
-
-        } catch (JsonSyntaxException e) {
-            logger.info("消息前缀 {} 未采用自定义风格，将使用默认风格的自定义文本前缀", messagePrefixText);
-        }
-        JsonObject obj = new JsonObject();
-        obj.addProperty("text", messagePrefixText);
-        obj.addProperty("color", "yellow");
-        return obj;
+        assertTrue(result.isJsonObject());
+        assertEquals("[鹊桥]", result.getAsJsonObject().get("text").getAsString());
+        assertEquals("yellow", result.getAsJsonObject().get("color").getAsString());
     }
 
     @Test
-    public void testInitMessagePrefixJsonObject() {
-        JsonObject jsonObject = initMessagePrefixJsonObjectDemo("[鹊桥]");
-        logger.info(jsonObject.toString());
-        assertEquals("yellow", jsonObject.get("color").getAsString());
-        assertEquals("[鹊桥]", jsonObject.get("text").getAsString());
+    @DisplayName("实际 Runtime 保留合法 JSON 对象前缀")
+    void validObjectPrefixIsPreserved() {
+        JsonElement result = runtime.initMessagePrefixJsonObject("{\"text\":\"[鹊桥]\",\"color\":\"green\"}");
+
+        assertTrue(result.isJsonObject());
+        assertEquals("green", result.getAsJsonObject().get("color").getAsString());
     }
 
     @Test
-    public void testInitMessagePrefixJsonObject2() {
-        JsonObject jsonObject = initMessagePrefixJsonObjectDemo("{\"text\":\"[鹊桥]\",\"color\":\"green\"}");
-        logger.info(jsonObject.toString());
-        assertEquals("green", jsonObject.get("color").getAsString());
-        assertEquals("[鹊桥]", jsonObject.get("text").getAsString());
+    @DisplayName("实际 Runtime 保留首项为对象的 JSON 数组前缀")
+    void validComponentArrayPrefixIsPreserved() {
+        JsonElement result = runtime.initMessagePrefixJsonObject("[{\"text\":\"[鹊桥]\"}]");
+
+        assertTrue(result.isJsonArray());
+        assertEquals("[鹊桥]", result.getAsJsonArray().get(0).getAsJsonObject().get("text").getAsString());
     }
 
+    @Test
+    @DisplayName("空白前缀会生成禁用显示的空文本组件")
+    void blankPrefixProducesEmptyText() {
+        JsonElement result = runtime.initMessagePrefixJsonObject("   ");
+
+        assertTrue(result.isJsonObject());
+        assertEquals("", result.getAsJsonObject().get("text").getAsString());
+    }
+
+    @Test
+    @DisplayName("非法 JSON 回退为普通文本")
+    void invalidJsonFallsBackToText() {
+        JsonElement result = runtime.initMessagePrefixJsonObject("{invalid json}");
+
+        assertEquals("{invalid json}", result.getAsJsonObject().get("text").getAsString());
+        assertEquals("yellow", result.getAsJsonObject().get("color").getAsString());
+    }
 }

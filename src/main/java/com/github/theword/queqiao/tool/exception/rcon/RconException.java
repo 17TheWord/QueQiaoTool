@@ -27,6 +27,11 @@ public class RconException extends QueQiaoException {
         DISCONNECTED,
 
         /**
+         * 命令为空或仅包含空白
+         */
+        INVALID_COMMAND,
+
+        /**
          * 命令已下发但执行失败
          */
         COMMAND_FAILED
@@ -66,6 +71,14 @@ public class RconException extends QueQiaoException {
 
     public static RconException clientDisconnected() {
         return new RconException("Rcon 未连接", null, Kind.DISCONNECTED);
+    }
+
+    public static RconException invalidCommand() {
+        return invalidCommand("Rcon 命令不能为空");
+    }
+
+    public static RconException invalidCommand(String message) {
+        return new RconException(message, null, Kind.INVALID_COMMAND);
     }
 
     public static RconException commandFailed(Throwable cause) {

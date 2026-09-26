@@ -62,6 +62,10 @@ public class SendRconCommandHandler extends AbstractProtocolHandler<CommandPaylo
             String errorMessage = e.getMessage() != null ? e.getMessage() : ProtocolConstants.Message.FAILED;
             RconCommandError errorData = new RconCommandError(command, errorMessage);
 
+            if (e.getKind() == RconException.Kind.INVALID_COMMAND) {
+                throw ProtocolException.badRequest(errorMessage, errorData);
+            }
+
             if (e.getKind() == RconException.Kind.DISABLED || e.getKind() == RconException.Kind.DISCONNECTED) {
                 this.logger.warn("Rcon 暂不可用（{}）：{}", e.getKind(), errorMessage);
                 throw ProtocolException.serviceUnavailable(errorMessage, errorData);

@@ -242,6 +242,17 @@ class ProtocolDispatchTest {
         assertEquals(ProtocolConstants.Status.INTERNAL_ERROR, response.getCode().intValue());
     }
 
+    @Test
+    @DisplayName("Rcon 命令参数不合法时返回 400")
+    void invalidRconCommandReturnsBadRequest() {
+        Response response = dispatch(
+                "{\"api\":\"send_rcon_command\",\"data\":{\"command\":\"list\"}}",
+                PlatformStubs.noopApiService(),
+                PlatformStubs.rconExecutorFailing(RconException.Kind.INVALID_COMMAND));
+
+        assertEquals(ProtocolConstants.Status.BAD_REQUEST, response.getCode().intValue());
+    }
+
     // ------------------------------------------------------------------
     // 响应契约
     // ------------------------------------------------------------------

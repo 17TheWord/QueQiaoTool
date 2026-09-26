@@ -5,6 +5,7 @@ import com.github.theword.queqiao.tool.config.io.ConfigFileState;
 import com.github.theword.queqiao.tool.config.ConfigKeys;
 import com.github.theword.queqiao.tool.config.schema.ConfigRegistry;
 import com.github.theword.queqiao.tool.config.Config;
+import com.github.theword.queqiao.tool.config.ConfigSnapshot;
 import com.github.theword.queqiao.tool.config.io.ConfigDocument;
 import com.github.theword.queqiao.tool.config.io.ConfigLoadResult;
 import com.github.theword.queqiao.tool.config.io.ConfigLoader;
@@ -105,6 +106,9 @@ public final class QueQiaoRuntime {
     private volatile Logger logger;
 
     private volatile WebsocketManager websocketManager;
+
+    /** 串行化 Runtime 对 RCON 客户端的创建、替换和关闭。 */
+    private final Object rconLifecycleLock = new Object();
 
     private volatile RconClient rconClient;
 
@@ -315,10 +319,12 @@ public final class QueQiaoRuntime {
             websocketManager = null;
         }
 
-        RconClient client = rconClient;
-        if (client != null) {
-            client.stop();
+        synchronized (rconLifecycleLock) {
+            RconClient client = rconClient;
             rconClient = null;
+            if (client != null) {
+                client.stop();
+            }
         }
 
         LanguageService service = languageService;
@@ -353,42 +359,58 @@ public final class QueQiaoRuntime {
     }
 
     private void initRconClient() {
-        if (config.get(ConfigKeys.Rcon.ENABLE)) {
-            rconClient = new RconClient(logger, config.get(ConfigKeys.Rcon.PORT), config.get(ConfigKeys.Rcon.PASSWORD));
-            rconClient.connect();
-        } else {
-            logger.info("Rcon 未启用，跳过 Rcon 客户端初始化");
+        synchronized (rconLifecycleLock) {
+            ConfigSnapshot configSnapshot = config.snapshot();
+            if (configSnapshot.valueOf(ConfigKeys.Rcon.ENABLE)) {
+                RconClient client = createRconClient(configSnapshot);
+                client.connect();
+                rconClient = client;
+            } else {
+                rconClient = null;
+                logger.info("Rcon 未启用，跳过 Rcon 客户端初始化");
+            }
         }
     }
 
     private void restartRconClient() {
-        if (!config.get(ConfigKeys.Rcon.ENABLE)) {
-            if (rconClient != null) {
-                rconClient.stop();
+        synchronized (rconLifecycleLock) {
+            RconClient previous = rconClient;
+            ConfigSnapshot configSnapshot = config.snapshot();
+            if (!configSnapshot.valueOf(ConfigKeys.Rcon.ENABLE)) {
                 rconClient = null;
-                logger.info("Rcon 已根据新配置禁用并关闭连接");
+                if (previous != null) {
+                    previous.stop();
+                    logger.info("Rcon 已根据新配置禁用并关闭连接");
+                }
+                return;
             }
-            return;
-        }
 
-        if (rconClient == null) {
-            initRconClient();
-        } else {
-            rconClient.stop();
-            rconClient.setPort(config.get(ConfigKeys.Rcon.PORT));
-            rconClient.setPassword(config.get(ConfigKeys.Rcon.PASSWORD));
-            rconClient.connect();
+            RconClient replacement = createRconClient(configSnapshot);
+            replacement.connect();
+            // 先发布新客户端，再关闭旧客户端；已经拿到旧引用的调用由旧客户端自身串行化。
+            rconClient = replacement;
+            if (previous != null) {
+                previous.stop();
+            }
         }
+    }
+
+    private RconClient createRconClient(ConfigSnapshot source) {
+        return new RconClient(
+                logger,
+                source.valueOf(ConfigKeys.Rcon.PORT),
+                source.valueOf(ConfigKeys.Rcon.PASSWORD));
     }
 
     public String sendRconCommand(String command) throws RconException {
         if (!config.get(ConfigKeys.Rcon.ENABLE)) {
             throw RconException.disabled();
         }
-        if (rconClient == null || !rconClient.isConnected()) {
+        RconClient client = rconClient;
+        if (client == null) {
             throw RconException.disconnected();
         }
-        return rconClient.sendCommand(command);
+        return client.sendCommand(command);
     }
 
     public JsonElement initMessagePrefixJsonObject(String messagePrefixText) {

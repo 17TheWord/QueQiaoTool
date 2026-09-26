@@ -1,34 +1,27 @@
 package com.github.theword.queqiao.tool.rcon;
 
-import org.glavo.rcon.Rcon;
+import com.github.theword.queqiao.tool.exception.rcon.RconException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link RconClient} 单元测试
- *
- * <p><b>A#29 回归</b>：{@code connect()} 在"已连接"分支缺少 {@code return}，
- * 会继续执行 {@code new Rcon(...)} 并用新连接覆盖 {@code client} 字段，
- * 旧连接的 socket 不被关闭 → 泄漏。
- *
- * <p><b>验证方式</b>：{@code org.glavo.rcon.Rcon} 是 {@code final class}，无法 mock；
- * 但 {@code RconClient.client} 是 {@code public volatile} 字段、{@code isConnected()} 只判
- * {@code client != null}。因此可以塞入 {@code new Rcon()}
- * （无参构造器不建立连接）伪造"已连接"状态，
- * 再用一个<b>只计数 accept</b> 的本地端口观察 {@code connect()} 是否仍去建立新连接——
- * 无需实现 RCON 协议。
- */
 class RconClientTest {
 
     static {
@@ -38,79 +31,172 @@ class RconClientTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(RconClientTest.class);
 
     @Test
-    @DisplayName("已连接状态下 connect() 不再建立新连接（A#29 回归）")
-    void connectDoesNothingWhenAlreadyConnected() throws Exception {
-        try (AcceptCountingServer stub = new AcceptCountingServer()) {
-            RconClient rconClient = new RconClient(LOGGER, stub.getPort(), "test-password");
+    @DisplayName("已连接时重复 connect 不创建第二条连接")
+    void connectIsIdempotent() {
+        AtomicInteger opened = new AtomicInteger();
+        RconClient client = client((host, port, password) -> {
+            opened.incrementAndGet();
+            return new FakeConnection();
+        });
 
-            // 伪造"已连接"状态：Rcon 无参构造器不建立任何连接
-            rconClient.client = new Rcon();
-            assertTrue(rconClient.isConnected(), "塞入非 null client 后应视为已连接");
+        client.connect();
+        client.connect();
 
-            rconClient.connect();
+        assertEquals(1, opened.get());
+        assertTrue(client.isConnected());
+    }
 
-            assertEquals(
-                    0,
-                    stub.getAcceptedCount(),
-                    "已连接状态下 connect() 不得再建立新连接（否则旧 socket 泄漏）");
+    @Test
+    @DisplayName("未连接时拒绝命令，空命令具有明确错误类型")
+    void rejectsDisconnectedAndInvalidCommands() {
+        RconClient client = client((host, port, password) -> new FakeConnection());
+
+        RconException disconnected = assertThrows(RconException.class, () -> client.sendCommand("list"));
+        assertEquals(RconException.Kind.DISCONNECTED, disconnected.getKind());
+
+        RconException invalid = assertThrows(RconException.class, () -> client.sendCommand(" \t "));
+        assertEquals(RconException.Kind.INVALID_COMMAND, invalid.getKind());
+        assertThrows(RconException.class, () -> client.sendCommand(null));
+
+        StringBuilder oversized = new StringBuilder();
+        for (int index = 0; index < 500; index++) {
+            oversized.append('界');
+        }
+        RconException tooLong = assertThrows(RconException.class, () -> client.sendCommand(oversized.toString()));
+        assertEquals(RconException.Kind.INVALID_COMMAND, tooLong.getKind());
+    }
+
+    @Test
+    @DisplayName("并发命令在同一连接上串行执行")
+    void commandsAreSerialized() throws Exception {
+        FakeConnection connection = new FakeConnection();
+        RconClient client = client((host, port, password) -> connection);
+        client.connect();
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<String> first = executor.submit(() -> client.sendCommand("first"));
+            Future<String> second = executor.submit(() -> client.sendCommand("second"));
+
+            assertEquals("first", first.get(2, TimeUnit.SECONDS));
+            assertEquals("second", second.get(2, TimeUnit.SECONDS));
+            assertEquals(1, connection.maxConcurrentCommands.get());
+        } finally {
+            executor.shutdownNow();
+            client.stop();
         }
     }
 
     @Test
-    @DisplayName("未连接时 connect() 会尝试建立连接（确保修复没有把正常路径堵死）")
-    void connectAttemptsConnectionWhenNotConnected() throws Exception {
-        try (AcceptCountingServer stub = new AcceptCountingServer()) {
-            RconClient rconClient = new RconClient(LOGGER, stub.getPort(), "test-password");
+    @DisplayName("关闭等待在途命令完成，之后的命令明确失败")
+    void stopWaitsForCommandAndThenRejectsFurtherCommands() throws Exception {
+        CountDownLatch commandEntered = new CountDownLatch(1);
+        CountDownLatch releaseCommand = new CountDownLatch(1);
+        FakeConnection connection = new FakeConnection(commandEntered, releaseCommand);
+        RconClient client = client((host, port, password) -> connection);
+        client.connect();
 
-            rconClient.connect();
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        AtomicReference<Throwable> commandFailure = new AtomicReference<>();
+        CountDownLatch stopCompleted = new CountDownLatch(1);
+        try {
+            Future<?> command = executor.submit(() -> {
+                try {
+                    assertEquals("running", client.sendCommand("running"));
+                } catch (Throwable error) {
+                    commandFailure.set(error);
+                }
+            });
+            assertTrue(commandEntered.await(2, TimeUnit.SECONDS), "命令应开始执行");
 
-            assertEquals(1, stub.getAcceptedCount(), "未连接状态下应尝试建立一次连接");
+            CountDownLatch stopStarted = new CountDownLatch(1);
+            AtomicReference<Thread> stopThread = new AtomicReference<>();
+            Future<?> stop = executor.submit(() -> {
+                stopThread.set(Thread.currentThread());
+                stopStarted.countDown();
+                client.stop();
+                stopCompleted.countDown();
+            });
+            assertTrue(stopStarted.await(2, TimeUnit.SECONDS));
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+            while (stopThread.get().getState() != Thread.State.BLOCKED
+                    && stopCompleted.getCount() != 0
+                    && System.nanoTime() < deadline) {
+                Thread.sleep(1L);
+            }
+            assertEquals(Thread.State.BLOCKED, stopThread.get().getState(),
+                    "stop 应等待正在使用连接的命令，而不是并发关闭 socket");
+
+            releaseCommand.countDown();
+            command.get(2, TimeUnit.SECONDS);
+            stop.get(2, TimeUnit.SECONDS);
+            assertNull(commandFailure.get());
+            assertFalse(client.isConnected());
+            assertTrue(connection.closed.get());
+            assertEquals(RconException.Kind.DISCONNECTED,
+                    assertThrows(RconException.class, () -> client.sendCommand("after-stop")).getKind());
+        } finally {
+            releaseCommand.countDown();
+            executor.shutdownNow();
+            client.stop();
         }
     }
 
-    /**
-     * 只统计"被连接了几次"的桩服务端
-     *
-     * <p>accept 后立即关闭连接：不需要实现 RCON 协议——
-     * 我们只关心客户端是否发起了 TCP 连接。
-     */
-    private static final class AcceptCountingServer implements AutoCloseable {
+    private static RconClient client(RconClient.ConnectionFactory factory) {
+        return new RconClient(LOGGER, 25575, "test-password", factory);
+    }
 
-        private final ServerSocket serverSocket;
-        private final AtomicInteger acceptedCount = new AtomicInteger();
-        private final Thread acceptThread;
+    private static final class FakeConnection implements RconClient.Connection {
 
-        private AcceptCountingServer() throws IOException {
-            this.serverSocket = new ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"));
-            this.acceptThread = new Thread(this::acceptLoop, "rcon-test-accept-loop");
-            this.acceptThread.setDaemon(true);
-            this.acceptThread.start();
+        private final AtomicInteger activeCommands = new AtomicInteger();
+        private final AtomicInteger maxConcurrentCommands = new AtomicInteger();
+        private final AtomicBoolean closed = new AtomicBoolean();
+        private final CountDownLatch commandEntered;
+        private final CountDownLatch releaseCommand;
+
+        private FakeConnection() {
+            this(null, null);
         }
 
-        private void acceptLoop() {
-            while (!serverSocket.isClosed()) {
-                try {
-                    Socket socket = serverSocket.accept();
-                    acceptedCount.incrementAndGet();
-                    socket.close();
-                } catch (IOException e) {
-                    return;
-                }
-            }
-        }
-
-        private int getPort() {
-            return serverSocket.getLocalPort();
-        }
-
-        private int getAcceptedCount() {
-            return acceptedCount.get();
+        private FakeConnection(CountDownLatch commandEntered, CountDownLatch releaseCommand) {
+            this.commandEntered = commandEntered;
+            this.releaseCommand = releaseCommand;
         }
 
         @Override
-        public void close() throws IOException {
-            serverSocket.close();
-            acceptThread.interrupt();
+        public String command(String command) throws IOException {
+            if (closed.get()) {
+                throw new IOException("connection is closed");
+            }
+            int active = activeCommands.incrementAndGet();
+            maxConcurrentCommands.accumulateAndGet(active, Math::max);
+            try {
+                if (commandEntered != null) {
+                    commandEntered.countDown();
+                    try {
+                        if (!releaseCommand.await(2, TimeUnit.SECONDS)) {
+                            throw new IOException("test command timed out");
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new IOException("test command interrupted", e);
+                    }
+                } else {
+                    try {
+                        Thread.sleep(25L);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new IOException("test command interrupted", e);
+                    }
+                }
+                return command;
+            } finally {
+                activeCommands.decrementAndGet();
+            }
+        }
+
+        @Override
+        public void close() {
+            closed.set(true);
         }
     }
 }

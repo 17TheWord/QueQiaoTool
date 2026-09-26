@@ -61,6 +61,8 @@ public final class PlatformStubs {
                     throw RconException.disabled();
                 case DISCONNECTED:
                     throw RconException.disconnected();
+                case INVALID_COMMAND:
+                    throw RconException.invalidCommand();
                 case COMMAND_FAILED:
                 default:
                     throw RconException.commandFailed(new IllegalStateException("stub failure"));
